@@ -8,12 +8,10 @@ const router = useRouter()
 const userStore = useUserStore()
 const users = ref([])
 const isLoading = ref(true)
-const errorMessage = ref('')
 const saving = ref(false)
-const describeError = e => {
-  const detail=e.response?.data?.detail
-  return Array.isArray(detail)?detail.map(x=>x.msg).join(' · '):detail||'No se pudo conectar con el servidor.'
-}
+const notice = ref('')
+const formError = ref('')
+const resending = ref(null)
 
 // Redirigir si no está logueado o no es Admin
 onMounted(async () => {
@@ -42,14 +40,13 @@ onMounted(async () => {
 
 const fetchUsers = async () => {
   isLoading.value = true
-  errorMessage.value = ''
   try {
     const res = await api.get('/users/', {
       headers: { Authorization: `Bearer ${userStore.token}` }
     })
     users.value = res.data
   } catch (error) {
-    errorMessage.value = describeError(error)
+    console.error("Error al cargar usuarios", error)
   } finally {
     isLoading.value = false
   }
@@ -70,31 +67,45 @@ const openModal = (user = null) => {
     isEditing.value = false
     formUser.value = { id: null, nombre: '', apellido: '', email: '', rol: 'Docente', password: '' }
   }
+  formError.value = ''
   showModal.value = true
 }
 
 const saveUser = async () => {
-  if(saving.value)return
-  saving.value=true
+  if (saving.value) return
+  saving.value = true
+  formError.value = ''
+  notice.value = ''
   try {
     const payload = { ...formUser.value }
     delete payload.id
-    if (!payload.password) delete payload.password
+    if (!payload.password || payload.rol === 'Docente' || payload.requiere_cambio_password || (isEditing.value && users.value.find(u => u.id === formUser.value.id)?.rol === 'Docente')) delete payload.password
 
     const config = { headers: { Authorization: `Bearer ${userStore.token}` } }
 
     if (isEditing.value) {
       await api.put(`/users/${formUser.value.id}`, payload, config)
     } else {
-      await api.post('/users/', payload, config)
+      await api.post('/users/', payload, { ...config, timeout: 60000 })
+      notice.value = payload.rol === 'Docente' ? 'Docente registrado. El servidor de correo aceptó el envío de su contraseña temporal; pídele revisar también la carpeta de spam.' : 'Usuario registrado.'
     }
     showModal.value = false
     fetchUsers()
   } catch (error) {
-    alert(describeError(error))
-  } finally {
-    saving.value=false
-  }
+    const detail = error.response?.data?.detail
+    formError.value = typeof detail === 'string' ? detail : 'No se pudo confirmar el registro. Revisa la lista de usuarios antes de reintentar.'
+  } finally { saving.value = false }
+}
+
+const resend = async (user) => {
+  if (resending.value) return
+  resending.value = user.id
+  notice.value = ''
+  try {
+    const { data } = await api.post(`/users/${user.id}/resend-temporary-password`, {}, { timeout: 60000 })
+    notice.value = data.message
+  } catch (e) { notice.value = e.response?.data?.detail || 'No se pudo confirmar el envío. Recarga la lista e inténtalo de nuevo.' }
+  finally { resending.value = null }
 }
 
 const deleteUser = async (id) => {
@@ -105,7 +116,7 @@ const deleteUser = async (id) => {
       })
       fetchUsers()
     } catch (error) {
-      errorMessage.value = describeError(error)
+      console.error(error)
     }
   }
 }
@@ -125,7 +136,7 @@ const deleteUser = async (id) => {
       </button>
     </div>
 
-    <p v-if="errorMessage" role="alert" class="mb-4 p-4 bg-red-50 text-red-800 rounded-xl">{{errorMessage}} <button @click="fetchUsers" class="underline">Reintentar</button></p>
+    <p v-if="notice" role="status" class="mb-4 p-4 rounded-lg bg-blue-50 text-blue-900">{{ notice }}</p>
     <!-- Tabla -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
       <div v-if="isLoading" class="p-12 text-center text-gray-500 dark:text-slate-400">Cargando usuarios...</div>
@@ -167,6 +178,7 @@ const deleteUser = async (id) => {
               </span>
             </td>
             <td class="px-6 py-4 text-right text-sm font-medium">
+              <button v-if="user.activo && user.requiere_cambio_password" @click="resend(user)" :disabled="resending !== null" class="text-blue-600 mr-4 disabled:opacity-50">{{ resending === user.id ? 'Enviando…' : 'Reenviar acceso temporal' }}</button>
               <button @click="openModal(user)" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</button>
               <button @click="deleteUser(user.id)" class="text-red-600 hover:text-red-900">Desactivar</button>
             </td>
@@ -200,18 +212,18 @@ const deleteUser = async (id) => {
               <option value="Docente">Docente</option>
               <option value="Director">Director</option>
               <option value="Admin">Administrador</option>
-              <option value="Orientador">Orientador</option>
             </select>
           </div>
-          <div>
+          <p v-if="!isEditing && formUser.rol === 'Docente'" class="text-sm p-3 rounded-lg bg-blue-50 text-blue-900">Se enviará una contraseña temporal al correo indicado. Vence en 24 horas y deberá cambiarse al ingresar.</p>
+          <div v-if="formUser.rol !== 'Docente' && !formUser.requiere_cambio_password && (!isEditing || users.find(u => u.id === formUser.id)?.rol !== 'Docente')">
             <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Contraseña <span v-if="isEditing" class="text-xs text-gray-400 dark:text-slate-500 font-normal">(Opcional si no cambia)</span></label>
             <input v-model="formUser.password" type="password" :required="!isEditing" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
           </div>
           
-          <label v-if="isEditing" class="flex gap-2 text-gray-700 dark:text-slate-300"><input type="checkbox" v-model="formUser.activo" /> Usuario activo</label>
+          <p v-if="formError" role="alert" class="text-sm text-red-600">{{ formError }}</p>
           <div class="mt-8 flex justify-end space-x-3">
-            <button type="button" @click="showModal = false" class="px-5 py-2 text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl font-medium transition-colors">Cancelar</button>
-            <button type="submit" :disabled="saving" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-md shadow-blue-500/30 transition-all">{{saving?'Guardando…':'Guardar'}}</button>
+            <button type="button" :disabled="saving" @click="showModal = false" class="px-5 py-2 text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded-xl font-medium transition-colors">Cancelar</button>
+            <button type="submit" :disabled="saving" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-md shadow-blue-500/30 transition-all">{{ saving ? 'Guardando…' : 'Guardar' }}</button>
           </div>
         </form>
       </div>

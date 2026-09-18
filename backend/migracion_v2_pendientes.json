@@ -1,0 +1,19 @@
+{
+  "calendarios_pendientes": [
+    2026
+  ],
+  "matriculas_pendientes": [
+    {
+      "estudiante_id": 1,
+      "curso_id": 1,
+      "apoderado_id": 1,
+      "pendiente": "Confirmar fecha de ingreso, origen real/simulado, parentesco y vigencia del contacto; crear matrícula y vínculo familiar."
+    },
+    {
+      "estudiante_id": 2,
+      "curso_id": 1,
+      "apoderado_id": 2,
+      "pendiente": "Confirmar fecha de ingreso, origen real/simulado, parentesco y vigencia del contacto; crear matrícula y vínculo familiar."
+    }
+  ]
+}

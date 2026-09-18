@@ -6,7 +6,7 @@ import { useUserStore } from '../stores/user'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    {path:'/tareas',name:'tareas',component:()=>import('../views/TasksView.vue'),meta:{requiresAuth:true,attendance:true}},
+    {path:'/cambiar-contrasena',component:()=>import('../views/ChangePasswordView.vue'),meta:{requiresAuth:true}},
     {path:'/calificaciones',name:'calificaciones',component:()=>import('../views/GradesView.vue'),meta:{requiresAuth:true,attendance:true}},
     {path:'/asistencia',name:'asistencia',component:()=>import('../views/AttendanceView.vue'),meta:{requiresAuth:true,attendance:true}},
     ...['gestiones','cursos','estudiantes','matriculas','materias','asignaciones'].map(section=>({
@@ -45,6 +45,8 @@ router.beforeEach(async (to, from, next) => {
     try {
       const { data } = await api.get('/auth/me')
       store.login(data, token)
+      if (data.requiere_cambio_password && to.path !== '/cambiar-contrasena') return next('/cambiar-contrasena')
+      if (!data.requiere_cambio_password && to.path === '/cambiar-contrasena') return next('/')
       if (to.meta.schoolAdmin && !['Admin','Director'].includes(data.rol)) return next('/')
       if (to.meta.attendance && !['Admin','Director','Docente'].includes(data.rol)) return next('/')
       if (to.path === '/users' && data.rol !== 'Admin') return next('/')

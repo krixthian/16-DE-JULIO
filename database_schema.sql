@@ -11,6 +11,9 @@ CREATE TABLE usuarios (
   apellido VARCHAR(100) NOT NULL,
   email VARCHAR(254) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NULL,
+  requiere_cambio_password BOOLEAN NOT NULL DEFAULT FALSE,
+  password_temporal_vence_en DATETIME NULL,
+  credencial_version SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   rol ENUM('Admin','Director','Docente','Orientador') NOT NULL,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP

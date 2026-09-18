@@ -4,7 +4,7 @@ import { RouterView, useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 
 const route = useRoute()
-const isLoginRoute = computed(() => route.path === '/login')
+const isLoginRoute = computed(() => ['/login', '/cambiar-contrasena'].includes(route.path))
 </script>
 
 <template>

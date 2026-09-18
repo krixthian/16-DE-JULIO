@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: 'http://localhost:8000', // URL base del backend FastAPI
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -9,7 +9,7 @@ const api = axios.create({
   }
 })
 
-// Adjuntar la sesión a las solicitudes del sistema.
+// Interceptores para añadir el token JWT (implementación futura)
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) {

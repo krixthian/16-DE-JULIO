@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator, field_validator, StringConstraints
-from typing import Optional, Annotated
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import Optional
 from enum import Enum
 
 class RolEnum(str, Enum):
@@ -10,42 +10,26 @@ class RolEnum(str, Enum):
 
 # --- Schemas de Usuario ---
 class UsuarioBase(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True)
-    nombre: str = Field(min_length=1,max_length=100)
-    apellido: str = Field(min_length=1,max_length=100)
-    email: EmailStr = Field(max_length=254)
+    nombre: str
+    apellido: str
+    email: EmailStr
     rol: RolEnum = RolEnum.docente
 
 class UsuarioCreate(UsuarioBase):
-    password: Annotated[str,StringConstraints(strip_whitespace=False)] = Field(min_length=1)
-
-    @field_validator('password')
-    @classmethod
-    def password_length(cls, value):
-        if len(value.encode('utf-8')) > 72:
-            raise ValueError('La contraseña no puede superar 72 bytes.')
-        return value
+    password: Optional[str] = None
 
 class UsuarioUpdate(BaseModel):
-    model_config = ConfigDict(str_strip_whitespace=True,extra='forbid')
-    nombre: Optional[str] = Field(default=None,min_length=1,max_length=100)
-    apellido: Optional[str] = Field(default=None,min_length=1,max_length=100)
-    email: Optional[EmailStr] = Field(default=None,max_length=254)
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    email: Optional[EmailStr] = None
     rol: Optional[RolEnum] = None
     activo: Optional[bool] = None
-    password: Optional[Annotated[str,StringConstraints(strip_whitespace=False)]] = Field(default=None,min_length=1)
-
-    @model_validator(mode='after')
-    def supplied_fields(self):
-        if any(getattr(self,k) is None for k in self.model_fields_set):
-            raise ValueError('Los campos enviados no pueden ser nulos.')
-        if self.password is not None:
-            UsuarioCreate.password_length(self.password)
-        return self
+    password: Optional[str] = None
 
 class UsuarioResponse(UsuarioBase):
     id: int
     activo: bool
+    requiere_cambio_password: bool = False
 
     class Config:
         from_attributes = True
@@ -57,3 +41,15 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=12, max_length=72)
+
+    @field_validator('new_password')
+    @classmethod
+    def validate_password_bytes(cls, value):
+        if len(value.encode('utf-8')) > 72:
+            raise ValueError('La contraseña admite como máximo 72 bytes UTF-8.')
+        return value

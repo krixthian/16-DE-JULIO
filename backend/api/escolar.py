@@ -81,7 +81,7 @@ def fila(obj):
 def obtener(db, model, id, lock=False):
     stmt = select(model).where(model.id == id)
     if lock:
-        stmt = stmt.with_for_update().execution_options(populate_existing=True)
+        stmt = stmt.with_for_update()
     obj = db.scalar(stmt)
     if obj is None:
         raise HTTPException(404, 'El registro solicitado no existe.')
@@ -133,7 +133,7 @@ def editar_gestion(id: int, data: GestionEntrada, db: Session = Depends(get_db),
         if not data.fecha_inicio <= assignment.vigente_desde <= (assignment.vigente_hasta or data.fecha_fin) <= data.fecha_fin:
             raise HTTPException(409,'Las fechas dejarían una asignación docente fuera de la gestión.')
     # Existing classroom activities also constrain a calendar correction.
-    for model, column in ((m.JornadaClase,m.JornadaClase.fecha),(m.Evaluacion,m.Evaluacion.fecha_aplicacion),(m.Tarea,func.date(m.Tarea.fecha_asignacion)),(m.Tarea,func.date(m.Tarea.fecha_limite))):
+    for model, column in ((m.JornadaClase,m.JornadaClase.fecha),(m.Evaluacion,m.Evaluacion.fecha_aplicacion)):
         outside = db.scalar(select(model.id).join(m.Curso, m.Curso.id == model.curso_id).where(m.Curso.gestion_id == id, or_(column < data.fecha_inicio, column > data.fecha_fin)).limit(1))
         if outside:
             raise HTTPException(409, 'Las fechas dejarían actividades escolares fuera de la gestión.')
@@ -237,7 +237,7 @@ def editar_matricula(id:int,data:MatriculaEntrada,db:Session=Depends(get_db),use
     if obj.estudiante_id != data.estudiante_id or obj.curso_id != data.curso_id:
         raise HTTPException(409,'Para cambiar de estudiante o curso, conserva esta matrícula y crea una nueva.')
     if any(getattr(obj,k)!=v for k,v in data.model_dump().items()):
-        for model in (m.Asistencia,m.Calificacion,m.EntregaTarea,m.RegistroConvivencia,m.SituacionEscolar,m.CortePredictivo,m.Citacion,m.ContextoPermanencia):
+        for model in (m.Asistencia,m.Calificacion,m.EntregaTarea,m.RegistroConvivencia,m.SituacionEscolar,m.CortePredictivo,m.Citacion):
             if db.scalar(select(model.id).where(model.matricula_id==id).limit(1)):
                 raise HTTPException(409,'La matrícula tiene registros asociados. Su cierre o corrección requiere revisar ese historial.')
     antes=fila(obj); aplicar(obj,data)
