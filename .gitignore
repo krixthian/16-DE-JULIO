@@ -1,0 +1,24 @@
+
+.env
+.env.*
+.database-url
+backend/.database-url
+backend/.jwt-secret
+backups/
+__pycache__/
+*.pyc
+node_modules/
+frontend/dist/
+
+# Archivos locales y datos privados
+backend/seed.py
+backend/migracion_v2_pendientes.json
+docs/auditoria_conexion.json
+data/
+*.docx
+*.xlsx
+*.xls
+docx_output.txt
+*.log
+.venv/
+venv/
