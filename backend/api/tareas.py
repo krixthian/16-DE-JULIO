@@ -62,7 +62,11 @@ def listar(asignacion_id:int,db:Session=Depends(get_db),user=Depends(personal)):
 def crear(data:TareaEntrada,db:Session=Depends(get_db),user=Depends(personal)):
     a,c,g=validar(db,user,data)
     t=m.Tarea(**data.model_dump(),curso_id=c.id)
-    db.add(t);auditar(db,t,user,None,'Creación de tarea');db.commit();db.refresh(t)
+    db.add(t);auditar(db,t,user,None,'Creación de tarea')
+    for row in lista(db,t,True)['estudiantes']:
+        pending=m.EntregaTarea(tarea_id=t.id,matricula_id=row['matricula_id'],curso_id=c.id,estado='PENDIENTE',registrado_por=user.id)
+        db.add(pending);auditar(db,pending,user,None,'Pendiente inicial al crear tarea')
+    db.commit();db.refresh(t)
     return salida(t)
 
 @router.put('/{id}')
@@ -92,8 +96,11 @@ def lista(db,t,lock=False):
           'estado':e.estado if e else None,'fecha_entrega':e.fecha_entrega if e else None,
           'fuera_plazo':bool(e and e.fecha_entrega and e.fecha_entrega>t.fecha_limite),
           'registrado_en':e.registrado_en if e else None})
+    digest=revision({'tarea':fila(t),'lista':rows,'entregas':[fila(e) for e in stored]})
+    for row in rows:
+        row['vencida_por_revisar']=row['estado']=='PENDIENTE' and datetime.now()>t.fecha_limite
     return {'tarea':salida(t),'estudiantes':rows,'registros_fuera_lista':len(set(by_id)-{mat.id for mat,s in members}),
-            'revision':revision({'tarea':fila(t),'lista':rows,'entregas':[fila(e) for e in stored]})}
+            'revision':digest}
 
 class Entrega(Entrada):
     matricula_id:int=Field(gt=0)
@@ -141,7 +148,7 @@ def guardar(id:int,data:Entregas,db:Session=Depends(get_db),user=Depends(persona
         if e and x.estado is None:raise HTTPException(422,'No se puede borrar un registro guardado; corrige el estado.')
         if x.estado is not None and (not e or e.estado!=x.estado or e.fecha_entrega!=x.fecha_entrega):changes.append((x,e))
     if not old and not changes:raise HTTPException(422,'Registra al menos un estado.')
-    if any(e for x,e in changes) and not data.motivo_correccion:raise HTTPException(422,'Indica un motivo de corrección.')
+    if any(e and e.estado!='PENDIENTE' for x,e in changes) and not data.motivo_correccion:raise HTTPException(422,'Indica un motivo de corrección.')
     for x,e in changes:
         before=fila(e) if e else None
         obj=e or m.EntregaTarea(tarea_id=id,matricula_id=x.matricula_id,curso_id=t.curso_id)

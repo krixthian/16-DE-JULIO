@@ -24,3 +24,6 @@ Frontend: npm run build, correcto.
 Navegador: servidor iniciado y pantalla de inicio de sesión accesible. La revisión visual de las pantallas protegidas requiere una sesión del usuario.
 
 Archivos principales nuevos: backend/api/tareas.py, backend/test_tareas.py, frontend/src/views/TasksView.vue. Integración en main.py, router, menú e inicio. El módulo de asistencias existente se verificó con su prueba funcional.
+
+## Automatización de estados
+Las tareas nuevas crean registros Pendiente para las matrículas de la fecha de asignación. Las tareas anteriores conservan sus registros. Al vencer el plazo, Pendiente se presenta como Vencida, por revisar, calculado al consultar y actualizado en pantalla. No se almacena como incumplimiento. Confirmar por primera vez una pendiente no exige motivo; corregir un estado confirmado sí. Al seleccionar Entregada se completa fecha y hora local actual, editable antes de guardar.

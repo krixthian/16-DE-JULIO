@@ -50,8 +50,8 @@ class TareasTests(unittest.TestCase):
        app.dependency_overrides[get_current_user]=lambda:teacher
        sh=await req('GET',path)
        self.assertEqual(len(sh['estudiantes']),4)
-       self.assertTrue(all(x['estado'] is None for x in sh['estudiantes']))
-       self.assertEqual(db.scalar(select(func.count()).select_from(m.EntregaTarea).where(m.EntregaTarea.tarea_id==t['id'])),0)
+       self.assertTrue(all(x['estado']=='PENDIENTE' and x['vencida_por_revisar'] for x in sh['estudiantes']))
+       self.assertEqual(db.scalar(select(func.count()).select_from(m.EntregaTarea).where(m.EntregaTarea.tarea_id==t['id'])),4)
        rows=[{'matricula_id':x['matricula_id'],'estado':s,'fecha_entrega':d} for x,s,d in zip(sh['estudiantes'],['ENTREGADA','ENTREGADA','NO_ENTREGADA','EXENTA'],['1993-03-08T12:00:00','1993-03-09T12:00:00',None,None])]
        async def put(sheet,rs=rows,status=200,**kw):return await req('PUT',path,{'revision':sheet['revision'],'estudiantes':rs,**kw},status)
        await put(sh,[{**rows[0],'fecha_entrega':None},*rows[1:]],422)
@@ -73,6 +73,12 @@ class TareasTests(unittest.TestCase):
        path=f"/{future['id']}/entregas";sh=await req('GET',path)
        await put(sh,status=422)
        pending=[{**x,'estado':'PENDIENTE','fecha_entrega':None} for x in rows]
+       self.assertTrue(all(not x['vencida_por_revisar'] for x in sh['estudiantes']))
+       with patch('api.tareas.datetime') as clock:
+        clock.now.return_value=datetime(1993,3,16,12)
+        expired=await req('GET',path)
+       self.assertEqual(expired['revision'],sh['revision'])
+       self.assertTrue(all(x['estado']=='PENDIENTE' and x['vencida_por_revisar'] for x in expired['estudiantes']))
        await put(sh,pending)
        planned=await req('POST',body={**payload,'fecha_asignacion':'1993-03-12T08:00:00','fecha_limite':'1993-03-15T12:00:00'},status=201)
        path=f"/{planned['id']}/entregas";sh=await req('GET',path)

@@ -8,7 +8,10 @@ const statuses=[['PENDIENTE','Pendiente'],['ENTREGADA','Entregada'],['NO_ENTREGA
 const message=e=>{const d=e.response?.data?.detail;return Array.isArray(d)?d.map(x=>x.msg.replace('Value error, ','')).join(' · '):d||'No se pudo conectar con el servidor.'}
 const format=v=>v?v.replace('T',' ').slice(0,16):'—'
 const localNow=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
-const counts=computed(()=>Object.fromEntries([...statuses,[null,'Sin registro']].map(([k,l])=>[l,sheet.value?.estudiantes.filter(s=>s.estado===k).length||0])))
+const clock=ref(Date.now())
+let clockTimer
+const expired=s=>s.estado==='PENDIENTE'&&sheet.value&&clock.value>new Date(sheet.value.tarea.fecha_limite).getTime()
+const counts=computed(()=>({...Object.fromEntries([...statuses,[null,'Sin registro']].map(([k,l])=>[l,sheet.value?.estudiantes.filter(s=>s.estado===k&&!expired(s)).length||0])), 'Vencida, por revisar':sheet.value?.estudiantes.filter(expired).length||0}))
 const visible=computed(()=>tasks.value.filter(t=>t.titulo.toLowerCase().includes(filter.value.toLowerCase())))
 function discard(){return !dirty.value||window.confirm('Hay cambios sin guardar. ¿Quieres descartarlos?')}
 function changed(){dirty.value=true;notice.value=''}
@@ -37,7 +40,7 @@ async function open(t){
  busy.value=true;error.value='';notice.value='';form.value=null;sheet.value=null;dirty.value=false
  try{sheet.value=(await api.get(`/tareas/${t.id}/entregas`)).data;reason.value=''}catch(e){error.value=message(e)}finally{busy.value=false}
 }
-function stateChanged(s){if(s.estado!=='ENTREGADA')s.fecha_entrega=null;changed()}
+function stateChanged(s){if(s.estado==='ENTREGADA'){if(!s.fecha_entrega)s.fecha_entrega=localNow()}else s.fecha_entrega=null;changed()}
 async function save(){
  busy.value=true;error.value='';notice.value=''
  try{
@@ -48,8 +51,8 @@ async function save(){
  }catch(e){error.value=message(e)}finally{busy.value=false}
 }
 function unload(e){if(dirty.value){e.preventDefault();e.returnValue=''}}
-onMounted(()=>{init();window.addEventListener('beforeunload',unload)})
-onBeforeUnmount(()=>window.removeEventListener('beforeunload',unload))
+onMounted(()=>{clockTimer=window.setInterval(()=>{clock.value=Date.now()},1000);init();window.addEventListener('beforeunload',unload)})
+onBeforeUnmount(()=>{window.clearInterval(clockTimer);window.removeEventListener('beforeunload',unload)})
 onBeforeRouteLeave(discard)
 </script>
 <template>
@@ -85,18 +88,18 @@ onBeforeRouteLeave(discard)
   </form>
   <section v-if="sheet" class="mt-6">
    <h2 class="text-xl font-semibold">{{sheet.tarea.titulo}}</h2>
-   <p class="text-sm text-slate-500 mt-2">Plazo: {{format(sheet.tarea.fecha_limite)}}. Lista de matriculados al asignar la tarea. Sin registro no significa no entregada.</p>
+   <p class="text-sm text-slate-500 mt-2">Plazo: {{format(sheet.tarea.fecha_limite)}}. Las nuevas tareas comienzan pendientes. Al vencer el plazo quedan por revisar; el docente confirma si no fueron entregadas.</p>
    <div class="flex flex-wrap gap-3 my-4"><div v-for="(n,label) in counts" :key="label" class="panel !mb-0">{{label}} <strong class="ml-2">{{n}}</strong></div></div>
    <p v-if="sheet.registros_fuera_lista" role="alert" class="panel text-red-700">Hay registros fuera de la lista. Dirección debe revisar las matrículas antes de guardar.</p>
    <div class="panel overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr><th class="cell">Estudiante</th><th class="cell">Estado</th><th class="cell">Fecha real de entrega</th><th class="cell">Plazo al guardar</th></tr></thead><tbody>
     <tr v-for="s in sheet.estudiantes" :key="s.matricula_id" class="border-t border-slate-200 dark:border-slate-700">
      <td class="cell min-w-48">{{s.apellido}}, {{s.nombre}}<span v-if="s.origen==='SIMULADO'" class="block text-xs text-slate-500">Datos simulados</span></td>
-     <td class="cell"><select v-model="s.estado" class="field min-w-40" :aria-label="`Estado de ${s.nombre}`" :disabled="busy" @change="stateChanged(s)"><option :value="null" :disabled="!!s.registrado_en">Sin registro</option><option v-for="[v,l] in statuses" :key="v" :value="v">{{l}}</option></select></td>
+     <td class="cell"><select v-model="s.estado" class="field min-w-40" :aria-label="`Estado de ${s.nombre}`" :disabled="busy" @change="stateChanged(s)"><option :value="null" :disabled="!!s.registrado_en">Sin registro</option><option v-for="[v,l] in statuses" :key="v" :value="v">{{v==='PENDIENTE'&&expired(s)?'Vencida, por revisar':l}}</option></select></td>
      <td class="cell"><input v-model="s.fecha_entrega" type="datetime-local" class="field" :aria-label="`Entrega de ${s.nombre}`" :disabled="busy||s.estado!=='ENTREGADA'" :min="sheet.tarea.fecha_asignacion" :max="localNow()" @input="changed" /></td>
      <td class="cell">{{s.estado==='ENTREGADA'&&s.fecha_entrega?(s.fecha_entrega>sheet.tarea.fecha_limite?'Fuera de plazo':'En plazo'):'—'}}</td>
     </tr><tr v-if="!sheet.estudiantes.length"><td colspan="4" class="cell">No hay matrículas vigentes al asignar esta tarea.</td></tr>
    </tbody></table></div>
-   <label class="block my-4">Motivo de corrección<input v-model="reason" maxlength="500" class="field" placeholder="Obligatorio al modificar registros guardados" :disabled="busy" @input="changed" /></label>
+   <p class="text-sm text-slate-500 my-4">Al marcar Entregada se completa la fecha y hora actual. Puedes corregirlas si recibiste la tarea antes. Pasar de Pendiente a un estado confirmado no requiere motivo.</p><label class="block my-4">Motivo de corrección<input v-model="reason" maxlength="500" class="field" placeholder="Obligatorio al modificar registros guardados" :disabled="busy" @input="changed" /></label>
    <button class="primary" :disabled="busy||!dirty||!sheet.estudiantes.length||!!sheet.registros_fuera_lista" @click="save">{{busy?'Guardando…':'Guardar seguimiento'}}</button>
   </section>
  </section>
