@@ -22,3 +22,6 @@ docx_output.txt
 *.log
 .venv/
 venv/
+
+# Artefactos experimentales, datasets y particiones locales del modelo
+backend/artifacts/

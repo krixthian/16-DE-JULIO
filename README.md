@@ -1,6 +1,6 @@
 # Sistema de Alerta Temprana — U.E. 16 de Julio
 
-Aplicación escolar con Vue 3, FastAPI y MySQL. Incluye usuarios, gestiones, cursos, estudiantes, matrículas, materias, asignaciones docentes, calificaciones, asistencias y tareas. El modelo XGBoost y los módulos de intervención siguen pendientes; consulta docs/REVISION_INTEGRAL.md.
+Aplicación escolar con Vue 3, FastAPI y MySQL. Incluye usuarios, gestiones, cursos, estudiantes, matrículas, materias, asignaciones docentes, calificaciones, asistencias y tareas. Las tareas 11 y 12 cuentan con generación de indicadores y entrenamiento base experimental de XGBoost; consulta [ingeniería y modelo base](docs/INGENIERIA_Y_MODELO_BASE.md). La validación con datos reales, integración de predicciones, alertas e intervenciones siguen pendientes. La revisión del 17 de septiembre se conserva en docs/REVISION_INTEGRAL.md como antecedente.
 
 ## Ejecutar localmente
 
