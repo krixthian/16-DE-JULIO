@@ -1,4 +1,5 @@
 <script setup>
+import { nombreEstudiante } from '../utils/estudiante'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import api from '../services/api'
@@ -93,9 +94,9 @@ onBeforeRouteLeave(discard)
    <p v-if="sheet.registros_fuera_lista" role="alert" class="panel text-red-700">Hay registros fuera de la lista. Dirección debe revisar las matrículas antes de guardar.</p>
    <div class="panel overflow-x-auto"><table class="w-full text-left text-sm"><thead><tr><th class="cell">Estudiante</th><th class="cell">Estado</th><th class="cell">Fecha real de entrega</th><th class="cell">Plazo al guardar</th></tr></thead><tbody>
     <tr v-for="s in sheet.estudiantes" :key="s.matricula_id" class="border-t border-slate-200 dark:border-slate-700">
-     <td class="cell min-w-48">{{s.apellido}}, {{s.nombre}}<span v-if="s.origen==='SIMULADO'" class="block text-xs text-slate-500">Datos simulados</span></td>
-     <td class="cell"><select v-model="s.estado" class="field min-w-40" :aria-label="`Estado de ${s.nombre}`" :disabled="busy" @change="stateChanged(s)"><option :value="null" :disabled="!!s.registrado_en">Sin registro</option><option v-for="[v,l] in statuses" :key="v" :value="v">{{v==='PENDIENTE'&&expired(s)?'Vencida, por revisar':l}}</option></select></td>
-     <td class="cell"><input v-model="s.fecha_entrega" type="datetime-local" class="field" :aria-label="`Entrega de ${s.nombre}`" :disabled="busy||s.estado!=='ENTREGADA'" :min="sheet.tarea.fecha_asignacion" :max="localNow()" @input="changed" /></td>
+     <td class="cell min-w-48">{{nombreEstudiante(s)}}<span v-if="s.origen==='SIMULADO'" class="block text-xs text-slate-500">Datos simulados</span></td>
+     <td class="cell"><select v-model="s.estado" class="field min-w-40" :aria-label="`Estado de ${nombreEstudiante(s)}`" :disabled="busy" @change="stateChanged(s)"><option :value="null" :disabled="!!s.registrado_en">Sin registro</option><option v-for="[v,l] in statuses" :key="v" :value="v">{{v==='PENDIENTE'&&expired(s)?'Vencida, por revisar':l}}</option></select></td>
+     <td class="cell"><input v-model="s.fecha_entrega" type="datetime-local" class="field" :aria-label="`Entrega de ${nombreEstudiante(s)}`" :disabled="busy||s.estado!=='ENTREGADA'" :min="sheet.tarea.fecha_asignacion" :max="localNow()" @input="changed" /></td>
      <td class="cell">{{s.estado==='ENTREGADA'&&s.fecha_entrega?(s.fecha_entrega>sheet.tarea.fecha_limite?'Fuera de plazo':'En plazo'):'—'}}</td>
     </tr><tr v-if="!sheet.estudiantes.length"><td colspan="4" class="cell">No hay matrículas vigentes al asignar esta tarea.</td></tr>
    </tbody></table></div>

@@ -1,4 +1,5 @@
 <script setup>
+import { nombreEstudiante, nombreCompleto, etiquetaCodigo, esAnonimo } from '../utils/estudiante'
 import { computed, nextTick, ref, watch } from 'vue'
 import api from '../services/api'
 
@@ -65,6 +66,8 @@ function display(row, key) {
   if (key==='docente_nombre' && row.docente_activo === false) return `${row[key]} (inactivo)`
   if (key==='calendario') return row.fecha_inicio && row.fecha_fin ? 'Completo' : 'Fechas pendientes'
   if (key==='matriculas') return data.value.matriculas.filter(m => m.estudiante_id === row.id).length || 'Sin matrícula'
+  if (key==='estudiante_nombre') return nombreCompleto(row[key])
+  if (props.section==='estudiantes' && ['apellido','nombre'].includes(key) && esAnonimo(row)) return key==='apellido' ? etiquetaCodigo(row.apellido) : 'Anonimizado'
   if (key==='grado') return `${row[key]}° de primaria`
   if (key==='fecha_fin' && props.section==='matriculas' && !row[key]) return 'Hasta fin de gestión'
   if (key==='origen') return row[key] === 'REAL' ? 'Reales' : 'Simulados'
@@ -139,7 +142,7 @@ async function save() {
         <table class="w-full text-sm text-left">
           <thead class="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-300"><tr><th v-for="[key,label] in config.columns" :key="key" class="px-4 py-3 font-semibold whitespace-nowrap" scope="col">{{ label }}</th><th class="px-4 py-3" scope="col">Acciones</th></tr></thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-            <tr v-for="row in visible" :key="row.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/30"><td v-for="[key] in config.columns" :key="key" class="px-4 py-4 whitespace-nowrap">{{ display(row,key) }}</td><td class="px-4 py-4"><button class="text-blue-600 dark:text-blue-400 font-semibold hover:underline" :aria-label="`Editar ${config.singular} ${row.nombre || row.anio || row.estudiante_nombre || row.id}`" @click="open(row)">Editar</button></td></tr>
+            <tr v-for="row in visible" :key="row.id" class="hover:bg-slate-50 dark:hover:bg-slate-700/30"><td v-for="[key] in config.columns" :key="key" class="px-4 py-4 whitespace-nowrap">{{ display(row,key) }}</td><td class="px-4 py-4"><button class="text-blue-600 dark:text-blue-400 font-semibold hover:underline" :aria-label="`Editar ${config.singular} ${row.nombre || row.anio || nombreCompleto(row.estudiante_nombre) || row.id}`" @click="open(row)">Editar</button></td></tr>
             <tr v-if="!visible.length"><td :colspan="config.columns.length+1" class="text-center text-slate-500 p-10">{{ query || year ? 'No hay resultados para estos filtros.' : `Todavía no hay registros. Usa «Registrar ${config.singular}» para comenzar.` }}</td></tr>
           </tbody>
         </table>
@@ -183,7 +186,7 @@ async function save() {
             <p class="text-sm text-slate-500">El código interno se genera automáticamente. Después puedes registrar la matrícula del estudiante.</p>
           </template>
           <template v-if="section==='matriculas'">
-            <label class="label">Estudiante<select v-model.number="form.estudiante_id" :disabled="!!editing" required class="field"><option value="" disabled>Selecciona un estudiante</option><option v-for="s in data.estudiantes" :key="s.id" :value="s.id">{{ s.apellido }}, {{ s.nombre }} · {{ s.codigo_rude || s.codigo_anonimo }}</option></select></label>
+            <label class="label">Estudiante<select v-model.number="form.estudiante_id" :disabled="!!editing" required class="field"><option value="" disabled>Selecciona un estudiante</option><option v-for="s in data.estudiantes" :key="s.id" :value="s.id">{{ nombreEstudiante(s) }} · {{ s.codigo_rude || s.codigo_anonimo }}</option></select></label>
             <label class="label">Gestión<select v-model.number="form.gestion_id" :disabled="!!editing" required class="field" @change="form.curso_id='' "><option value="" disabled>Selecciona una gestión</option><option v-for="g in data.gestiones" :key="g.id" :value="g.id">{{ g.anio }}{{ !g.fecha_inicio || !g.fecha_fin ? ' · Fechas pendientes' : '' }}</option></select></label>
             <label class="label">Curso<select v-model.number="form.curso_id" :disabled="!!editing" required class="field"><option value="" disabled>Selecciona un curso</option><option v-for="c in availableCourses" :key="c.id" :value="c.id">{{ c.grado }}° {{ c.paralelo }}</option></select></label>
             <label class="label">Fecha de ingreso<input v-model="form.fecha_ingreso" type="date" required class="field" /></label>

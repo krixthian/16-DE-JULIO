@@ -1,4 +1,5 @@
 <script setup>
+import { etiquetaCodigo } from '../utils/estudiante'
 import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 const alerts=ref([]),summary=ref(null),selected=ref(null),items=ref([]),busy=ref(false),error=ref(''),notice=ref('')
@@ -65,7 +66,7 @@ onMounted(load)
      <tbody>
       <tr v-if="!visible.length"><td colspan="5" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : 'No hay alertas con estos filtros.' }}</td></tr>
       <tr v-for="a in visible" :key="a.id" @click="open(a)" class="border-t border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700" :class="selected?.id===a.id?'bg-blue-50 dark:bg-slate-700':''">
-       <td class="p-3 font-mono">{{ a.estudiante }}</td>
+       <td class="p-3 font-medium">{{ etiquetaCodigo(a.estudiante) }}</td>
        <td class="p-3">{{ a.gestion }} · {{ a.curso }}<span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">Retrospectivo (usado en entrenamiento)</span><span v-else class="block text-xs text-blue-600">Cohorte actual</span></td>
        <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(a.nivel)">{{ a.nivel }}</span> <span class="text-slate-500">{{ pct(a.probabilidad) }}</span></td>
        <td class="p-3">{{ label(states,a.estado) }}</td>
@@ -77,7 +78,7 @@ onMounted(load)
    <aside class="lg:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
     <p v-if="!selected" class="text-slate-500">Selecciona una alerta para ver sus factores y registrar intervenciones.</p>
     <template v-else>
-     <h2 class="font-semibold text-lg">Alerta {{ selected.estudiante }}</h2>
+     <h2 class="font-semibold text-lg">{{ etiquetaCodigo(selected.estudiante) }} · {{ selected.curso }} · {{ selected.gestion }}</h2>
      <p class="text-sm text-slate-500">Corte {{ selected.fecha_corte }} · {{ selected.curso }} · {{ pct(selected.probabilidad) }}</p>
      <h3 class="font-semibold mt-4">Factores que más elevan el riesgo</h3>
      <ul class="mt-2 space-y-1 text-sm"><li v-for="f in selected.factores" :key="f.variable" class="flex justify-between"><span>{{ f.variable }} = {{ typeof f.valor==='number'&&f.valor<1&&f.valor>0 ? f.valor.toFixed(2) : f.valor }}</span><span class="text-slate-500">+{{ f.aporte }}</span></li><li v-if="!selected.factores.length" class="text-slate-500">Sin factores positivos.</li></ul>

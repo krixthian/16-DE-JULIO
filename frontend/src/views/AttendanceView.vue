@@ -1,4 +1,5 @@
 <script setup>
+import { nombreEstudiante } from '../utils/estudiante'
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import api from '../services/api'
@@ -65,10 +66,10 @@ onBeforeRouteLeave(()=>!dirty.value||window.confirm('Hay cambios sin guardar. ¿
     <div class="p-4 flex flex-wrap justify-between items-center gap-3 border-b border-slate-200 dark:border-slate-700"><span>{{ sheet.estudiantes.length }} estudiantes con matrícula vigente</span><button class="secondary" :disabled="saving||!sheet.estudiantes.some(s=>!s.estado)" @click="markPending">Marcar pendientes como presentes</button></div>
     <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-300"><tr><th class="cell">Estudiante</th><th class="cell">Estado</th><th class="cell">Justificación</th><th class="cell">Observación</th></tr></thead>
      <tbody class="divide-y divide-slate-100 dark:divide-slate-700"><tr v-for="s in sheet.estudiantes" :key="s.matricula_id">
-      <td class="cell min-w-48"><span class="font-medium">{{ s.apellido }}, {{ s.nombre }}</span><span v-if="s.origen==='SIMULADO'" class="block text-xs text-slate-500 mt-1">Datos simulados</span></td>
-      <td class="cell"><select v-model="s.estado" :aria-label="`Estado de ${s.nombre} ${s.apellido}`" class="field min-w-36" :disabled="saving" @change="stateChanged(s)"><option :value="null" :disabled="!!s.registrado_en">Sin registro</option><option v-for="[value,label] in statuses" :key="value" :value="value">{{ label }}</option></select></td>
-      <td class="cell"><select v-model="s.justificada" :aria-label="`Justificación de ${s.nombre} ${s.apellido}`" class="field min-w-36" :disabled="saving||!s.estado||s.estado==='PRESENTE'" @change="changed"><option :value="null">{{ !s.estado||s.estado==='PRESENTE'?'No corresponde':'Sin confirmar' }}</option><option :value="true">Justificada</option><option :value="false">Injustificada</option></select></td>
-      <td class="cell"><input v-model="s.observacion" :aria-label="`Observación de ${s.nombre} ${s.apellido}`" maxlength="500" class="field min-w-48" placeholder="Opcional" :disabled="saving||!s.estado" @input="changed" /></td>
+      <td class="cell min-w-48"><span class="font-medium">{{ nombreEstudiante(s) }}</span><span v-if="s.origen==='SIMULADO'" class="block text-xs text-slate-500 mt-1">Datos simulados</span></td>
+      <td class="cell"><select v-model="s.estado" :aria-label="`Estado de ${nombreEstudiante(s)}`" class="field min-w-36" :disabled="saving" @change="stateChanged(s)"><option :value="null" :disabled="!!s.registrado_en">Sin registro</option><option v-for="[value,label] in statuses" :key="value" :value="value">{{ label }}</option></select></td>
+      <td class="cell"><select v-model="s.justificada" :aria-label="`Justificación de ${nombreEstudiante(s)}`" class="field min-w-36" :disabled="saving||!s.estado||s.estado==='PRESENTE'" @change="changed"><option :value="null">{{ !s.estado||s.estado==='PRESENTE'?'No corresponde':'Sin confirmar' }}</option><option :value="true">Justificada</option><option :value="false">Injustificada</option></select></td>
+      <td class="cell"><input v-model="s.observacion" :aria-label="`Observación de ${nombreEstudiante(s)}`" maxlength="500" class="field min-w-48" placeholder="Opcional" :disabled="saving||!s.estado" @input="changed" /></td>
      </tr><tr v-if="!sheet.estudiantes.length"><td colspan="4" class="p-10 text-center text-slate-500">No hay estudiantes con matrícula vigente en esta fecha.</td></tr></tbody></table></div>
    </div>
    <div v-if="sheet.jornada_registrada" class="mt-5"><label class="text-sm font-medium">Motivo de corrección<input v-model="reason" maxlength="500" placeholder="Obligatorio si modificas información ya guardada" class="field" :disabled="saving" @input="changed" /></label></div>
