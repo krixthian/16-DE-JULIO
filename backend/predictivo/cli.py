@@ -69,6 +69,14 @@ def main():
     cuts.add_argument('--fecha', type=date.fromisoformat, required=True)
     cuts.add_argument('--origen', choices=['REAL', 'SIMULADO'], required=True)
     cuts.add_argument('--guardar', action='store_true')
+    real = commands.add_parser('entrenar-real', help='Entrenar con el Excel real consolidado (corte T1); no escribe en MySQL.')
+    real.add_argument('--excel', type=Path, required=True)
+    real.add_argument('--salida', type=Path, required=True)
+    real.add_argument('--repeticiones', type=int, default=20)
+    alerts = commands.add_parser('generar-alertas-real', help='Cortes T1, predicciones y alertas de matrículas REAL; sin --confirmar revierte.')
+    alerts.add_argument('--excel', type=Path, required=True)
+    alerts.add_argument('--modelo-id', type=int, required=True)
+    alerts.add_argument('--confirmar', action='store_true')
     registry = commands.add_parser('registrar-modelo', help='Registrar metadatos; no activa el modelo ni genera alertas.')
     registry.add_argument('--directorio', type=Path, required=True)
     registry.add_argument('--umbral-medio', type=float, required=True)
@@ -92,6 +100,17 @@ def main():
             dataset = json.loads(args.dataset.read_text(encoding='utf-8-sig'))
             report = train_baseline(dataset, args.salida, args.gestion_evaluacion)
             print(json.dumps({k: report[k] for k in ('origen', 'entrenamiento', 'evaluacion', 'metricas', 'limitaciones')}, ensure_ascii=False, indent=2))
+        elif args.command == 'entrenar-real':
+            from predictivo.real_t1 import train
+            report = train(args.excel, args.salida, args.repeticiones)
+            print(json.dumps({k: report[k] for k in ('version_modelo', 'modelo_sha256', 'limitaciones')}, ensure_ascii=False, indent=2))
+        elif args.command == 'generar-alertas-real':
+            from database import SessionLocal
+            from predictivo.real_t1 import generate
+            with SessionLocal() as db:
+                counts = generate(db, args.excel, args.modelo_id)
+                db.commit() if args.confirmar else db.rollback()
+                print(json.dumps({**counts, 'confirmado': args.confirmar}))
         elif args.command == 'cortes':
             if args.fecha > date.today():
                 raise ValueError('No se permiten cortes futuros.')

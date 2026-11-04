@@ -5,7 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_db
-from api import auth, users, escolar, asignaciones, asistencia, calificaciones, tareas, predictivo
+from api import auth, users, escolar, asignaciones, asistencia, calificaciones, tareas, predictivo, alertas
 
 # Crear las tablas en la BD si no existen
 # Aplicar migrate_v2.py de forma explícita; el arranque no modifica el esquema.
@@ -32,6 +32,7 @@ app.include_router(asistencia.router)
 app.include_router(calificaciones.router)
 app.include_router(tareas.router)
 app.include_router(predictivo.router)
+app.include_router(alertas.router)
 
 @app.get("/")
 def read_root():

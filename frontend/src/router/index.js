@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/user'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {path:'/alertas',name:'alertas',component:()=>import('../views/AlertsView.vue'),meta:{requiresAuth:true,alerts:true}},
     {path:'/tareas',name:'tareas',component:()=>import('../views/TasksView.vue'),meta:{requiresAuth:true,attendance:true}},
     {path:'/calificaciones',name:'calificaciones',component:()=>import('../views/GradesView.vue'),meta:{requiresAuth:true,attendance:true}},
     {path:'/asistencia',name:'asistencia',component:()=>import('../views/AttendanceView.vue'),meta:{requiresAuth:true,attendance:true}},
@@ -46,6 +47,7 @@ router.beforeEach(async (to, from, next) => {
       const { data } = await api.get('/auth/me')
       store.login(data, token)
       if (to.meta.schoolAdmin && !['Admin','Director'].includes(data.rol)) return next('/')
+      if (to.meta.alerts && !['Admin','Director','Orientador'].includes(data.rol)) return next('/')
       if (to.meta.attendance && !['Admin','Director','Docente'].includes(data.rol)) return next('/')
       if (to.path === '/users' && data.rol !== 'Admin') return next('/')
       next()
