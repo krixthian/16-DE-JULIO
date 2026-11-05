@@ -73,6 +73,17 @@ def main():
     real.add_argument('--excel', type=Path, required=True)
     real.add_argument('--salida', type=Path, required=True)
     real.add_argument('--repeticiones', type=int, default=20)
+    check = commands.add_parser('metricas-real', help='Mostrar métricas guardadas; con --excel las recalcula y compara.')
+    check.add_argument('--directorio', type=Path, required=True)
+    check.add_argument('--excel', type=Path)
+    check.add_argument('--repeticiones', type=int, default=20)
+    tune = commands.add_parser('ajustar-real', help='Objetivo 2: ajuste con validación anidada por estudiante; no escribe en MySQL.')
+    tune.add_argument('--excel', type=Path, required=True)
+    tune.add_argument('--salida', type=Path, required=True)
+    tune.add_argument('--repeticiones', type=int, default=20)
+    tuned = commands.add_parser('metricas-ajuste', help='Mostrar el ajuste guardado; con --excel lo recalcula y compara.')
+    tuned.add_argument('--directorio', type=Path, required=True)
+    tuned.add_argument('--excel', type=Path)
     alerts = commands.add_parser('generar-alertas-real', help='Cortes T1, predicciones y alertas de matrículas REAL; sin --confirmar revierte.')
     alerts.add_argument('--excel', type=Path, required=True)
     alerts.add_argument('--modelo-id', type=int, required=True)
@@ -104,6 +115,18 @@ def main():
             from predictivo.real_t1 import train
             report = train(args.excel, args.salida, args.repeticiones)
             print(json.dumps({k: report[k] for k in ('version_modelo', 'modelo_sha256', 'limitaciones')}, ensure_ascii=False, indent=2))
+        elif args.command == 'metricas-real':
+            from predictivo.real_t1 import print_report
+            if not print_report(args.directorio, args.excel, args.repeticiones):
+                parser.exit(1, 'La verificación no coincide.\n')
+        elif args.command == 'ajustar-real':
+            from predictivo.ajuste_real import run
+            report = run(args.excel, args.salida, args.repeticiones)
+            print(json.dumps(report['decision'], ensure_ascii=False, indent=2))
+        elif args.command == 'metricas-ajuste':
+            from predictivo.ajuste_real import print_report as print_tuning
+            if not print_tuning(args.directorio, args.excel):
+                parser.exit(1, 'La verificación no coincide.\n')
         elif args.command == 'generar-alertas-real':
             from database import SessionLocal
             from predictivo.real_t1 import generate
