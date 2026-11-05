@@ -126,6 +126,100 @@ class AlertasApiTests(unittest.TestCase):
                 self.assertEqual((await client.get('/alertas')).status_code, 403)
         asyncio.run(run())
 
+    def test_filters_responsible_priority_and_audit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            real_t1.generate(self.db, excel, model_id)
+            self.db.add_all([m.Usuario(id=2, nombre='Orientación', apellido='Prueba', email='o@example.invalid', rol='Orientador', activo=True),
+                m.Usuario(id=3, nombre='Docente', apellido='Prueba', email='d@example.invalid', rol='Docente', activo=True)])
+            self.db.commit()
+        app = FastAPI()
+        app.include_router(router)
+        app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_user] = lambda: self.user
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                alerts = (await client.get('/alertas')).json()
+                first = alerts[0]
+                self.assertEqual(first['prioridad']['puesto'], 1)
+                self.assertIn('ranking de prioridad', first['prioridad']['nota'])
+                for nivel in ('MEDIO', 'ALTO'):
+                    filtered = (await client.get('/alertas', params={'nivel': nivel})).json()
+                    self.assertTrue(all(a['nivel'] == nivel for a in filtered))
+                by_course = (await client.get('/alertas', params={'curso_id': first['curso_id'], 'gestion': first['gestion']})).json()
+                self.assertTrue(by_course and all(a['curso_id'] == first['curso_id'] for a in by_course))
+                self.assertEqual({u['id'] for u in (await client.get('/alertas/responsables')).json()}, {1, 2})
+                self.assertEqual((await client.patch(f"/alertas/{first['id']}", json={'responsable_id': 3})).status_code, 422)
+                self.assertEqual((await client.patch(f"/alertas/{first['id']}", json={})).status_code, 422)
+                moved = await client.patch(f"/alertas/{first['id']}", json={'responsable_id': 2, 'estado': 'EN_REVISION'})
+                self.assertEqual(moved.json()['responsable']['id'], 2)
+                self.assertEqual(len((await client.get('/alertas', params={'responsable_id': 2})).json()), 1)
+                await client.patch(f"/alertas/{first['id']}", json={'estado': 'CERRADA', 'motivo_cierre': 'Seguimiento concluido'})
+                history = (await client.get(f"/alertas/{first['id']}/historial")).json()
+                self.assertEqual([h['operacion'] for h in history], ['CORRECCION', 'CORRECCION'])
+                self.assertEqual(history[0]['antes']['responsable_id'], 1)
+                self.assertEqual(history[0]['despues'], {'estado': 'EN_REVISION', 'responsable_id': 2, 'cerrada_en': None, 'motivo_cierre': None})
+                self.assertEqual(history[1]['despues']['estado'], 'CERRADA')
+                unchanged = self.db.scalar(select(func.count()).select_from(m.AuditoriaCambio))
+                await client.patch(f"/alertas/{first['id']}", json={'estado': 'CERRADA', 'motivo_cierre': 'Seguimiento concluido'})
+                self.assertEqual(self.db.scalar(select(func.count()).select_from(m.AuditoriaCambio)), unchanged)
+        asyncio.run(run())
+
+    def test_recommendations_are_adopted_once_and_execution_is_recorded(self):
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            real_t1.generate(self.db, excel, model_id)
+            self.db.commit()
+        app = FastAPI()
+        app.include_router(router)
+        app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_user] = lambda: self.user
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                alert = (await client.get('/alertas')).json()[0]
+                rec = (await client.get(f"/alertas/{alert['id']}/recomendaciones")).json()
+                self.assertIn('pendiente de validación', rec['validacion'])
+                self.assertTrue(rec['reglas'])
+                regla = rec['reglas'][0]
+                self.assertIsNone(regla['intervencion_id'])
+                created = await client.post(f"/alertas/{alert['id']}/recomendaciones/{regla['codigo']}")
+                self.assertEqual(created.status_code, 201, created.text)
+                self.assertEqual(created.json()['regla_version'], regla['regla_version'])
+                self.assertIn(regla['dato'], created.json()['recomendacion'])
+                self.assertEqual((await client.post(f"/alertas/{alert['id']}/recomendaciones/{regla['codigo']}")).status_code, 409)
+                inactive = {'RP01', 'RP02', 'RP03', 'RP04', 'RP05'} - {r['codigo'] for r in rec['reglas']}
+                if inactive:
+                    self.assertEqual((await client.post(f"/alertas/{alert['id']}/recomendaciones/{inactive.pop()}")).status_code, 422)
+                again = (await client.get(f"/alertas/{alert['id']}/recomendaciones")).json()['reglas'][0]
+                self.assertEqual(again['intervencion_id'], created.json()['id'])
+                item = created.json()['id']
+                future = {'estado': 'REALIZADA', 'accion_realizada': 'Reunión', 'fecha_ejecucion': '2999-01-01'}
+                self.assertEqual((await client.patch(f'/intervenciones/{item}', json=future)).status_code, 422)
+                done = await client.patch(f'/intervenciones/{item}', json={'estado': 'REALIZADA', 'tipo_accion': 'CITACION',
+                    'accion_realizada': 'Reunión con el apoderado', 'fecha_ejecucion': '2025-05-12', 'resultado': 'Acuerdo de asistencia'})
+                self.assertEqual(done.status_code, 200, done.text)
+                body = done.json()
+                self.assertEqual(body['accion_realizada'], '[Citación al apoderado] Reunión con el apoderado')
+                self.assertEqual(str(body['realizada_en'])[:10], '2025-05-12')
+                self.assertEqual(body['resultado'], 'Acuerdo de asistencia')
+        asyncio.run(run())
+
+
+class ReglasRecomendacionTests(unittest.TestCase):
+    def test_rules_fire_on_their_data_and_rp05_is_fallback(self):
+        from predictivo import recomendaciones as rp
+        base_ind = {f'{a}_T1': 75 for a in rp.AREAS} | {'promedio_T1': 75, 'faltas_T1': 0, 'atrasos_T1': 1, 'tasa_asistencia_T1': .95}
+        self.assertEqual([r['codigo'] for r in rp.evaluar(base_ind, 'MEDIO')], ['RP05'])
+        weak = base_ind | {'promedio_T1': 60, 'MAT_T1': 45, 'faltas_T1': 4, 'atrasos_T1': 4}
+        result = {r['codigo']: r for r in rp.evaluar(weak, 'ALTO')}
+        self.assertEqual(set(result), {'RP01', 'RP02', 'RP03', 'RP04', 'RP05'})
+        self.assertIn('Matemática (45)', result['RP02']['dato'])
+        self.assertEqual(result['RP01']['dato'], 'promedio_T1 = 60')
+        self.assertNotIn('RP05', [r['codigo'] for r in rp.evaluar(weak, 'MEDIO')])
+        self.assertTrue(all('pendiente de validación' in r['validacion'] for r in result.values()))
+
 
 if __name__ == '__main__':
     unittest.main()
