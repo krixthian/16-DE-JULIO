@@ -261,3 +261,49 @@ def generate(db, excel, model_id):
             counts['alertas'] += 1
     db.flush()
     return counts
+
+
+def print_report(directory, excel=None, repetitions=20):
+    """Imprime las métricas guardadas; con excel las recalcula y compara (evidencia reproducible)."""
+    import xgboost as xgb
+    directory = Path(directory)
+    report = json.loads((directory / 'reporte.json').read_text(encoding='utf-8'))
+    model_path = directory / 'modelo_xgboost.json'
+    model_ok = hashlib.sha256(model_path.read_bytes()).hexdigest() == report['modelo_sha256']
+    print(f"Modelo {report['version_modelo']} · entrenado {report['entrenado_en']} · origen {report['origen']}")
+    print(f"SHA-256 modelo:  {report['modelo_sha256'][:16]}…  {'OK, coincide con el archivo' if model_ok else 'NO COINCIDE'}")
+    if excel:
+        data_ok = hashlib.sha256(Path(excel).read_bytes()).hexdigest() == report['dataset_sha256']
+        print(f"SHA-256 dataset: {report['dataset_sha256'][:16]}…  {'OK, mismo Excel' if data_ok else 'NO COINCIDE: el Excel cambió'}")
+    print(f"Protocolo: {report['protocolo']}\nVariables ({len(report['variables'])}): {', '.join(report['variables'])}")
+    print(f"Excluidas: {report['variables_excluidas']}  · xgboost {xgb.__version__}")
+    keys = ('roc_auc', 'average_precision', 'sensibilidad', 'precision', 'f1', 'tasa_marcados')
+    for target, ev in report['evaluacion'].items():
+        print(f"\n== {target}: {ev['filas']} filas, {ev['positivos']} positivos ({ev['estudiantes_positivos']} estudiantes), gestiones {ev['gestiones']}")
+        print(f"{'Modelo':24}{'ROC-AUC':>8} {'IC 95 %':>13}{'AP':>8} {'IC 95 %':>13}{'Sens.':>7}{'Prec.':>7}{'F1':>7}{'%marc.':>8}")
+        for name, m in ev['modelos'].items():
+            ic = m.get('ic95', {})
+            ci = lambda k: f"[{ic[k][0]:.2f}-{ic[k][1]:.2f}]" if k in ic else ''
+            print(f"{name:24}{m['roc_auc']:8.3f} {ci('roc_auc'):>13}{m['average_precision']:8.3f} {ci('average_precision'):>13}"
+                f"{m['sensibilidad']:7.2f}{m['precision']:7.2f}{m['f1']:7.2f}{m['tasa_marcados'] * 100:7.1f}%")
+    sens = directory / 'sensibilidad.json'
+    if sens.exists():
+        t = json.loads(sens.read_text(encoding='utf-8'))['temporal_2021_2023_a_2024']
+        x = t['xgboost']
+        print(f"\n== Temporal 2021-2023 -> 2024: {t['evaluacion']} matrículas, {t['positivos_evaluacion']} abandonos")
+        print(f"XGBoost ROC-AUC {x['roc_auc']:.3f} · AP {x['average_precision']:.3f} · sensibilidad {x['sensibilidad']:.2f} · "
+            f"precisión {x['precision']:.2f} · {x['verdaderos_positivos']} detectados, {x['falsos_positivos']} falsas alarmas")
+    if not excel:
+        return model_ok
+    print(f'\nRecalculando la validación cruzada desde el Excel ({repetitions} repeticiones)…')
+    frame = load(excel)
+    same = True
+    for target, ev in report['evaluacion'].items():
+        _, y, groups, runs = cross_validate(frame, TARGETS[target], repetitions)
+        fresh = summarize(y, groups, runs)
+        for name, m in ev['modelos'].items():
+            diff = max(abs(fresh[name][k] - m[k]) for k in keys)
+            same &= diff < 1e-9
+            print(f"  {target:12}{name:24}{'idéntico' if diff < 1e-9 else f'difiere ({diff:.2e})'}")
+    print('RESULTADO: métricas reproducidas exactamente.' if same else 'RESULTADO: hay diferencias, revisar versiones o datos.')
+    return model_ok and same
