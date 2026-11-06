@@ -1,4 +1,6 @@
 -- Estructura actual completa. Solo ejecutar en una base NUEVA y VACIA.
+-- Verificado el 2026-11-06 contra la base real alerta_temprana_v2 (MySQL 8.0.46) y backend/models.py:
+-- 28 tablas, 47 claves foráneas, 40 CHECK; columnas, tipos, índices y restricciones idénticos.
 
 -- No incluye usuarios, contraseñas ni datos escolares.
 
