@@ -1,0 +1,203 @@
+# Salida real: python -m unittest discover -p 'test_*.py' (desde backend), actividad 17
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+..C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+...C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+.C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+.C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+.C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+...........C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  now = timegm(datetime.utcnow().utctimetuple())
+..................C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  now = timegm(datetime.utcnow().utctimetuple())
+....
+----------------------------------------------------------------------
+Ran 41 tests in 655.781s
+
+OK
+exit=0

@@ -207,6 +207,92 @@ class AlertasApiTests(unittest.TestCase):
         asyncio.run(run())
 
 
+    def test_dashboard_aggregates_match_database(self):
+        from api.dashboard import router as dashboard_router
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            counts = real_t1.generate(self.db, excel, model_id)
+            self.db.commit()
+        app = FastAPI()
+        app.include_router(router)
+        app.include_router(dashboard_router)
+        app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_user] = lambda: self.user
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                first = (await client.get('/alertas')).json()[0]
+                item = (await client.post(f"/alertas/{first['id']}/intervenciones", json={'recomendacion': 'Citar'})).json()['id']
+                await client.patch(f'/intervenciones/{item}', json={'estado': 'REALIZADA', 'accion_realizada': 'Reunión'})
+                await client.post(f"/alertas/{first['id']}/intervenciones", json={'recomendacion': 'Tutoría'})
+                panel = (await client.get('/dashboard')).json()
+                self.assertEqual(panel['resumen']['predicciones'], rows)
+                self.assertEqual(panel['resumen']['alertas'], counts['alertas'])
+                self.assertEqual(panel['resumen']['alto'] + panel['resumen']['medio'], counts['alertas'])
+                self.assertEqual(sum(c['ALTO'] + c['MEDIO'] for c in panel['alertas_por_curso']), counts['alertas'])
+                self.assertEqual(sum(g['n'] for g in panel['promedio_por_grado']), rows)
+                self.assertTrue(all(g['n'] == sum(g[b['codigo']] for b in panel['bandas']) for g in panel['promedio_por_grado']))
+                self.assertEqual(sum(e['predicciones'] for e in panel['evolucion']), rows)
+                self.assertEqual(panel['intervenciones'], {'PENDIENTE': 1, 'EJECUTADA': 1, 'CANCELADA': 0})
+                year = first['gestion']
+                filtered = (await client.get('/dashboard', params={'gestion': year})).json()
+                self.assertTrue(all(c['gestion'] == year for c in filtered['alertas_por_curso']))
+                self.assertEqual(len(filtered['evolucion']), len(panel['evolucion']))
+                self.assertNotIn('codigo_anonimo', str(panel))
+                self.user.rol = 'Docente'
+                self.assertEqual((await client.get('/dashboard')).status_code, 403)
+        asyncio.run(run())
+
+
+    def test_reports_are_anonymized_and_filtered(self):
+        import csv
+        import io
+        from api.reportes import router as reports_router, etiqueta
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            counts = real_t1.generate(self.db, excel, model_id)
+            self.db.commit()
+        app = FastAPI()
+        app.include_router(router)
+        app.include_router(reports_router)
+        app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_user] = lambda: self.user
+        self.assertEqual(etiqueta('EST-0042'), 'Estudiante 0042')
+        self.assertEqual(etiqueta('EXT-0007'), 'Estudiante ext. 0007')
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                first = (await client.get('/alertas')).json()[0]
+                item = (await client.post(f"/alertas/{first['id']}/intervenciones", json={'recomendacion': 'Citar a la familia'})).json()['id']
+                await client.patch(f'/intervenciones/{item}', json={'estado': 'REALIZADA', 'tipo_accion': 'CITACION',
+                    'accion_realizada': 'Reunión', 'fecha_ejecucion': '2024-05-02', 'resultado': 'Acuerdo'})
+                year = first['gestion']
+                expected = len((await client.get('/alertas', params={'gestion': year})).json())
+                response = await client.get('/reportes/alertas.csv', params={'gestion': year})
+                self.assertEqual(response.status_code, 200)
+                self.assertIn(f'reporte_alertas_{year}.csv', response.headers['content-disposition'])
+                text = response.content.decode('utf-8-sig')
+                self.assertIn('ranking de prioridad', text)
+                self.assertIn('no sustituye', text)
+                self.assertNotIn('ANONIMO', text)
+                table = list(csv.DictReader(io.StringIO('\n'.join(l for l in text.splitlines() if not l.startswith('#')))))
+                self.assertEqual(len(table), expected)
+                self.assertTrue(all(r['estudiante'].startswith('Estudiante ') for r in table))
+                row = next(r for r in table if 'Reunión' in r['intervenciones'])
+                self.assertIn('[Citación al apoderado] Reunión', row['intervenciones'])
+                self.assertIn('Resultado: Acuerdo', row['intervenciones'])
+                by_course = (await client.get('/reportes/alertas.csv', params={'gestion': year, 'curso_id': first['curso_id']})).content.decode('utf-8-sig')
+                self.assertIn(f"Curso {first['curso']}", by_course)
+                pdf = await client.get('/reportes/alertas.pdf', params={'gestion': year, 'curso_id': first['curso_id']})
+                self.assertEqual(pdf.headers['content-type'], 'application/pdf')
+                self.assertTrue(pdf.content.startswith(b'%PDF'))
+                self.assertEqual((await client.get('/reportes/alertas.pdf', params={'gestion': 1999})).status_code, 404)
+                self.assertEqual((await client.get('/reportes/alertas.csv', params={'gestion': year, 'curso_id': 999999})).status_code, 404)
+                self.user.rol = 'Docente'
+                self.assertEqual((await client.get('/reportes/alertas.csv', params={'gestion': year})).status_code, 403)
+        asyncio.run(run())
+
+
 class ReglasRecomendacionTests(unittest.TestCase):
     def test_rules_fire_on_their_data_and_rp05_is_fallback(self):
         from predictivo import recomendaciones as rp

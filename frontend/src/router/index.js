@@ -6,6 +6,7 @@ import { useUserStore } from '../stores/user'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {path:'/panel',name:'panel',component:()=>import('../views/DashboardView.vue'),meta:{requiresAuth:true,alerts:true}},
     {path:'/alertas',name:'alertas',component:()=>import('../views/AlertsView.vue'),meta:{requiresAuth:true,alerts:true}},
     {path:'/tareas',name:'tareas',component:()=>import('../views/TasksView.vue'),meta:{requiresAuth:true,attendance:true}},
     {path:'/calificaciones',name:'calificaciones',component:()=>import('../views/GradesView.vue'),meta:{requiresAuth:true,attendance:true}},

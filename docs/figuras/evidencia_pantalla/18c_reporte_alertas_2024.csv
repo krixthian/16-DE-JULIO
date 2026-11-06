@@ -1,0 +1,6 @@
+﻿# Reporte de alertas de riesgo · Gestión 2024 · Todos los cursos · generado 2026-11-06 13:50
+# El nivel ordena la revisión (ranking de prioridad); la probabilidad no está calibrada y no es un riesgo absoluto. Umbrales MEDIO ≥ 0,5 y ALTO ≥ 0,8: propuesta pendiente de validar con Dirección.
+# El modelo apoya, no sustituye, el criterio docente.
+estudiante,gestion,curso,nivel_prioridad,puesto_ranking,de,puntaje_no_calibrado,estado_alerta,responsable_rol,factores,reglas_activas,intervenciones,modelo,fecha_corte
+Estudiante 0001,2024,1° A,ALTO,2,419,0.979,Nueva,Admin,promedio_T1 = 66; APV_T1 = 62; EMU_T1 = 66,RP01 RP05,,xgb-real-t1-v1-20261104155014,2024-04-30
+Estudiante 0136,2024,3° A,ALTO,1,419,0.984,Nueva,Admin,promedio_T1 = 66; APV_T1 = 67; EMU_T1 = 63,RP01 RP05,,xgb-real-t1-v1-20261104155014,2024-04-30
