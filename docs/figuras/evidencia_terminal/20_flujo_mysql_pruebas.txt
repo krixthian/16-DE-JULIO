@@ -1,0 +1,13 @@
+# Verificación de la base de PRUEBAS alerta_temprana_v2_pruebas tras el flujo de punta a punta, 2026-11-06 14:27
+# Comando: set MYSQL_PRUEBAS_DB=alerta_temprana_v2_pruebas; python -m unittest test_integral_mysql -v
+# Resultado: test_end_to_end_follow_up_workflow ... ok | Ran 1 test in 125.572s | OK
+modelos_predictivos  1
+cortes_predictivos   80
+predicciones         80
+alertas              10
+intervenciones       1
+auditoria_cambios    6
+alertas por estado   {'CERRADA': 1, 'NUEVA': 9}
+intervención         [('REALIZADA', 'RP01@RP-v1', '[Citación al apoderado] Reunión con el apoderado', datetime.date(2024, 5, 10), 'Compromiso de asistencia')]
+auditoría            [('alertas', 'CORRECCION', 2), ('intervenciones', 'ALTA', 1), ('intervenciones', 'CORRECCION', 3)]
+# Base real alerta_temprana_v2 sin cambios: matriculas 940 | alertas 13 | intervenciones 0

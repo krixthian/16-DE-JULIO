@@ -69,9 +69,11 @@ class AlertasApiTests(unittest.TestCase):
         excel_fixture(excel)
         frame = real_t1.load(excel)
         self.db.add(m.Gestion(id=2, anio=2024, fecha_inicio=date(2024, 2, 1), fecha_fin=date(2024, 11, 30)))
+        self.db.flush()  # MySQL valida las FK al insertar: gestión antes que sus cursos.
         enrollment = 100
         for (year, grade), _ in frame.groupby(['gestion', 'grado']):
             self.db.add(m.Curso(id=int(year * 10 + grade), gestion_id=int(year - 2022), grado=int(grade), paralelo='Z'))
+        self.db.flush()
         for code in frame['codigo_anonimo'].unique():
             self.db.add(m.Estudiante(codigo_anonimo=code, nombre='ANONIMO', apellido=code))
         self.db.flush()
