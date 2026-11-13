@@ -10,6 +10,7 @@ from api.auth import get_current_user
 from api.escolar import Entrada
 from database import get_db
 from predictivo import recomendaciones as rp
+from predictivo import explicacion as ex
 import models as m
 
 
@@ -138,6 +139,40 @@ def resumen(db: Session = Depends(get_db)):
         'origen': modelo.origen_datos, 'umbral_medio': float(modelo.umbral_medio), 'umbral_alto': float(modelo.umbral_alto)}}
 
 
+REGLA_ACADEMICA = ('Regla RP02: al menos un área con nota menor a 51 ("en desarrollo", escala de la Ley 070) al cierre del '
+    '1.er trimestre. No es una predicción del modelo: señala bajo rendimiento que el modelo no prioriza, porque en el historial '
+    'esos estudiantes no abandonaron.')
+
+
+@router.get('/alertas/academicas')
+def academicas(gestion: int | None = None, db: Session = Depends(get_db)):
+    """Riesgo académico por regla explícita (solo lectura): matrículas con áreas bajo 51, con o sin alerta del modelo."""
+    modelo = select(func.max(m.ModeloPredictivo.id)).scalar_subquery()
+    query = (select(m.CortePredictivo, m.Prediccion, m.Curso, m.Gestion, m.Estudiante, m.Alerta.id).select_from(m.CortePredictivo)
+        .join(m.Prediccion, (m.Prediccion.corte_id == m.CortePredictivo.id) & (m.Prediccion.modelo_id == modelo))
+        .join(m.Matricula, m.Matricula.id == m.CortePredictivo.matricula_id).join(m.Curso, m.Curso.id == m.Matricula.curso_id)
+        .join(m.Gestion, m.Gestion.id == m.Curso.gestion_id).join(m.Estudiante, m.Estudiante.id == m.Matricula.estudiante_id)
+        .outerjoin(m.Alerta, m.Alerta.prediccion_id == m.Prediccion.id))
+    if gestion is not None:
+        query = query.where(m.Gestion.anio == gestion)
+    casos = []
+    for corte, pred, curso, g, est, alerta_id in db.execute(query).all():
+        ind = (corte.variables or {}).get('indicadores') or {}
+        bajas = sorted(((ex.NOMBRES_AREAS[a], ind[f'{a}_T1']) for a in ex.NOMBRES_AREAS
+            if ind.get(f'{a}_T1') is not None and ind[f'{a}_T1'] < 51), key=lambda x: x[1])
+        if not bajas:
+            continue
+        reglas = [r['codigo'] for r in rp.evaluar(ind, pred.nivel) if r['codigo'] != 'RP05']
+        casos.append({'matricula_id': corte.matricula_id, 'estudiante': est.codigo_anonimo, 'gestion': g.anio, 'curso_id': curso.id,
+            'curso': f'{curso.grado}° {curso.paralelo}', 'grado': curso.grado, 'areas_bajo_51': [{'area': n, 'nota': v} for n, v in bajas],
+            'promedio_T1': ind.get('promedio_T1'), 'faltas_T1': ind.get('faltas_T1'), 'asistencia': ind.get('tasa_asistencia_T1'),
+            'modelo': {'nivel': pred.nivel, 'puntaje': float(pred.probabilidad), 'alerta_id': alerta_id}, 'reglas': reglas})
+    casos.sort(key=lambda c: (-c['gestion'], -len(c['areas_bajo_51']), c['promedio_T1'] or 0))
+    sin_alerta = [c for c in casos if c['modelo']['alerta_id'] is None]
+    return {'criterio': REGLA_ACADEMICA, 'total': len(casos), 'sin_alerta_del_modelo': len(sin_alerta),
+        'gestiones': sorted({c['gestion'] for c in casos}, reverse=True), 'casos': casos}
+
+
 @router.get('/alertas/responsables')
 def responsables(db: Session = Depends(get_db)):
     users = db.scalars(select(m.Usuario).where(m.Usuario.activo.is_(True), m.Usuario.rol.in_(ROLES_RESPONSABLE))
@@ -234,6 +269,31 @@ def reglas_alerta(db, row):
 def recomendaciones(alert_id: int, db: Session = Depends(get_db)):
     return {'version': rp.VERSION, 'validacion': rp.VALIDACION, 'tipos_accion': rp.TIPOS_ACCION,
         'reglas': reglas_alerta(db, obtener(db, alert_id))}
+
+
+def indicadores_de(db, *condiciones):
+    rows = db.scalars(select(m.CortePredictivo.variables).join(m.Matricula, m.Matricula.id == m.CortePredictivo.matricula_id)
+        .join(m.Curso, m.Curso.id == m.Matricula.curso_id).where(*condiciones)).all()
+    return [(v or {}).get('indicadores') or {} for v in rows]
+
+
+@router.get('/alertas/{alert_id}/explicacion')
+def explicacion(alert_id: int, db: Session = Depends(get_db)):
+    """Por qué la alerta tiene ese nivel: todos los aportes del modelo, en lenguaje claro y comparados con el curso."""
+    row = obtener(db, alert_id)
+    alerta, pred, modelo, corte, curso, gestion = row[:6]
+    try:
+        model = ex.cargar_modelo(modelo.artefacto_uri, modelo.artefacto_sha256)
+    except (OSError, ValueError) as error:
+        raise HTTPException(503, f'No se pudo cargar el modelo registrado para explicar la alerta: {error}')
+    indicadores = (corte.variables or {}).get('indicadores') or {}
+    contrib, base = ex.aportes(model, indicadores)
+    misma_version = m.CortePredictivo.version_variables == corte.version_variables
+    otros = m.CortePredictivo.id != corte.id
+    return ex.construir(indicadores, contrib, base, float(pred.probabilidad), pred.nivel, float(modelo.umbral_medio),
+        float(modelo.umbral_alto), indicadores_de(db, m.Curso.id == curso.id, misma_version, otros),
+        indicadores_de(db, m.Curso.gestion_id == gestion.id, misma_version, otros), ranking(db, [row])[alerta.id],
+        f'{curso.grado}° {curso.paralelo}', gestion.anio)
 
 
 @router.post('/alertas/{alert_id}/recomendaciones/{codigo}', status_code=201)

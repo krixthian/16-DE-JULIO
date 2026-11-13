@@ -295,6 +295,165 @@ class AlertasApiTests(unittest.TestCase):
         asyncio.run(run())
 
 
+    def test_explanation_reproduces_score_and_compares_with_course(self):
+        import math
+        from predictivo.real_t1 import FEATURE_NAMES
+        app = FastAPI()
+        app.include_router(router)
+        app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_user] = lambda: self.user
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            real_t1.generate(self.db, excel, model_id)
+            self.db.commit()
+
+            async def run():
+                async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                    alert = (await client.get('/alertas')).json()[0]
+                    response = await client.get(f"/alertas/{alert['id']}/explicacion")
+                    self.assertEqual(response.status_code, 200, response.text)
+                    why = response.json()
+                    self.assertEqual({v['variable'] for v in why['variables']}, set(FEATURE_NAMES))
+                    self.assertTrue(why['coincide_con_guardado'])
+                    logit = math.log(why['punto_partida'] / (1 - why['punto_partida'])) + sum(v['aporte'] for v in why['variables'])
+                    self.assertAlmostEqual(1 / (1 + math.exp(-logit)), alert['probabilidad'], places=3)
+                    self.assertEqual(why['nivel']['nivel'], alert['nivel'])
+                    self.assertIn(f"puesto {alert['prioridad']['puesto']} de {alert['prioridad']['de']}", why['nivel']['motivo'])
+                    self.assertIn('no está calibrado', why['nivel']['nota'])
+                    self.assertEqual(why['estudiantes_en_curso'], len([a for a in self.db.scalars(select(m.Matricula).where(
+                        m.Matricula.curso_id == alert['curso_id']))]))
+                    promedio = next(v for v in why['variables'] if v['variable'] == 'promedio_T1')
+                    self.assertIsNotNone(promedio['media_curso'])
+                    self.assertTrue(promedio['valor_texto'].startswith(f"{promedio['valor']:g} · "))
+                    ups = [v for v in why['variables'] if v['efecto'] == 'sube']
+                    self.assertAlmostEqual(sum(v['peso_relativo'] for v in ups), 100, delta=0.5)
+                    self.assertEqual([abs(v['aporte']) for v in why['variables']], sorted((abs(v['aporte']) for v in why['variables']), reverse=True))
+                    self.assertNotIn('ANONIMO', str(why))
+                    self.assertEqual((await client.get('/alertas/999999/explicacion')).status_code, 404)
+                    record = self.db.get(m.ModeloPredictivo, model_id)
+                    record.artefacto_uri = str(Path(directory) / 'no_existe.json')
+                    self.db.commit()
+                    self.assertEqual((await client.get(f"/alertas/{alert['id']}/explicacion")).status_code, 503)
+                    self.user.rol = 'Docente'
+                    self.assertEqual((await client.get(f"/alertas/{alert['id']}/explicacion")).status_code, 403)
+            asyncio.run(run())
+
+
+    def test_academic_rule_lists_every_failing_area_independently_of_the_model(self):
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            real_t1.generate(self.db, excel, model_id)
+            self.db.commit()
+            frame = real_t1.load(excel)
+        expected = int((frame[[f'{a}_T1' for a in real_t1.AREAS]] < 51).any(axis=1).sum())
+        app = FastAPI()
+        app.include_router(router)
+        app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_user] = lambda: self.user
+        before = self.db.scalar(select(func.count()).select_from(m.Alerta))
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                data = (await client.get('/alertas/academicas')).json()
+                self.assertGreater(expected, 0)
+                self.assertEqual(data['total'], expected)
+                self.assertIn('No es una predicción del modelo', data['criterio'])
+                for case in data['casos']:
+                    self.assertTrue(case['areas_bajo_51'])
+                    self.assertTrue(all(a['nota'] < 51 for a in case['areas_bajo_51']))
+                    self.assertIn('RP02', case['reglas'])
+                self.assertEqual(data['sin_alerta_del_modelo'], sum(1 for c in data['casos'] if c['modelo']['alerta_id'] is None))
+                year = data['casos'][0]['gestion']
+                filtered = (await client.get('/alertas/academicas', params={'gestion': year})).json()
+                self.assertTrue(all(c['gestion'] == year for c in filtered['casos']))
+                self.assertNotIn('ANONIMO', str(data))
+                self.user.rol = 'Docente'
+                self.assertEqual((await client.get('/alertas/academicas')).status_code, 403)
+        asyncio.run(run())
+        self.assertEqual(self.db.scalar(select(func.count()).select_from(m.Alerta)), before)
+
+
+    def test_model_results_come_from_registry_and_degrade_without_reports(self):
+        from unittest import mock
+        from api import resultados
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            real_t1.generate(self.db, excel, model_id)
+            self.db.commit()
+            app = FastAPI()
+            app.include_router(resultados.router)
+            app.dependency_overrides[get_db] = lambda: self.db
+            app.dependency_overrides[get_current_user] = lambda: self.user
+            missing = Path(directory) / 'no_existe.json'
+
+            async def run():
+                async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                    data = (await client.get('/modelo/resultados')).json()
+                    record = self.db.get(m.ModeloPredictivo, model_id).metricas['evaluacion']['abandono']
+                    self.assertEqual((data['modelo']['filas'], data['modelo']['positivos']), (record['filas'], record['positivos']))
+                    self.assertEqual(data['modelo']['predicciones'], rows)
+                    xgb = next(c for c in data['comparacion'] if c['modelo'] == 'xgboost')
+                    self.assertAlmostEqual(xgb['average_precision'], record['modelos']['xgboost']['average_precision'])
+                    cm = data['matriz_confusion']
+                    self.assertAlmostEqual(cm['verdaderos_positivos'] + cm['falsos_negativos'], record['positivos'])
+                    self.assertAlmostEqual(cm['falsos_positivos'] + cm['verdaderos_negativos'], record['filas'] - record['positivos'])
+                    self.assertEqual(len(data['importancia']['variables']), len(real_t1.FEATURE_NAMES))
+                    self.assertAlmostEqual(sum(v['porcentaje'] for v in data['importancia']['variables']), 100, delta=0.5)
+                    self.assertEqual(data['importancia']['filas'], rows)
+                    with mock.patch.object(resultados, 'AJUSTE', missing), mock.patch.object(resultados, 'SENSIBILIDAD', missing), \
+                            mock.patch.object(resultados, 'SMOTE', missing):
+                        bare = (await client.get('/modelo/resultados')).json()
+                    self.assertIsNone(bare['ajuste'])
+                    self.assertIsNone(bare['temporal'])
+                    self.assertIsNone(bare['balanceo'])
+                    self.assertIsNone(bare['fuentes']['balanceo'])
+                    self.user.rol = 'Docente'
+                    self.assertEqual((await client.get('/modelo/resultados')).status_code, 403)
+            asyncio.run(run())
+
+
+    def test_dataset_analysis_matches_registered_outcomes(self):
+        from api.dashboard import router as dashboard_router
+        with tempfile.TemporaryDirectory() as directory:
+            excel, model_id, rows = self.prepare(directory)
+            real_t1.generate(self.db, excel, model_id)
+            frame = real_t1.load(excel)
+            # La etiqueta del análisis sale de la base: se registra el abandono de las matrículas positivas del dataset.
+            positivas = frame[frame['y_abandono_intra_anual'] == 1]
+            for row in positivas.itertuples():
+                matricula = self.db.scalar(select(m.Matricula.id).join(m.Estudiante, m.Estudiante.id == m.Matricula.estudiante_id)
+                    .join(m.Curso, m.Curso.id == m.Matricula.curso_id).join(m.Gestion, m.Gestion.id == m.Curso.gestion_id)
+                    .where(m.Estudiante.codigo_anonimo == row.codigo_anonimo, m.Gestion.anio == int(row.gestion)))
+                self.db.add(m.SituacionEscolar(matricula_id=matricula, tipo='ABANDONO_CONFIRMADO', fecha_efectiva=date(int(row.gestion), 7, 31),
+                    observado_hasta=date(int(row.gestion), 11, 30), fuente_verificacion='Ficticio', registrado_por=1))
+            self.db.commit()
+        app = FastAPI()
+        app.include_router(dashboard_router)
+        app.dependency_overrides[get_db] = lambda: self.db
+        app.dependency_overrides[get_current_user] = lambda: self.user
+
+        async def run():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url='http://test') as client:
+                data = (await client.get('/dashboard/dataset')).json()
+                self.assertEqual(data['resumen']['matriculas'], rows)
+                self.assertEqual(data['resumen']['abandonos'], len(positivas))
+                self.assertEqual(sum(g['abandonos'] for g in data['por_gestion']), len(positivas))
+                self.assertEqual(sum(g['matriculas'] for g in data['por_grado']), rows)
+                materias = {x['codigo']: x for x in data['materias']}
+                self.assertEqual(len(materias), len(real_t1.AREAS) + 1)
+                for codigo in real_t1.AREAS:
+                    col = frame[f'{codigo}_T1']
+                    self.assertAlmostEqual(materias[codigo]['media_abandonaron'], round(col[frame['y_abandono_intra_anual'] == 1].mean(), 2))
+                    self.assertAlmostEqual(materias[codigo]['media_continuaron'], round(col[frame['y_abandono_intra_anual'] == 0].mean(), 2))
+                    self.assertEqual(sum(b['matriculas'] for b in materias[codigo]['bandas']), rows)
+                    self.assertEqual(sum(b['abandonos'] for b in materias[codigo]['bandas']), len(positivas))
+                self.assertEqual(sum(h['abandonaron'] + h['continuaron'] for h in data['histograma_promedio']), rows)
+                self.assertIn('no prueba', data['nota'])
+                self.user.rol = 'Docente'
+                self.assertEqual((await client.get('/dashboard/dataset')).status_code, 403)
+        asyncio.run(run())
+
+
 class ReglasRecomendacionTests(unittest.TestCase):
     def test_rules_fire_on_their_data_and_rp05_is_fallback(self):
         from predictivo import recomendaciones as rp

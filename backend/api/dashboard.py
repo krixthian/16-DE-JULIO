@@ -71,3 +71,70 @@ def panel(gestion: int | None = None, db: Session = Depends(get_db)):
         'intervenciones': {k: estados_int[k] for k in ('PENDIENTE', 'EJECUTADA', 'CANCELADA')},
         'estados_alerta': {k: estados_alerta[k] for k in ('NUEVA', 'EN_REVISION', 'EN_SEGUIMIENTO', 'CERRADA')},
     }
+
+
+def _media(valores):
+    valores = [v for v in valores if v is not None]
+    return round(sum(valores) / len(valores), 2) if valores else None
+
+
+def _mediana(valores):
+    from statistics import median
+    valores = [v for v in valores if v is not None]
+    return round(float(median(valores)), 2) if valores else None
+
+
+@router.get('/dataset')
+def dataset(db: Session = Depends(get_db)):
+    """Análisis descriptivo del dataset real: desbalance, abandono por gestión y grado, y desglose por materia.
+
+    Variables del corte T1 (cortes_predictivos del modelo vigente) y etiqueta registrada en situaciones_escolares
+    (ABANDONO_CONFIRMADO). Es descriptivo: con pocos abandonos, una diferencia no prueba una causa.
+    """
+    from predictivo.explicacion import NOMBRES_AREAS
+    abandonos = set(db.scalars(select(m.SituacionEscolar.matricula_id).where(m.SituacionEscolar.tipo == 'ABANDONO_CONFIRMADO')))
+    filas = []
+    for p, corte, curso, g in db.execute(base()).all():
+        ind = (corte.variables or {}).get('indicadores') or {}
+        filas.append(dict(ind, gestion=g.anio, grado_curso=curso.grado, abandono=corte.matricula_id in abandonos))
+    if not filas:
+        return {'resumen': None}
+    sal, sig = [f for f in filas if f['abandono']], [f for f in filas if not f['abandono']]
+
+    def conteo(clave):
+        out = defaultdict(lambda: [0, 0])
+        for f in filas:
+            out[f[clave]][0] += 1
+            out[f[clave]][1] += f['abandono']
+        return [{'valor': k, 'matriculas': v[0], 'abandonos': v[1]} for k, v in sorted(out.items())]
+
+    materias = []
+    for codigo, nombre in [*NOMBRES_AREAS.items(), ('promedio', 'Promedio del 1.er trimestre')]:
+        col = 'promedio_T1' if codigo == 'promedio' else f'{codigo}_T1'
+        bandas = []
+        for b, etiqueta, low, high in BANDAS:
+            grupo = [f for f in filas if f.get(col) is not None and low <= f[col] <= high]
+            bandas.append({'banda': b, 'etiqueta': etiqueta, 'matriculas': len(grupo), 'abandonos': sum(f['abandono'] for f in grupo)})
+        m_sal, m_sig = _media([f.get(col) for f in sal]), _media([f.get(col) for f in sig])
+        materias.append({'codigo': codigo, 'materia': nombre, 'media_abandonaron': m_sal, 'media_continuaron': m_sig,
+            'mediana_abandonaron': _mediana([f.get(col) for f in sal]), 'mediana_continuaron': _mediana([f.get(col) for f in sig]),
+            'diferencia': None if None in (m_sal, m_sig) else round(m_sal - m_sig, 2),
+            'bajo_51_abandonaron': sum(1 for f in sal if (f.get(col) or 100) < 51),
+            'bajo_51_continuaron': sum(1 for f in sig if (f.get(col) or 100) < 51), 'bandas': bandas})
+    rangos = [(0, 50), (51, 55), (56, 60), (61, 65), (66, 70), (71, 75), (76, 80), (81, 85), (86, 100)]
+    histograma = [{'rango': f'{a}-{b}' if a else f'≤ {b}', 'continuaron': sum(1 for f in sig if a <= (f.get('promedio_T1') or -1) <= b),
+        'abandonaron': sum(1 for f in sal if a <= (f.get('promedio_T1') or -1) <= b)} for a, b in rangos]
+    asistencia = [{'variable': k, 'etiqueta': e, 'abandonaron': _media([f.get(k) for f in sal]), 'continuaron': _media([f.get(k) for f in sig]),
+        'mediana_abandonaron': _mediana([f.get(k) for f in sal]), 'mediana_continuaron': _mediana([f.get(k) for f in sig])}
+        for k, e in (('faltas_T1', 'Faltas en T1'), ('atrasos_T1', 'Atrasos en T1'), ('licencias_T1', 'Licencias en T1'),
+            ('tasa_asistencia_T1', 'Tasa de asistencia'))]
+    return {
+        'resumen': {'matriculas': len(filas), 'abandonos': len(sal), 'continuaron': len(sig),
+            'tasa_abandono': round(len(sal) / len(filas), 4), 'proporcion': f'1 de cada {round(len(filas) / len(sal))}' if sal else None},
+        'por_gestion': conteo('gestion'), 'por_grado': conteo('grado_curso'),
+        'materias': sorted(materias, key=lambda r: (r['codigo'] != 'promedio', r['diferencia'] if r['diferencia'] is not None else 0)),
+        'histograma_promedio': histograma, 'asistencia': asistencia, 'bandas': [{'codigo': c, 'etiqueta': e} for c, e, *_ in BANDAS],
+        'nota': ('Análisis descriptivo de las matrículas reales al corte del 1.er trimestre. Con pocos abandonos, una diferencia '
+            'entre grupos no prueba que una materia cause el abandono.'),
+        'fuente': 'Base de datos: cortes_predictivos (variables T1) y situaciones_escolares (ABANDONO_CONFIRMADO).',
+    }
