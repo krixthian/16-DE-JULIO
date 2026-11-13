@@ -29,12 +29,21 @@ def base(gestion=None):
     return query.where(m.Gestion.anio == gestion) if gestion else query
 
 
+def modelo_umbrales(db):
+    modelo = db.scalar(select(m.ModeloPredictivo).order_by(m.ModeloPredictivo.id.desc()))
+    return modelo and {'medio': float(modelo.umbral_medio), 'alto': float(modelo.umbral_alto)}
+
+
 @router.get('')
 def panel(gestion: int | None = None, db: Session = Depends(get_db)):
     filas = db.execute(base(gestion)).all()
     alertas = {a.prediccion_id: a for a in db.scalars(select(m.Alerta).where(m.Alerta.prediccion_id.in_([p.id for p, *_ in filas])))}
     por_curso, distribucion, n_grado = defaultdict(Counter), defaultdict(Counter), Counter()
+    matriculas_curso = Counter((g.anio, curso.grado, curso.paralelo) for _, _, curso, g in filas)
+    uso = Counter()
     for p, corte, curso, g in filas:
+        if p.id in alertas:
+            uso['actual' if (p.factores or {}).get('uso') == 'COHORTE_ACTUAL' else 'retrospectiva'] += 1
         promedio = ((corte.variables or {}).get('indicadores') or {}).get('promedio_T1')
         if promedio is not None:
             distribucion[curso.grado][banda(promedio)] += 1
@@ -42,27 +51,32 @@ def panel(gestion: int | None = None, db: Session = Depends(get_db)):
         if p.id in alertas:
             por_curso[(g.anio, curso.grado, curso.paralelo)][p.nivel] += 1
     ids = [a.id for a in alertas.values()]
+    con_intervencion = set(db.scalars(select(m.Intervencion.alerta_id).where(m.Intervencion.alerta_id.in_(ids)))) if ids else set()
     estados_int = Counter()
     if ids:
         for estado, total in db.execute(select(m.Intervencion.estado, func.count()).where(m.Intervencion.alerta_id.in_(ids))
                 .group_by(m.Intervencion.estado)):
             estados_int[GRUPOS_INTERVENCION[estado]] += total
-    evolucion = defaultdict(lambda: {'predicciones': 0, 'MEDIO': 0, 'ALTO': 0})
+    evolucion = defaultdict(lambda: {'predicciones': 0, 'MEDIO': 0, 'ALTO': 0, 'retrospectiva': False})
     todas = db.execute(base()).all()
     con_alerta = set(db.scalars(select(m.Alerta.prediccion_id)))
     for p, _, _, g in todas:
         evolucion[g.anio]['predicciones'] += 1
+        evolucion[g.anio]['retrospectiva'] |= (p.factores or {}).get('uso') == 'RETROSPECTIVO_EN_ENTRENAMIENTO'
         if p.id in con_alerta:
             evolucion[g.anio][p.nivel] += 1
     estados_alerta = Counter(a.estado for a in alertas.values())
     niveles = Counter(p.nivel for p, *_ in filas if p.id in alertas)
     return {
         'gestion': gestion, 'gestiones': sorted(evolucion), 'nota': NOTA_PRIORIDAD,
+        'umbrales': modelo_umbrales(db),
         'resumen': {'predicciones': len(filas), 'alertas': len(alertas), 'alto': niveles['ALTO'], 'medio': niveles['MEDIO'],
+            'tasa_alerta': round(len(alertas) / len(filas), 4) if filas else 0, 'retrospectivas': uso['retrospectiva'],
+            'cohorte_actual': uso['actual'], 'con_intervencion': len(con_intervencion), 'sin_intervencion': len(alertas) - len(con_intervencion),
             'intervenciones_pendientes': estados_int['PENDIENTE'], 'intervenciones_ejecutadas': estados_int['EJECUTADA'],
-            'alertas_cerradas': estados_alerta['CERRADA']},
-        'alertas_por_curso': [{'gestion': k[0], 'curso': f'{k[1]}° {k[2]}', 'grado': k[1], 'ALTO': v['ALTO'], 'MEDIO': v['MEDIO']}
-            for k, v in sorted(por_curso.items())],
+            'alertas_cerradas': estados_alerta['CERRADA'], 'cursos_con_alerta': len(por_curso), 'cursos': len(matriculas_curso)},
+        'alertas_por_curso': [{'gestion': k[0], 'curso': f'{k[1]}° {k[2]}', 'grado': k[1], 'ALTO': v['ALTO'], 'MEDIO': v['MEDIO'],
+            'matriculas': matriculas_curso[k]} for k, v in sorted(por_curso.items(), key=lambda kv: (-kv[0][0], kv[0][1], kv[0][2]))],
         'cursos': [{'id': c.id, 'curso': f'{c.grado}° {c.paralelo}', 'gestion': g.anio} for c, g in sorted(
             {curso.id: (curso, g) for _, _, curso, g in filas}.values(), key=lambda x: (x[1].anio, x[0].grado, x[0].paralelo))],
         'bandas': [{'codigo': c, 'etiqueta': e} for c, e, *_ in BANDAS],

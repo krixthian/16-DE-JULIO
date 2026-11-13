@@ -236,6 +236,14 @@ class AlertasApiTests(unittest.TestCase):
                 self.assertTrue(all(g['n'] == sum(g[b['codigo']] for b in panel['bandas']) for g in panel['promedio_por_grado']))
                 self.assertEqual(sum(e['predicciones'] for e in panel['evolucion']), rows)
                 self.assertEqual(panel['intervenciones'], {'PENDIENTE': 1, 'EJECUTADA': 1, 'CANCELADA': 0})
+                resumen = panel['resumen']
+                self.assertAlmostEqual(resumen['tasa_alerta'], round(counts['alertas'] / rows, 4))
+                self.assertEqual(resumen['retrospectivas'] + resumen['cohorte_actual'], counts['alertas'])
+                self.assertEqual((resumen['con_intervencion'], resumen['sin_intervencion']), (1, counts['alertas'] - 1))
+                self.assertEqual(resumen['cursos_con_alerta'], len(panel['alertas_por_curso']))
+                self.assertTrue(all(c['matriculas'] >= c['ALTO'] + c['MEDIO'] for c in panel['alertas_por_curso']))
+                self.assertEqual(panel['umbrales'], {'medio': .5, 'alto': .8})
+                self.assertTrue(all(isinstance(e['retrospectiva'], bool) for e in panel['evolucion']))
                 year = first['gestion']
                 filtered = (await client.get('/dashboard', params={'gestion': year})).json()
                 self.assertTrue(all(c['gestion'] == year for c in filtered['alertas_por_curso']))

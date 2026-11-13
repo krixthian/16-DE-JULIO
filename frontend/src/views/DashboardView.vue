@@ -12,9 +12,34 @@ const message=e=>e.response?.data?.detail||'No se pudo conectar con el servidor.
 const levels=[['ALTO','Prioridad alta','#d93b3b'],['MEDIO','Prioridad media','#e8a33d']]
 const bandColors={ED:'#eb6834',DA:'#f5b48f',DO:'#9cc3ef',DP:'#2a78d6'}
 const steps=[['PENDIENTE','Pendientes','#eb6834'],['EJECUTADA','Ejecutadas','#1baf7a'],['CANCELADA','Canceladas','#b8b6ae']]
-const cards=computed(()=>{const r=data.value?.resumen;return r?[['Predicciones',r.predicciones,''],['Alertas',r.alertas,''],['Prioridad alta',r.alto,'text-red-600'],
- ['Prioridad media',r.medio,'text-amber-600'],['Interv. pendientes',r.intervenciones_pendientes,''],['Interv. ejecutadas',r.intervenciones_ejecutadas,'text-emerald-600'],['Alertas cerradas',r.alertas_cerradas,'']]:[]})
+const th=k=>{const v=data.value?.umbrales?.[k];return v==null?'—':String(v).replace('.',',')}
+const pctText=(a,b)=>b?`${(100*a/b).toFixed(1).replace('.',',')} %`:'0 %'
+const scope=computed(()=>gestion.value?`en ${gestion.value}`:'en todas las gestiones')
+const cardGroups=computed(()=>{const r=data.value?.resumen;if(!r)return []
+ return [
+  {titulo:'1. Qué detectó el modelo',items:[
+   {l:'Matrículas evaluadas',v:r.predicciones,d:'Estudiantes a los que el modelo calculó un puntaje al cierre del 1.er trimestre.'},
+   {l:'Alertas generadas',v:r.alertas,d:`${pctText(r.alertas,r.predicciones)} de las evaluadas: puntaje ≥ ${th('medio')}.`},
+   {l:'Prioridad alta',v:r.alto,c:'text-red-600',d:`Puntaje ≥ ${th('alto')}: revisar primero.`},
+   {l:'Prioridad media',v:r.medio,c:'text-amber-600',d:`Puntaje entre ${th('medio')} y ${th('alto')}.`}]},
+  {titulo:'2. De qué año son las alertas',items:[
+   {l:'Retrospectivas',v:r.retrospectivas,d:'Años usados para entrenar el modelo: muestran que el modelo reconoce casos pasados; no requieren acción.'},
+   {l:'Cohorte actual',v:r.cohorte_actual,c:'text-blue-600',d:'Estudiantes de la gestión en curso: son las que la escuela debe atender.'}]},
+  {titulo:'3. Qué se hizo con ellas',items:[
+   {l:'Sin intervención',v:r.sin_intervencion,c:r.sin_intervencion?'text-amber-600':'',d:`${r.sin_intervencion} de ${r.alertas} alertas aún no tienen ninguna acción registrada.`},
+   {l:'Intervenciones ejecutadas',v:r.intervenciones_ejecutadas,c:'text-emerald-600',d:`Pendientes: ${r.intervenciones_pendientes}.`},
+   {l:'Alertas cerradas',v:r.alertas_cerradas,d:'Cerradas con motivo (por ejemplo, el estudiante asiste con normalidad).'}]}]})
+const summaryText=computed(()=>{const r=data.value?.resumen;if(!r)return ''
+ const partes=[`${r.alertas===1?'Se generó 1 alerta':`Se generaron ${r.alertas} alertas`} ${scope.value} sobre ${r.predicciones} matrículas evaluadas (${pctText(r.alertas,r.predicciones)}): ${r.alto} de prioridad alta y ${r.medio} de prioridad media.`]
+ if(r.retrospectivas)partes.push(`${r.retrospectivas} ${r.retrospectivas===1?'es retrospectiva':'son retrospectivas'} (años usados para entrenar) y ${r.cohorte_actual} ${r.cohorte_actual===1?'corresponde':'corresponden'} a la cohorte actual.`)
+ partes.push(`Las alertas están en ${r.cursos_con_alerta} de ${r.cursos} cursos.`)
+ partes.push(r.con_intervencion?`${r.con_intervencion} de ${r.alertas} alertas ya tienen al menos una intervención; ${r.alertas_cerradas} se cerraron.`:`Ninguna alerta tiene todavía una intervención registrada.`)
+ return partes.join(' ')})
+const followSteps=[['NUEVA','Nueva','#64748b'],['EN_REVISION','En revisión','#e8a33d'],['EN_SEGUIMIENTO','En seguimiento','#2a78d6'],['CERRADA','Cerrada','#1baf7a']]
 const stepTotal=computed(()=>Object.values(data.value?.intervenciones||{}).reduce((a,b)=>a+b,0))
+const gradeNote=computed(()=>{const rows=data.value?.promedio_por_grado||[];if(!rows.length)return ''
+ const low=rows.map(g=>({g:g.grado,p:g.n?100*(g.ED+g.DA)/g.n:0})).sort((a,b)=>b.p-a.p)[0]
+ return `El ${low.g}.º grado tiene la mayor proporción de estudiantes por debajo de "desarrollo óptimo" (${low.p.toFixed(0)} % en ED o DA).`})
 
 // Opciones comunes: texto en tinta neutra, rejilla tenue, barras finas con esquinas redondeadas.
 const bar={borderRadius:4,borderSkipped:false,maxBarThickness:28}
@@ -28,22 +53,15 @@ function options({horizontal=false,stacked=true,percent=false,legend=true,toolti
    tooltip:{callbacks:tooltip||{}}},
   scales:horizontal?{x:value,y:category}:{x:category,y:value}}
 }
-const byCourse=computed(()=>{const rows=data.value?.alertas_por_curso||[];return {
- labels:rows.map(c=>`${c.curso} · ${c.gestion}`),
- datasets:levels.map(([k,l,c])=>({label:l,data:rows.map(r=>r[k]),backgroundColor:c,...bar}))}})
 const byGrade=computed(()=>{const rows=data.value?.promedio_por_grado||[];return {
  labels:rows.map(g=>`${g.grado}.º (n=${g.n})`),
  datasets:(data.value?.bandas||[]).map(b=>({label:b.etiqueta,data:rows.map(g=>g.n?100*g[b.codigo]/g.n:0),counts:rows.map(g=>g[b.codigo]),backgroundColor:bandColors[b.codigo],...bar,borderRadius:0}))}})
 const byYear=computed(()=>{const rows=data.value?.evolucion||[];return {
- labels:rows.map(e=>`${e.gestion}`),
+ labels:rows.map(e=>[`${e.gestion}`,e.retrospectiva?'retrospectiva':'cohorte actual']),
  datasets:levels.map(([k,l,c])=>({label:l,data:rows.map(r=>r[k]),backgroundColor:c,...bar}))}})
-const bySteps=computed(()=>({labels:steps.map(s=>s[1]),
- datasets:[{label:'Intervenciones',data:steps.map(([k])=>data.value?.intervenciones[k]||0),backgroundColor:steps.map(s=>s[2]),...bar}]}))
-const courseOptions=computed(()=>options({horizontal:true}))
 const gradeOptions=computed(()=>options({horizontal:true,percent:true,tooltip:{label:c=>`${c.dataset.label}: ${c.dataset.counts[c.dataIndex]} (${c.raw.toFixed(0)} %)`}}))
-const yearOptions=computed(()=>options({tooltip:{footer:items=>`de ${data.value.evolucion[items[0].dataIndex].predicciones} predicciones`}}))
-const stepOptions=computed(()=>options({horizontal:true,stacked:false,legend:false}))
-const courseHeight=computed(()=>`${Math.max(160,26*(data.value?.alertas_por_curso.length||0)+60)}px`)
+const yearOptions=computed(()=>{const o=options({tooltip:{footer:items=>{const e=data.value.evolucion[items[0].dataIndex];return `${e.ALTO+e.MEDIO} alertas de ${e.predicciones} matrículas (${pctText(e.ALTO+e.MEDIO,e.predicciones)})`}}})
+ o.scales.y.title={display:true,text:'Número de alertas',color:dark.value?'#cbd5e1':'#475569'};return o})
 
 async function download(format){
  downloading.value=format;error.value=''
@@ -168,34 +186,61 @@ onBeforeUnmount(()=>observer.disconnect())
    </template>
   </section>
   <template v-if="data&&tab==='seguimiento'">
-   <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-6">
-    <div v-for="[l,v,c] in cards" :key="l" class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
-     <p class="text-xs text-slate-500">{{ l }}</p><p class="text-2xl font-bold mt-1" :class="c">{{ v }}</p>
+   <div class="mt-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 p-4 text-sm text-blue-900 dark:text-blue-100">
+    <p class="font-semibold">Resumen {{ scope }}</p>
+    <p class="mt-1">{{ summaryText }}</p>
+   </div>
+   <div class="grid lg:grid-cols-2 gap-4 mt-4">
+    <div v-for="g in cardGroups" :key="g.titulo" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4" :class="g.items.length>3?'lg:col-span-2':''">
+     <p class="text-sm font-semibold">{{ g.titulo }}</p>
+     <div class="grid gap-3 mt-3" :class="g.items.length>3?'grid-cols-2 lg:grid-cols-4':g.items.length===3?'grid-cols-1 sm:grid-cols-3':'grid-cols-2'">
+      <div v-for="i in g.items" :key="i.l" class="rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
+       <p class="text-xs text-slate-500">{{ i.l }}</p><p class="text-2xl font-bold" :class="i.c">{{ i.v }}</p><p class="text-xs text-slate-500 mt-1">{{ i.d }}</p>
+      </div>
+     </div>
     </div>
    </div>
    <div class="grid lg:grid-cols-2 gap-6 mt-6">
     <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
-     <h2 class="font-semibold">Alertas por nivel y por curso</h2>
-     <div class="mt-3" :style="{height:courseHeight}"><Bar v-if="data.alertas_por_curso.length" :data="byCourse" :options="courseOptions" aria-label="Alertas por nivel y por curso" /></div>
-     <p v-if="!data.alertas_por_curso.length" class="text-sm text-slate-500">Sin alertas en esta gestión.</p>
-    </article>
-    <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
-     <h2 class="font-semibold">Promedio del 1.er trimestre por grado</h2>
-     <div class="mt-3 h-72"><Bar :data="byGrade" :options="gradeOptions" aria-label="Distribución del promedio del primer trimestre por grado" /></div>
-     <p class="mt-2 text-xs text-slate-500">Escala de valoración de primaria (Ley 070). Cada barra suma 100 % de su grado.</p>
-    </article>
-    <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
-     <h2 class="font-semibold">Evolución de alertas por gestión</h2>
+     <h2 class="font-semibold">Alertas por gestión</h2>
+     <p class="text-xs text-slate-500 mt-1">Cuántas alertas hubo cada año y de qué prioridad. Pasa el mouse sobre una barra para ver de cuántas matrículas.</p>
      <div class="mt-3 h-64"><Bar :data="byYear" :options="yearOptions" aria-label="Alertas por gestión" /></div>
-     <p class="mt-2 text-xs text-slate-500">Las gestiones con abandonos conocidos se usaron para entrenar el modelo: sus alertas son retrospectivas.</p>
+     <table class="w-full text-xs mt-3"><thead class="text-left text-slate-500"><tr><th>Gestión</th><th>Matrículas</th><th>Alertas</th><th>% del año</th><th>Tipo</th></tr></thead>
+      <tbody><tr v-for="e in data.evolucion" :key="e.gestion" class="border-t border-slate-100 dark:border-slate-700"><td class="py-1">{{ e.gestion }}</td><td>{{ e.predicciones }}</td><td>{{ e.ALTO+e.MEDIO }} <span class="text-slate-500">({{ e.ALTO }} alta · {{ e.MEDIO }} media)</span></td><td>{{ pctText(e.ALTO+e.MEDIO,e.predicciones) }}</td><td>{{ e.retrospectiva?'Retrospectiva':'Cohorte actual' }}</td></tr></tbody></table>
     </article>
     <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
-     <h2 class="font-semibold">Estado de las intervenciones</h2>
-     <div class="mt-3 h-48"><Bar :data="bySteps" :options="stepOptions" aria-label="Estado de las intervenciones" /></div>
-     <p v-if="!stepTotal" class="text-sm text-slate-500">Aún no hay intervenciones registradas.</p>
-     <p class="mt-2 text-xs text-slate-500">Pendientes = propuesta, aprobada o en curso. Alertas: {{ data.estados_alerta.NUEVA }} nuevas · {{ data.estados_alerta.EN_REVISION }} en revisión · {{ data.estados_alerta.EN_SEGUIMIENTO }} en seguimiento · {{ data.estados_alerta.CERRADA }} cerradas.</p>
+     <h2 class="font-semibold">Seguimiento de las alertas</h2>
+     <p class="text-xs text-slate-500 mt-1">En qué estado está cada alerta y si ya tiene acciones registradas.</p>
+     <div class="mt-4 flex h-8 rounded-lg overflow-hidden" role="img" :aria-label="`Estados de ${data.resumen.alertas} alertas`">
+      <div v-for="[k,l,c] in followSteps" v-show="data.estados_alerta[k]" :key="k" :style="{width:`${100*data.estados_alerta[k]/Math.max(1,data.resumen.alertas)}%`,background:c}" class="flex items-center justify-center text-xs font-semibold text-white" :title="`${l}: ${data.estados_alerta[k]}`">{{ data.estados_alerta[k] }}</div>
+     </div>
+     <div class="flex flex-wrap gap-3 mt-2 text-xs text-slate-600 dark:text-slate-300"><span v-for="[k,l,c] in followSteps" :key="k" class="flex items-center gap-1"><i class="w-3 h-3 rounded-sm inline-block" :style="{background:c}"></i>{{ l }}: {{ data.estados_alerta[k] }}</span></div>
+     <div class="grid grid-cols-3 gap-3 mt-5 text-center">
+      <div v-for="[k,l,c] in steps" :key="k" class="rounded-lg bg-slate-50 dark:bg-slate-900 p-3"><p class="text-2xl font-bold" :style="{color:data.intervenciones[k]?c:undefined}">{{ data.intervenciones[k] }}</p><p class="text-xs text-slate-500">Intervenciones {{ l.toLowerCase() }}</p></div>
+     </div>
+     <p v-if="!stepTotal" class="mt-4 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 p-3 text-sm">Todavía no se registró ninguna intervención. Se registran desde <strong>Alertas de riesgo</strong>, al abrir una alerta y adoptar una recomendación (RP01 a RP05).</p>
+     <p class="mt-3 text-xs text-slate-500">Pendientes = propuesta, aprobada o en curso. Ejecutadas = realizada con fecha y resultado.</p>
     </article>
    </div>
+   <article class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
+    <h2 class="font-semibold">Cursos con alertas</h2>
+    <p class="text-xs text-slate-500 mt-1">{{ data.resumen.cursos_con_alerta }} de {{ data.resumen.cursos }} cursos tienen al menos una alerta {{ scope }}. El porcentaje indica qué parte del curso está alertada.</p>
+    <div v-if="data.alertas_por_curso.length" class="overflow-x-auto mt-3"><table class="w-full text-sm">
+     <thead class="text-left text-slate-500"><tr><th class="py-1 pr-3">Curso</th><th class="pr-3">Gestión</th><th class="pr-3">Estudiantes evaluados</th><th class="pr-3">Prioridad alta</th><th class="pr-3">Prioridad media</th><th class="pr-3">% del curso alertado</th></tr></thead>
+     <tbody><tr v-for="c in data.alertas_por_curso" :key="c.gestion+c.curso" class="border-t border-slate-100 dark:border-slate-700">
+      <td class="py-1 pr-3 font-medium">{{ c.curso }}</td><td class="pr-3">{{ c.gestion }}</td><td class="pr-3">{{ c.matriculas }}</td>
+      <td class="pr-3"><span v-if="c.ALTO" class="text-red-600 font-semibold">{{ c.ALTO }}</span><span v-else class="text-slate-400">0</span></td>
+      <td class="pr-3"><span v-if="c.MEDIO" class="text-amber-600 font-semibold">{{ c.MEDIO }}</span><span v-else class="text-slate-400">0</span></td>
+      <td class="pr-3"><div class="flex items-center gap-2"><div class="h-2 w-24 rounded bg-slate-100 dark:bg-slate-700"><div class="h-2 rounded bg-[#eb6834]" :style="{width:`${Math.min(100,100*(c.ALTO+c.MEDIO)/Math.max(1,c.matriculas)*5)}%`}"></div></div>{{ pctText(c.ALTO+c.MEDIO,c.matriculas) }}</div></td>
+     </tr></tbody></table></div>
+    <p v-else class="mt-3 text-sm text-slate-500">Sin alertas {{ scope }}.</p>
+   </article>
+   <article class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
+    <h2 class="font-semibold">Rendimiento del 1.er trimestre por grado</h2>
+    <p class="text-xs text-slate-500 mt-1">Qué parte de cada grado está en cada banda de la escala de valoración (Ley 070), según el promedio del 1.er trimestre. Cada barra suma el 100 % del grado.</p>
+    <div class="mt-3 h-72"><Bar :data="byGrade" :options="gradeOptions" aria-label="Distribución del promedio del primer trimestre por grado" /></div>
+    <p class="mt-2 text-sm">{{ gradeNote }}</p>
+   </article>
    <article class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
     <h2 class="font-semibold">Reporte de alertas</h2>
     <p class="text-sm text-slate-500 mt-1">PDF imprimible o CSV con alertas, factores e intervenciones. Estudiantes anonimizados; incluye la fecha, el nivel como ranking de prioridad y la nota de que el modelo apoya, no sustituye, el criterio docente.</p>
