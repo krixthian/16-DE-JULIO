@@ -9,7 +9,8 @@ Cada actividad tiene tres partes: **Mostrar** (qué abrir o hacer), **Decir** (g
   ```powershell
   $env:PYTHONIOENCODING = "utf-8"
   ```
-- [ ] Figuras de `docs/figuras/` (1 a 10) a mano.
+- [ ] Figuras de `docs/figuras/` (1 a 10) a mano, como respaldo: casi todo se muestra ahora en el sistema (**Resultados del modelo** y **Panel analítico**).
+- [ ] Abrir una vez **Resultados del modelo** antes de empezar: la primera carga tarda unos 5 segundos.
 - [ ] Decidir en qué alerta se hará la intervención en vivo (actividad 16): **escribe en la base real** y queda auditado. Recomendado: una de 2025, por ejemplo **Estudiante 0012 · 1° A**, o hacer un respaldo justo antes.
 
 **Apertura (30 s):**
@@ -67,7 +68,7 @@ python -m predictivo metricas-real --directorio artifacts/real_t1_v1
 
 ## Actividad 12: Entrenamiento base del modelo predictivo (XGBoost)
 
-**Mostrar:** la salida completa de `metricas-real` (el comando de la actividad 11): primero la línea "SHA-256 … OK, coincide con el archivo" y luego la tabla de abandono. Figuras 1 y 2 de `docs/figuras/`.
+**Mostrar:** en el sistema, **Resultados del modelo**: las 5 métricas con su IC, la matriz de confusión y "Comparación con otros métodos". Como respaldo, en la terminal, `metricas-real` (comando de la actividad 11), que verifica el hash del modelo.
 
 **Decir:**
 > "El modelo base es un XGBoost de 80 árboles, profundidad 3 y tasa de aprendizaje 0,05, con semilla fija. Se validó con **validación cruzada agrupada por estudiante, 5 pliegues repetidos 20 veces**, para que un estudiante nunca esté a la vez en entrenamiento y evaluación. Los intervalos de confianza son por bootstrap.
@@ -82,16 +83,18 @@ python -m predictivo metricas-real --directorio artifacts/real_t1_v1
 **Si preguntan, ¿y la regresión logística?**
 > "Obtiene resultados iguales o mejores (AUC 1,00) y los intervalos se solapan: XGBoost no es superior de forma distinguible. Lo mantengo porque explica cada predicción con sus factores (valores SHAP), que es lo que ve el docente en cada alerta."
 
+**Mostrar luego:** en la misma pantalla, **"¿En qué se fija el modelo?"**.
+> "Esta es la importancia de cada variable en las 790 predicciones. **El promedio del primer trimestre concentra el 63,6 % del peso**; le siguen Artes Plásticas (11,5 %) y Educación Musical (10,6 %). El modelo depende sobre todo del rendimiento general."
+
 **Si preguntan, ¿y predecir que no continúa el año siguiente?**
 > "Lo evalué y no funciona: AUC 0,53, con 17 casos solo de 2024. Por eso el sistema solo alerta sobre el abandono dentro del año."
 
 ## Actividad 13: Sintonización de hiperparámetros y evaluación (F1-Score)
 
-**Mostrar:** en la terminal:
+**Mostrar:** en **Resultados del modelo**: "Elección del umbral", "Ajuste de hiperparámetros y calibración" y "Desbalance de clases: ¿ayuda SMOTE?". Como respaldo, en la terminal:
 ```powershell
 python -m predictivo metricas-ajuste --directorio artifacts/real_t1_ajuste_v1
 ```
-Figuras 6 (comparación con IC), 9 (umbrales) y 10 (estabilidad).
 
 **Decir:**
 > "Ajusté los hiperparámetros con **validación anidada**: 108 combinaciones de profundidad, tasa de aprendizaje, número de árboles, peso mínimo por hoja y submuestreo. El ajuste se hace dentro de cada pliegue, sin ver los datos de evaluación. El criterio de adopción se fijó **antes** de ver los resultados: adoptar solo si mejora la AP de forma distinguible.
@@ -99,6 +102,9 @@ Figuras 6 (comparación con IC), 9 (umbrales) y 10 (estabilidad).
 > Resultado: el ajustado tiene F1 0,79 frente a 0,80 del base, y la diferencia de AP es −0,005, con un intervalo de −0,20 a +0,16, que incluye el cero. **Se ajustó y el modelo base resultó adecuado.** Además se eligieron 43 configuraciones distintas en 100 pliegues: con 11 casos ninguna domina.
 >
 > También evalué umbrales: con 0,5 se detectan 9,2 de 11 abandonos con 2,7 falsas alarmas; con 0,8, 7,3 con 0,9. Propongo 0,5 para alertar y 0,8 para priorizar, a validar con Dirección. La calibración tampoco mejoró de forma distinguible, así que no se adoptó."
+
+**Desbalance de clases (SMOTE):**
+> "Hay 11 abandonos frente a 779 continuidades. El modelo compensa el desbalance con `scale_pos_weight`. Por recomendación de mi tutor, comparé con **SMOTE, BorderlineSMOTE, ADASYN y SMOTE parcial con pesos**, remuestreando solo dentro del pliegue de entrenamiento, con 20 repeticiones. **Ninguno supera al método en uso**: SMOTE baja la AP de 0,859 a 0,739 y casi duplica las falsas alarmas (5,2 frente a 2,7); ADASYN baja a 0,635. Sin ningún balanceo, se pierde casi la mitad de los abandonos. Detalle en `docs/experimento_smote_resumen.md`."
 
 **Si preguntan, ¿entonces el ajuste no sirvió?**
 > "Sirvió para demostrar con evidencia que el modelo base es adecuado. Elegir el resultado más favorable a posteriori habría inflado las métricas; fijar el criterio antes lo evita."
@@ -115,14 +121,25 @@ Figuras 6 (comparación con IC), 9 (umbrales) y 10 (estabilidad).
 
 ## Actividad 15: Módulo de alertas de riesgo académico
 
-**Mostrar:** en **Alertas de riesgo**, el aviso azul y los filtros. Filtrar **2024 + Alto** (quedan 2) y abrir **Estudiante 0136 · 3° A · 2024**. Bajar hasta **Historial (auditoría)**. Luego quitar el filtro y mostrar las 2 alertas de 2025.
+**Mostrar:** en **Alertas de riesgo**, el aviso azul y los filtros. Filtrar **2024 + Alto** (quedan 2) y abrir **Estudiante 0136 · 3° A · 2024**. Pulsar **"Ver la explicación completa"** y recorrer sus cuatro partes. Bajar hasta **Historial (auditoría)**. Luego quitar el filtro y mostrar las 2 alertas de 2025. Por último, la pestaña **"Riesgo académico por reglas"**.
 
 **Decir:**
 > "Cada alerta indica su **puesto en el ranking**: este estudiante es el número 1 de 419 en 2024. El nivel es una prioridad, no un porcentaje de riesgo, porque las probabilidades no están calibradas. MEDIO desde 0,5 y ALTO desde 0,8 es una propuesta para Dirección.
 >
-> El panel explica **por qué**: el promedio del primer trimestre (66) es lo que más eleva su prioridad, seguido de Artes Plásticas y Educación Musical. Se filtra por gestión, curso, nivel y estado; se asigna un responsable; y para cerrar una alerta el motivo es obligatorio. Cada cambio queda en el historial de auditoría.
+> Cada alerta explica **por qué está así y por qué en ese nivel**:
+> 1. Su puntaje (0,984) frente a los umbrales 0,5 y 0,8, en una barra.
+> 2. Un resumen en palabras.
+> 3. Un gráfico con lo que eleva y lo que reduce su prioridad. El promedio del primer trimestre (66, frente a 72,7 de su curso) aporta el 65 % de lo que la eleva.
+> 4. Las 19 variables comparadas con el promedio de su curso.
+>
+> La explicación se calcula con el mismo modelo registrado, y la suma de los aportes da exactamente el puntaje guardado.
+>
+> Además: se filtra por gestión, curso, nivel y estado; se asigna un responsable; para cerrar una alerta el motivo es obligatorio; y cada cambio queda en el historial de auditoría.
 >
 > Las alertas de 2021 a 2024 son retrospectivas, porque esos años se usaron para entrenar. Las 2 de 2025 son la cohorte actual."
+
+**Riesgo académico por reglas (pestaña):**
+> "Revisando las alertas noté algo que un docente cuestionaría: el modelo prioriza a estudiantes con promedio de 62 a 66, mientras que estudiantes con cinco áreas reprobadas reciben un puntaje bajo. La razón está en los datos: en el historial, los estudiantes con áreas bajo 51 casi no abandonaron. Por eso agregué esta pestaña: una **regla explícita** (áreas bajo 51) que muestra a los 25 estudiantes en esa situación, **24 de ellos sin alerta del modelo**. No es una predicción; complementa al modelo. Es de solo lectura: registrar seguimiento sobre ella requiere un cambio de esquema que dejé como trabajo futuro."
 
 **Si preguntan, ¿y los falsos positivos?**
 > "Una falsa alarma cuesta una revisión; no detectar un abandono cuesta mucho más. Igual, el docente decide y puede cerrar la alerta con motivo."
@@ -148,10 +165,15 @@ Figuras 6 (comparación con IC), 9 (umbrales) y 10 (estabilidad).
 
 ## Actividad 17: Dashboards analíticos interactivos
 
-**Mostrar:** **Panel analítico**. Pasar el mouse por "Evolución de alertas por gestión" (tooltip). Cambiar el filtro a 2024. Abrir "Ver los datos en tablas".
+**Mostrar:** **Panel analítico**, pestaña **"Seguimiento de alertas"**: leer el resumen en palabras, las tarjetas por grupo, "Alertas por gestión" (tooltip) y "Cursos con alertas". Cambiar el filtro a 2025. Luego la pestaña **"Análisis del dataset y por materia"**.
 
-**Decir:**
-> "El panel es para Dirección y Orientación. Muestra alertas por nivel y curso, la distribución del promedio del primer trimestre por grado según la escala de la Ley 070, la evolución de alertas por gestión (4, 3, 2, 2 y 2 de 2021 a 2025) y el estado de las intervenciones. Se hizo con Chart.js y **todo se calcula en el momento desde la base**: no hay cifras fijas. Cada gráfico tiene su tabla de datos."
+**Decir (seguimiento):**
+> "El panel es para Dirección y Orientación. Arriba resume en palabras la situación: 13 alertas sobre 790 matrículas evaluadas (1,6 %), 11 retrospectivas de los años de entrenamiento y 2 de la cohorte actual, en 13 de 34 cursos. Las tarjetas responden tres preguntas: qué detectó el modelo, de qué año son las alertas y qué se hizo con ellas. Luego muestra las alertas por gestión con su porcentaje, el estado del seguimiento, el porcentaje alertado de cada curso y el rendimiento por grado. Se hizo con Chart.js y **todo se calcula en el momento desde la base**."
+
+**Decir (análisis del dataset y por materia):**
+> "Aquí analizo el dataset. Hay 11 abandonos frente a 779 continuidades: 1 de cada 72, clases muy desbalanceadas.
+>
+> El desglose por materia muestra que, en todas, los que abandonaron tenían notas más bajas, con una diferencia parecida en todas: entre 14 y 17 puntos. **Ninguna materia explica por sí sola el abandono.** Los abandonos se concentran en la banda 'desarrollo aceptable' (51-68), no entre los reprobados. Según el promedio, en el rango 61-65 abandonaron 8 de 10 matrículas, y por encima de 70 ninguna. La asistencia del primer trimestre casi no los distingue: mediana de 1 falta frente a 0."
 
 ## Actividad 18: Módulo de generación de reportes
 
@@ -172,11 +194,11 @@ Figuras 6 (comparación con IC), 9 (umbrales) y 10 (estabilidad).
 
 ## Actividad 20: Ejecución de pruebas generales e integrales
 
-**Mostrar:** `docs/PLAN_PRUEBAS.md` (matriz de permisos y flujo) y `docs/figuras/evidencia_terminal/20_tests_backend.txt`. *(No correr la batería en vivo: tarda unos 10 minutos.)*
+**Mostrar:** `docs/PLAN_PRUEBAS.md` (matriz de permisos y flujo) y `docs/figuras/evidencia_terminal/25_tests_recomendaciones_panel.txt`. *(No correr la batería en vivo: tarda unos 25 minutos.)*
 
 **Decir:**
-> "Hay **49 pruebas automáticas en verde**: unitarias, por módulo, del esquema e integrales.
-> - **Permisos:** se probaron los 58 endpoints con los 4 roles, y sin sesión todos responden 401.
+> "Hay **54 pruebas automáticas en verde**: unitarias, por módulo, del esquema e integrales.
+> - **Permisos:** se probaron los 64 endpoints con los 4 roles, y sin sesión todos responden 401.
 > - **Flujo completo:** alerta, recomendación, intervención, cierre, panel, reporte y auditoría.
 > - **MySQL real:** el mismo flujo se ejecutó en una base de pruebas, con las claves foráneas y las restricciones activas.
 >
@@ -193,10 +215,11 @@ Figuras 6 (comparación con IC), 9 (umbrales) y 10 (estabilidad).
 >
 > Las limitaciones son claras:
 > - solo 11 abandonos, con una separación por promedio que infla las métricas;
-> - etiquetas por confirmar con Dirección;
+> - el modelo depende sobre todo del promedio, y en el historial los reprobados no abandonaron; por eso lo complementé con una regla académica;
+> - etiquetas por confirmar con Dirección: se infirieron del cuaderno (asistencia en cero o notas fijas);
 > - umbrales y reglas por validar con la escuela.
 >
-> Como trabajo futuro: incorporar los paralelos faltantes de 2021-2023 y más cursos de 2025, validar con Dirección, y usar la asistencia diaria y la citación formal a la familia."
+> Como trabajo futuro: incorporar los paralelos faltantes de 2021-2023 y más cursos de 2025; recolectar los factores de contexto que el sistema ya tiene diseñados (36 variables de permanencia, como apoyo en casa o desmotivación); registrar seguimiento sobre las alertas por regla; validar con Dirección; y usar la asistencia diaria y la citación formal a la familia."
 
 ## Preguntas difíciles: respuestas cortas
 
@@ -208,4 +231,10 @@ Figuras 6 (comparación con IC), 9 (umbrales) y 10 (estabilidad).
 | ¿Por qué umbral 0,5? | No se ajustó con los datos de evaluación. Con 0,5 se detectan 9,2 de 11 con 2,7 falsas alarmas; con 0,8, 7,3 con 0,9. |
 | ¿Funciona en otros años? | En la prueba temporal 2021-2023 → 2024 detectó 2 de 2, con 10 falsas alarmas. Sirve para priorizar; hay que reevaluarlo con más datos. |
 | ¿Qué pasa si el modelo se equivoca? | La alerta es un aviso para revisar, no una decisión. Se cierra con motivo y todo queda auditado. |
+| ¿Usaste SMOTE? | Sí, lo comparé con BorderlineSMOTE, ADASYN y SMOTE parcial con pesos, remuestreando solo en el entrenamiento. Ninguno superó a `scale_pos_weight`: SMOTE bajó la AP de 0,859 a 0,739. |
+| ¿Por qué un estudiante con 64 de promedio sale en prioridad alta? | El modelo no razona con el 51 de aprobación: aprende del historial, donde 10 de los 11 abandonos tenían promedio entre 62 y 66 sin áreas reprobadas. Es una limitación declarada, y por eso agregué la regla académica para los reprobados. |
+| ¿Qué materia influye más en el abandono? | Ninguna por sí sola: en todas, los que abandonaron tenían entre 14 y 17 puntos menos. El modelo se apoya en el promedio (63,6 % del peso). |
+| ¿Por qué no usaste el registro de abandono o las notas del T2? | Porque en abril no existen: sería fuga de información. Inflarían las métricas hasta 1,0 sin servir en la práctica. |
+| ¿Hay más datos que podrías usar? | Ya se usan edad, grado, género, faltas, atrasos y licencias. "Abandonó el año anterior" muestra una diferencia, pero con solo 2 casos. Los factores de contexto están diseñados en la base, pero sin datos reales todavía. |
+| ¿Por qué el puntaje no es una probabilidad? | El balanceo con `scale_pos_weight` eleva todos los puntajes, y con 11 casos la calibración no mejoró. Por eso se usa como ranking de prioridad. |
 | ¿Se puede reproducir? | Sí: `metricas-real --excel` y `metricas-ajuste --excel` recalculan todo y confirman "reproducido exactamente". |

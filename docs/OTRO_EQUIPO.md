@@ -23,7 +23,7 @@ En el equipo original se preparó, **fuera de Git**, la carpeta `TRASLADO_LAPTOP
    ```powershell
    git clone https://github.com/krixthian/16-DE-JULIO.git
    cd 16-DE-JULIO
-   git checkout actividades-15-19-modulos
+   git checkout recomendaciones-ingeniero
    ```
 3. **Restaurar la base** (crea `alerta_temprana_v2` con sus 28 tablas y todos los registros). En PowerShell, con el usuario de MySQL de la laptop:
    ```powershell
@@ -43,7 +43,7 @@ En el equipo original se preparó, **fuera de Git**, la carpeta `TRASLADO_LAPTOP
    cd backend; python -m unittest discover -p "test_*.py"; cd ..
    npm --prefix frontend run build
    ```
-   Deben pasar los 49 tests (unos 10 minutos) y el build debe terminar sin errores. Para verificar que la base restaurada es la misma:
+   Deben pasar los 54 tests (unos 25 minutos) y el build debe terminar sin errores. Para verificar que la base restaurada es la misma:
    ```powershell
    cd backend; python -c "from sqlalchemy import inspect, text; from database import engine; i=inspect(engine); c=engine.connect(); print(len(i.get_table_names()), sum(len(i.get_foreign_keys(t)) for t in i.get_table_names()), c.execute(text('select count(*) from matriculas')).scalar(), c.execute(text('select count(*) from alertas')).scalar())"
    ```

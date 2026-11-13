@@ -1,6 +1,6 @@
 # Proyecto: Sistema de alerta temprana (XGBoost), U.E. 16 de Julio
 
-Proyecto de grado: predice el riesgo de abandono escolar en primaria (La Paz) al cierre del 1.er trimestre. Stack: FastAPI + SQLAlchemy/PyMySQL (`backend/`), Vue 3 + Tailwind + Chart.js (`frontend/`), MySQL 8 (base `alerta_temprana_v2`: 28 tablas, 47 FK, 40 CHECK). Rama de trabajo: `actividades-15-19-modulos`. El estado detallado está en `RESUMEN_PARA_CHAT.md` (fuera de Git) y en `docs/`.
+Proyecto de grado: predice el riesgo de abandono escolar en primaria (La Paz) al cierre del 1.er trimestre. Stack: FastAPI + SQLAlchemy/PyMySQL (`backend/`), Vue 3 + Tailwind + Chart.js (`frontend/`), MySQL 8 (base `alerta_temprana_v2`: 28 tablas, 47 FK, 40 CHECK). Rama de trabajo: `recomendaciones-ingeniero`. El estado detallado está en `RESUMEN_PARA_CHAT.md` (fuera de Git) y en `docs/`.
 
 ## Reglas del autor (obligatorias)
 
@@ -15,7 +15,7 @@ Proyecto de grado: predice el riesgo de abandono escolar en primaria (La Paz) al
 
 ## Comandos
 
-- **Backend:** desde `backend`, `python -m unittest discover -p "test_*.py"` (49 tests, unos 10 minutos).
+- **Backend:** desde `backend`, `python -m unittest discover -p "test_*.py"` (54 tests, unos 25 minutos; la prueba sobre MySQL se omite salvo que se defina `MYSQL_PRUEBAS_DB`).
 - **Frontend:** `npm --prefix frontend run build`.
 - **Reproducibilidad del modelo** (desde `backend`): `python -m predictivo metricas-real --directorio artifacts/real_t1_v1 --excel ../data/DATASET_REAL_CONSOLIDADO_2021_2025.xlsx` y `python -m predictivo metricas-ajuste --directorio artifacts/real_t1_ajuste_v1`.
 - **Servidores:** ver `.claude/launch.json` (backend en 127.0.0.1:8000, frontend en 5173).
