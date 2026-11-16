@@ -410,13 +410,19 @@ class AlertasApiTests(unittest.TestCase):
                     self.assertEqual(len(data['importancia']['variables']), len(real_t1.FEATURE_NAMES))
                     self.assertAlmostEqual(sum(v['porcentaje'] for v in data['importancia']['variables']), 100, delta=0.5)
                     self.assertEqual(data['importancia']['filas'], rows)
+                    if resultados.AMPLIADA.exists():
+                        ea = data['etiqueta_ampliada']
+                        self.assertEqual(len(ea['curva_abandono']), 4)
+                        self.assertLessEqual(ea['etiqueta']['abandonos_incluidos'], ea['etiqueta']['positivos'])
+                        self.assertTrue(all(0 <= v <= 1 for v in ea['ap_abandono'].values()))
                     with mock.patch.object(resultados, 'AJUSTE', missing), mock.patch.object(resultados, 'SENSIBILIDAD', missing), \
-                            mock.patch.object(resultados, 'SMOTE', missing):
+                            mock.patch.object(resultados, 'SMOTE', missing), mock.patch.object(resultados, 'AMPLIADA', missing):
                         bare = (await client.get('/modelo/resultados')).json()
                     self.assertIsNone(bare['ajuste'])
                     self.assertIsNone(bare['temporal'])
                     self.assertIsNone(bare['balanceo'])
                     self.assertIsNone(bare['fuentes']['balanceo'])
+                    self.assertIsNone(bare['etiqueta_ampliada'])
                     self.user.rol = 'Docente'
                     self.assertEqual((await client.get('/modelo/resultados')).status_code, 403)
             asyncio.run(run())

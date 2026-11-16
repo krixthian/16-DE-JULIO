@@ -45,6 +45,20 @@ const balanceChart=computed(()=>({labels:balance.value.map(b=>b.nombre),datasets
 const balanceOptions=computed(()=>{const o=base({horizontal:true,max:1,title:'Media de 20 repeticiones'});
  o.plugins.tooltip={callbacks:{footer:items=>{const b=balance.value[items[0].dataIndex];return `Detecta ${n(b.verdaderos_positivos_media,2)} de ${data.value.modelo.positivos} · ${n(b.falsos_positivos_media,2)} falsas alarmas`}}};return o})
 const separation=computed(()=>Object.entries(data.value?.separacion_promedio_le_66||{}))
+const ea=computed(()=>data.value?.etiqueta_ampliada)
+const pct=f=>`${Math.round(f*100)} %`
+const curveChart=computed(()=>{const e=ea.value;if(!e)return null
+ return {labels:e.curva_abandono.map(c=>pct(c.fraccion)),datasets:[
+  {label:`Abandono (${data.value.modelo.positivos} casos)`,data:e.curva_abandono.map(c=>c.average_precision),borderColor:colors.orange,backgroundColor:colors.orange,borderWidth:2,pointRadius:5},
+  {label:`No aprueba el año (${e.etiqueta.positivos} casos)`,data:e.curva_ampliada.map(c=>c.average_precision),borderColor:colors.blue,backgroundColor:colors.blue,borderWidth:2,pointRadius:5,borderDash:[6,4]}]}})
+const curveOptions=computed(()=>{const o=base({title:'Average precision (AP)'});o.scales.y.max=1
+ o.scales.x.title={display:true,text:'Parte de los casos usados para entrenar',color:dark.value?'#cbd5e1':'#475569'}
+ o.plugins.tooltip={callbacks:{footer:items=>{const e=ea.value,i=items[0].dataIndex,c=(items[0].datasetIndex?e.curva_ampliada:e.curva_abandono)[i];return `≈ ${n(c.positivos_entrenamiento,1)} casos en el entrenamiento · AP ${n(c.average_precision)} ± ${n(c.average_precision_std)}`}}};return o})
+const rulesChart=computed(()=>{const e=ea.value;if(!e)return null
+ return {labels:e.metodos.map(m=>m.nombre),datasets:[
+  {label:'Para detectar abandono',data:e.metodos.map(m=>e.ap_abandono[m.modelo]),backgroundColor:colors.orange,...bar},
+  {label:'Para detectar "no aprueba el año"',data:e.metodos.map(m=>e.ap_ampliada[m.modelo]),backgroundColor:colors.blue,...bar}]}})
+const curveFirst=computed(()=>ea.value?.curva_abandono?.[0]),curveLast=computed(()=>ea.value?.curva_abandono?.at(-1))
 
 async function load(){
  busy.value=true;error.value=''
@@ -151,6 +165,24 @@ onBeforeUnmount(()=>observer.disconnect())
      <ul class="mt-1 space-y-1 list-disc pl-5 text-slate-600 dark:text-slate-300"><li v-for="l in data.limitaciones" :key="l">{{ l }}</li></ul>
     </article>
    </div>
+   <!-- Etiqueta ampliada y curva de aprendizaje -->
+   <article v-if="ea" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
+    <h2 class="font-semibold">¿Son suficientes los casos? Curva de aprendizaje y etiqueta ampliada</h2>
+    <p class="text-sm text-slate-500 mt-1">Se probó ampliar la etiqueta a "no aprueba el año" (abandono o reprobación: {{ ea.etiqueta.positivos }} casos reales, incluye los {{ ea.etiqueta.abandonos_incluidos }} abandonos) y se midió cómo cambia el modelo según cuántos casos tiene para aprender. Misma validación por estudiante, 20 repeticiones.</p>
+    <div class="grid lg:grid-cols-2 gap-6 mt-4">
+     <div>
+      <h3 class="text-sm font-semibold">Con más casos, el modelo de abandono mejora</h3>
+      <div class="mt-2 h-64"><Line :data="curveChart" :options="curveOptions" aria-label="Curva de aprendizaje: AP según la parte de los casos usados para entrenar" /></div>
+      <p class="mt-2 text-xs text-slate-500">Abandono: de AP {{ n(curveFirst.average_precision) }} con ≈ {{ n(curveFirst.positivos_entrenamiento,1) }} casos a {{ n(curveLast.average_precision) }} con ≈ {{ n(curveLast.positivos_entrenamiento,1) }}, y la curva aún no se aplana: el límite es la cantidad de abandonos registrados, no el algoritmo.</p>
+     </div>
+     <div>
+      <h3 class="text-sm font-semibold">Las reglas simples bastan para la reprobación, no para el abandono</h3>
+      <div class="mt-2 h-64"><Bar :data="rulesChart" :options="base({horizontal:true,max:1,title:'Average precision (AP), media de 20 repeticiones'})" aria-label="AP de cada método para abandono y para no aprobar el año" /></div>
+      <p class="mt-2 text-xs text-slate-500">Para "no aprueba el año", la regla del promedio T1 alcanza AP {{ n(ea.ap_ampliada.regla_promedio_T1) }}, igual que XGBoost ({{ n(ea.ap_ampliada.xgboost) }}). Para el abandono, la misma regla cae a {{ n(ea.ap_abandono.regla_promedio_T1) }} y XGBoost llega a {{ n(ea.ap_abandono.xgboost) }}: quienes abandonan no tienen notas bajas.</p>
+     </div>
+    </div>
+    <p class="mt-4 text-sm rounded-lg bg-slate-50 dark:bg-slate-900 p-3"><strong>Decisión:</strong> se mantiene el modelo de abandono. La etiqueta ampliada se predice con una regla simple (en 2025 detecta {{ ea.temporal_2025.regla_promedio_T1.verdaderos_positivos }} de {{ ea.temporal_2025.positivos }} con {{ ea.temporal_2025.regla_promedio_T1.falsos_positivos }} falsas alarmas, frente a {{ ea.temporal_2025.xgboost.falsos_positivos }} de XGBoost), y esa necesidad ya la cubre la pestaña "Riesgo académico por reglas".</p>
+   </article>
    <p class="mt-6 text-xs text-slate-500">Fuentes: <span v-for="(v,k) in data.fuentes" :key="k">{{ v || `${k}: no disponible` }} · </span></p>
   </template>
  </section>

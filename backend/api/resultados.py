@@ -1,5 +1,6 @@
 """Resultados del modelo: métricas validadas, comparación con baselines, importancia de variables, ajuste,
-umbrales, calibración, validación temporal y experimento de balanceo (SMOTE).
+umbrales, calibración, validación temporal, experimento de balanceo (SMOTE) y experimento de etiqueta ampliada
+(curva de aprendizaje y reglas frente a modelos).
 
 Fuentes, sin cifras escritas a mano: el registro del modelo en la base (modelos_predictivos.metricas), los cortes
 y predicciones de la base, y los reportes reproducibles del pipeline (artifacts/ y docs/). Si falta un reporte,
@@ -24,6 +25,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 AJUSTE = BACKEND / 'artifacts' / 'real_t1_ajuste_v1' / 'reporte_ajuste.json'
 SENSIBILIDAD = BACKEND / 'artifacts' / 'real_t1_v1' / 'sensibilidad.json'
 SMOTE = BACKEND.parent / 'docs' / 'experimento_smote_resumen_tabla.csv'
+AMPLIADA = BACKEND.parent / 'docs' / 'experimento_etiqueta_ampliada.json'
 NOMBRES = {'xgboost': 'XGBoost (modelo en uso)', 'regresion_logistica': 'Regresión logística', 'regla_promedio_T1': 'Regla: promedio T1',
     'regla_n_areas_bajo_51': 'Regla: áreas bajo 51', 'regla_faltas_T1': 'Regla: faltas T1', 'siempre_continuidad': 'Siempre "continúa" (azar)'}
 VARIANTES = {'a_sin_balanceo': 'Sin balanceo', 'b_scale_pos_weight': 'scale_pos_weight (en uso)', 'c_smote': 'SMOTE',
@@ -78,6 +80,27 @@ def smote():
     return out
 
 
+def etiqueta_ampliada():
+    """Resumen del experimento de etiqueta ampliada (abandono o reprobación): curvas de aprendizaje y AP por método."""
+    r = leer_json(AMPLIADA)
+    if not r:
+        return None
+    metodos = ('xgboost', 'regresion_logistica', 'regla_promedio_T1', 'regla_n_areas_bajo_51', 'siempre_continuidad')
+    ap = lambda cv: {k: (cv.get(k) or {}).get('average_precision') for k in metodos}
+    curva = lambda filas: [{k: f.get(k) for k in ('fraccion', 'positivos_entrenamiento', 'average_precision', 'average_precision_std',
+        'sensibilidad', 'f1')} for f in filas or []]
+    temporal = r.get('temporal_2025_realista') or {}
+    return dict(
+        etiqueta={k: (r.get('etiqueta') or {}).get(k) for k in ('descripcion', 'positivos', 'estudiantes_positivos', 'abandonos_incluidos')},
+        metodos=[{'modelo': k, 'nombre': NOMBRES.get(k, k)} for k in metodos],
+        ap_abandono=ap(r.get('cv_abandono') or {}), ap_ampliada=ap(r.get('cv_ampliada') or {}),
+        curva_abandono=curva(r.get('curva_aprendizaje_abandono')), curva_ampliada=curva(r.get('curva_aprendizaje_ampliada')),
+        sobre_los_11_abandonos=r.get('sobre_los_11_abandonos'),
+        temporal_2025={'positivos': temporal.get('positivos_evaluacion'), 'evaluacion': temporal.get('evaluacion'),
+            **{k: {c: ((temporal.get('modelos') or {}).get(k) or {}).get(c) for c in ('verdaderos_positivos', 'falsos_positivos', 'f1')}
+               for k in ('xgboost', 'regla_promedio_T1')}})
+
+
 @router.get('/resultados')
 def resultados(db: Session = Depends(get_db)):
     modelo = db.scalar(select(m.ModeloPredictivo).order_by(m.ModeloPredictivo.id.desc()))
@@ -115,9 +138,11 @@ def resultados(db: Session = Depends(get_db)):
         'temporal': sens and sens.get('temporal_2021_2023_a_2024'),
         'separacion_promedio_le_66': sens and sens.get('separacion_promedio_le_66'),
         'balanceo': smote(),
+        'etiqueta_ampliada': etiqueta_ampliada(),
         'limitaciones': met.get('limitaciones') or [],
         'fuentes': {'registro_del_modelo': 'Base de datos (modelos_predictivos.metricas)', 'importancia': 'Base de datos (790 cortes) + modelo registrado',
             'ajuste_umbrales_calibracion': 'backend/artifacts/real_t1_ajuste_v1/reporte_ajuste.json' if ajuste else None,
             'temporal': 'backend/artifacts/real_t1_v1/sensibilidad.json' if sens else None,
-            'balanceo': 'docs/experimento_smote_resumen_tabla.csv' if SMOTE.exists() else None},
+            'balanceo': 'docs/experimento_smote_resumen_tabla.csv' if SMOTE.exists() else None,
+            'etiqueta_ampliada': 'docs/experimento_etiqueta_ampliada.json' if AMPLIADA.exists() else None},
     }

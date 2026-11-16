@@ -1,0 +1,736 @@
+{
+ "version": "etiqueta-ampliada-v1",
+ "etiqueta": {
+  "columna": "y_reprobacion",
+  "descripcion": "No aprueba el año: abandono o reprobación (dato real del dataset).",
+  "filas": 790,
+  "positivos": 35,
+  "estudiantes_positivos": 31,
+  "abandonos_incluidos": 11,
+  "por_gestion": {
+   "2021": 4,
+   "2022": 3,
+   "2023": 2,
+   "2024": 14,
+   "2025": 12
+  }
+ },
+ "protocolo": "StratifiedGroupKFold 5 pliegues por estudiante x 20 repeticiones (semillas 1607+); IC 95 % bootstrap por estudiante (2000). Umbral 0,5 fijo. Mismos 19 predictores T1 e hiperparámetros del modelo en uso.",
+ "cv_ampliada": {
+  "xgboost": {
+   "roc_auc": 0.9996215704824977,
+   "average_precision": 0.9960026782541245,
+   "precision": 0.9355706505164709,
+   "sensibilidad": 0.9842857142857143,
+   "f1": 0.9589233906318396,
+   "tasa_marcados": 0.046645569620253166,
+   "verdaderos_positivos": 34.45,
+   "falsos_positivos": 2.4,
+   "brier": 0.0024031610624124337,
+   "ic95": {
+    "roc_auc": [
+     0.9952877865522195,
+     1.0
+    ],
+    "average_precision": [
+     0.9684018068765968,
+     1.0
+    ],
+    "precision": [
+     0.8292508710801393,
+     1.0
+    ],
+    "sensibilidad": [
+     0.896551724137931,
+     1.0
+    ],
+    "f1": [
+     0.896551724137931,
+     1.0
+    ]
+   }
+  },
+  "regresion_logistica": {
+   "roc_auc": 0.9997294228949858,
+   "average_precision": 0.9944865589093803,
+   "precision": 0.867281430116796,
+   "sensibilidad": 0.9957142857142858,
+   "f1": 0.9269169145221777,
+   "tasa_marcados": 0.050886075949367095,
+   "verdaderos_positivos": 34.85,
+   "falsos_positivos": 5.35,
+   "brier": 0.004839599014491291,
+   "ic95": {
+    "roc_auc": [
+     0.9988779491519219,
+     1.0
+    ],
+    "average_precision": [
+     0.9777500898891152,
+     1.0
+    ],
+    "precision": [
+     0.7399782608695652,
+     0.964316502463054
+    ],
+    "sensibilidad": [
+     0.94,
+     1.0
+    ],
+    "f1": [
+     0.8492943129929431,
+     0.981489898989899
+    ]
+   }
+  },
+  "regla_promedio_T1": {
+   "roc_auc": 0.9998107852412487,
+   "average_precision": 0.9954887218045115,
+   "precision": 0.9433732761122465,
+   "sensibilidad": 0.9442857142857143,
+   "f1": 0.9435862822765418,
+   "tasa_marcados": 0.04436708860759494,
+   "verdaderos_positivos": 33.05,
+   "falsos_positivos": 2.0,
+   "ic95": {
+    "roc_auc": [
+     0.9993102585211052,
+     1.0
+    ],
+    "average_precision": [
+     0.9846118012422359,
+     1.0
+    ],
+    "precision": [
+     0.8444444444444444,
+     1.0
+    ],
+    "sensibilidad": [
+     0.8461538461538461,
+     1.0
+    ],
+    "f1": [
+     0.875,
+     1.0
+    ]
+   }
+  },
+  "regla_n_areas_bajo_51": {
+   "roc_auc": 0.8571428571428573,
+   "average_precision": 0.7269439421338154,
+   "precision": 1.0,
+   "sensibilidad": 0.7099999999999997,
+   "f1": 0.830263157894737,
+   "tasa_marcados": 0.031455696202531636,
+   "verdaderos_positivos": 24.85,
+   "falsos_positivos": 0.0,
+   "ic95": {
+    "roc_auc": [
+     0.7674224806201551,
+     0.9428571428571428
+    ],
+    "average_precision": [
+     0.5579425812700377,
+     0.8906617948048244
+    ],
+    "precision": [
+     1.0,
+     1.0
+    ],
+    "sensibilidad": [
+     0.5172135706340378,
+     0.884642857142857
+    ],
+    "f1": [
+     0.6817940038684719,
+     0.938790970933828
+    ]
+   }
+  },
+  "regla_faltas_T1": {
+   "roc_auc": 0.5419110690633868,
+   "average_precision": 0.07601468529428919,
+   "precision": 0.040349516508789124,
+   "sensibilidad": 0.3928571428571428,
+   "f1": 0.07287946754230219,
+   "tasa_marcados": 0.429367088607595,
+   "verdaderos_positivos": 13.75,
+   "falsos_positivos": 325.45,
+   "ic95": {
+    "roc_auc": [
+     0.44178731989839304,
+     0.644521709319349
+    ],
+    "average_precision": [
+     0.033467418656121385,
+     0.14584424157442588
+    ],
+    "precision": [
+     0.017018041978148362,
+     0.0675685192234488
+    ],
+    "sensibilidad": [
+     0.13513513513513514,
+     0.6666666666666666
+    ],
+    "f1": [
+     0.031004163077806488,
+     0.12041912965152284
+    ]
+   }
+  },
+  "siempre_continuidad": {
+   "average_precision": 0.04430379746835443,
+   "roc_auc": 0.5,
+   "sensibilidad": 0.0,
+   "precision": 0.0,
+   "f1": 0.0,
+   "tasa_marcados": 0.0
+  }
+ },
+ "cv_abandono": {
+  "xgboost": {
+   "roc_auc": 0.9893978293849927,
+   "average_precision": 0.8587746516171721,
+   "precision": 0.7736538461538462,
+   "sensibilidad": 0.8409090909090908,
+   "f1": 0.8040890269151137,
+   "tasa_marcados": 0.015126582278481016,
+   "verdaderos_positivos": 9.25,
+   "falsos_positivos": 2.7,
+   "brier": 0.004928596969850101,
+   "ic95": {
+    "roc_auc": [
+     0.895164949131302,
+     1.0
+    ],
+    "average_precision": [
+     0.5317950415668019,
+     1.0
+    ],
+    "precision": [
+     0.44427083333333334,
+     1.0
+    ],
+    "sensibilidad": [
+     0.45454545454545453,
+     1.0
+    ],
+    "f1": [
+     0.5,
+     0.967741935483871
+    ]
+   }
+  },
+  "regresion_logistica": {
+   "roc_auc": 0.999591550939433,
+   "average_precision": 0.9736069296864752,
+   "precision": 0.6616625816993463,
+   "sensibilidad": 1.0,
+   "f1": 0.7961001642036125,
+   "tasa_marcados": 0.02107594936708861,
+   "verdaderos_positivos": 11.0,
+   "falsos_positivos": 5.65,
+   "brier": 0.005901518558295864,
+   "ic95": {
+    "roc_auc": [
+     0.9977586115538832,
+     1.0
+    ],
+    "average_precision": [
+     0.8472569444444447,
+     1.0
+    ],
+    "precision": [
+     0.375,
+     0.8947368421052632
+    ],
+    "sensibilidad": [
+     1.0,
+     1.0
+    ],
+    "f1": [
+     0.5454545454545454,
+     0.9444444444444444
+    ]
+   }
+  },
+  "regla_promedio_T1": {
+   "roc_auc": 0.9714085657602988,
+   "average_precision": 0.3027597498966538,
+   "precision": 0.2794127209916684,
+   "sensibilidad": 0.95,
+   "f1": 0.4317650418169118,
+   "tasa_marcados": 0.04727848101265823,
+   "verdaderos_positivos": 10.45,
+   "falsos_positivos": 26.9,
+   "ic95": {
+    "roc_auc": [
+     0.9573638277353409,
+     0.9838085836420396
+    ],
+    "average_precision": [
+     0.11416111987771471,
+     0.5119048231791006
+    ],
+    "precision": [
+     0.1111111111111111,
+     0.4468225083986561
+    ],
+    "sensibilidad": [
+     0.6666666666666666,
+     1.0
+    ],
+    "f1": [
+     0.19601518026565465,
+     0.6129652605459054
+    ]
+   }
+  },
+  "regla_n_areas_bajo_51": {
+   "roc_auc": 0.5314505776636713,
+   "average_precision": 0.10356731875719219,
+   "precision": 0.019288158110580725,
+   "sensibilidad": 0.2772727272727272,
+   "f1": 0.03606567853725577,
+   "tasa_marcados": 0.1987974683544304,
+   "verdaderos_positivos": 3.05,
+   "falsos_positivos": 154.0,
+   "ic95": {
+    "roc_auc": [
+     0.47947761194029853,
+     0.6565796092922594
+    ],
+    "average_precision": [
+     0.006234413965087282,
+     0.3385764879981074
+    ],
+    "precision": [
+     0.0,
+     0.05660711896159506
+    ],
+    "sensibilidad": [
+     0.0,
+     0.7142857142857143
+    ],
+    "f1": [
+     0.0,
+     0.10323136818687427
+    ]
+   }
+  },
+  "regla_faltas_T1": {
+   "roc_auc": 0.6490839071070138,
+   "average_precision": 0.11740505555761782,
+   "precision": 0.12235500610500609,
+   "sensibilidad": 0.11363636363636362,
+   "f1": 0.11442471305218645,
+   "tasa_marcados": 0.013987341772151902,
+   "verdaderos_positivos": 1.25,
+   "falsos_positivos": 9.8,
+   "ic95": {
+    "roc_auc": [
+     0.41196469369578687,
+     0.8505975142979936
+    ],
+    "average_precision": [
+     0.008978845482383905,
+     0.34978414510887085
+    ],
+    "precision": [
+     0.0,
+     0.4444444444444444
+    ],
+    "sensibilidad": [
+     0.0,
+     0.375
+    ],
+    "f1": [
+     0.0,
+     0.33362068965517083
+    ]
+   }
+  },
+  "siempre_continuidad": {
+   "average_precision": 0.013924050632911392,
+   "roc_auc": 0.5,
+   "sensibilidad": 0.0,
+   "precision": 0.0,
+   "f1": 0.0,
+   "tasa_marcados": 0.0
+  }
+ },
+ "desglose": {
+  "xgboost": {
+   "abandonos_detectados": 10.45,
+   "abandonos": 11,
+   "reprobados_detectados": 24.0,
+   "reprobados": 24,
+   "falsas_alarmas": 2.4
+  },
+  "regresion_logistica": {
+   "abandonos_detectados": 10.85,
+   "abandonos": 11,
+   "reprobados_detectados": 24.0,
+   "reprobados": 24,
+   "falsas_alarmas": 5.35
+  },
+  "regla_n_areas_bajo_51": {
+   "abandonos_detectados": 1.0,
+   "abandonos": 11,
+   "reprobados_detectados": 23.85,
+   "reprobados": 24,
+   "falsas_alarmas": 0.0
+  },
+  "regla_promedio_T1": {
+   "abandonos_detectados": 9.05,
+   "abandonos": 11,
+   "reprobados_detectados": 24.0,
+   "reprobados": 24,
+   "falsas_alarmas": 2.0
+  }
+ },
+ "sobre_los_11_abandonos": {
+  "modelo_actual_abandono": {
+   "average_precision": 0.8587746516171721,
+   "roc_auc": 0.9893978293849927,
+   "abandonos_detectados": 9.25,
+   "marcados": 11.95
+  },
+  "modelo_ampliado": {
+   "average_precision": 0.19240154868126902,
+   "roc_auc": 0.9694859376823434,
+   "abandonos_detectados": 10.45,
+   "marcados": 36.85
+  }
+ },
+ "temporal_2025_realista": {
+  "entrenamiento": 640,
+  "positivos_entrenamiento": 23,
+  "evaluacion": 150,
+  "positivos_evaluacion": 12,
+  "excluidos_por_estar_en_entrenamiento": 0,
+  "modelos": {
+   "xgboost": {
+    "roc_auc": 1.0,
+    "average_precision": 1.0,
+    "precision": 0.6666666666666666,
+    "sensibilidad": 1.0,
+    "f1": 0.8,
+    "tasa_marcados": 0.12,
+    "verdaderos_positivos": 12,
+    "falsos_positivos": 6,
+    "ic95": {
+     "average_precision": [
+      1.0,
+      1.0
+     ],
+     "sensibilidad": [
+      1.0,
+      1.0
+     ]
+    }
+   },
+   "regresion_logistica": {
+    "roc_auc": 1.0,
+    "average_precision": 1.0,
+    "precision": 0.6666666666666666,
+    "sensibilidad": 1.0,
+    "f1": 0.8,
+    "tasa_marcados": 0.12,
+    "verdaderos_positivos": 12,
+    "falsos_positivos": 6,
+    "ic95": {
+     "average_precision": [
+      0.9999999999999998,
+      1.0
+     ],
+     "sensibilidad": [
+      1.0,
+      1.0
+     ]
+    }
+   },
+   "regla_promedio_T1": {
+    "roc_auc": 1.0,
+    "average_precision": 1.0,
+    "precision": 0.8,
+    "sensibilidad": 1.0,
+    "f1": 0.8888888888888888,
+    "tasa_marcados": 0.1,
+    "verdaderos_positivos": 12,
+    "falsos_positivos": 3,
+    "umbral_elegido_en_entrenamiento": 66.0,
+    "ic95": {
+     "average_precision": [
+      0.9999999999999999,
+      1.0
+     ],
+     "sensibilidad": [
+      1.0,
+      1.0
+     ]
+    }
+   },
+   "regla_n_areas_bajo_51": {
+    "roc_auc": 1.0,
+    "average_precision": 1.0,
+    "precision": 1.0,
+    "sensibilidad": 0.6666666666666666,
+    "f1": 0.8,
+    "tasa_marcados": 0.05333333333333334,
+    "verdaderos_positivos": 8,
+    "falsos_positivos": 0,
+    "umbral_elegido_en_entrenamiento": 5.0,
+    "ic95": {
+     "average_precision": [
+      1.0,
+      1.0
+     ],
+     "sensibilidad": [
+      0.36363636363636365,
+      0.9230769230769231
+     ]
+    }
+   },
+   "regla_faltas_T1": {
+    "roc_auc": 0.5757850241545894,
+    "average_precision": 0.09477926587301588,
+    "precision": 0.0,
+    "sensibilidad": 0.0,
+    "f1": 0.0,
+    "tasa_marcados": 0.04,
+    "verdaderos_positivos": 0,
+    "falsos_positivos": 6,
+    "umbral_elegido_en_entrenamiento": 3.0,
+    "ic95": {
+     "average_precision": [
+      0.04892782738095239,
+      0.18098720697541454
+     ],
+     "sensibilidad": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "azar": {
+    "average_precision": 0.08,
+    "roc_auc": 0.5
+   }
+  }
+ },
+ "temporal_2025_estricta": {
+  "entrenamiento": 640,
+  "positivos_entrenamiento": 23,
+  "evaluacion": 36,
+  "positivos_evaluacion": 1,
+  "excluidos_por_estar_en_entrenamiento": 114,
+  "modelos": {
+   "xgboost": {
+    "roc_auc": 1.0,
+    "average_precision": 1.0,
+    "precision": 0.3333333333333333,
+    "sensibilidad": 1.0,
+    "f1": 0.5,
+    "tasa_marcados": 0.08333333333333333,
+    "verdaderos_positivos": 1,
+    "falsos_positivos": 2,
+    "ic95": {
+     "average_precision": [
+      1.0,
+      1.0
+     ],
+     "sensibilidad": [
+      1.0,
+      1.0
+     ]
+    }
+   },
+   "regresion_logistica": {
+    "roc_auc": 1.0,
+    "average_precision": 1.0,
+    "precision": 0.3333333333333333,
+    "sensibilidad": 1.0,
+    "f1": 0.5,
+    "tasa_marcados": 0.08333333333333333,
+    "verdaderos_positivos": 1,
+    "falsos_positivos": 2,
+    "ic95": {
+     "average_precision": [
+      1.0,
+      1.0
+     ],
+     "sensibilidad": [
+      1.0,
+      1.0
+     ]
+    }
+   },
+   "regla_promedio_T1": {
+    "roc_auc": 0.9999999999999999,
+    "average_precision": 1.0,
+    "precision": 0.5,
+    "sensibilidad": 1.0,
+    "f1": 0.6666666666666666,
+    "tasa_marcados": 0.05555555555555555,
+    "verdaderos_positivos": 1,
+    "falsos_positivos": 1,
+    "umbral_elegido_en_entrenamiento": 66.0,
+    "ic95": {
+     "average_precision": [
+      1.0,
+      1.0
+     ],
+     "sensibilidad": [
+      1.0,
+      1.0
+     ]
+    }
+   },
+   "regla_n_areas_bajo_51": {
+    "roc_auc": 1.0,
+    "average_precision": 1.0,
+    "precision": 1.0,
+    "sensibilidad": 1.0,
+    "f1": 1.0,
+    "tasa_marcados": 0.027777777777777776,
+    "verdaderos_positivos": 1,
+    "falsos_positivos": 0,
+    "umbral_elegido_en_entrenamiento": 5.0,
+    "ic95": {
+     "average_precision": [
+      1.0,
+      1.0
+     ],
+     "sensibilidad": [
+      1.0,
+      1.0
+     ]
+    }
+   },
+   "regla_faltas_T1": {
+    "roc_auc": 0.6571428571428573,
+    "average_precision": 0.058823529411764705,
+    "precision": 0.0,
+    "sensibilidad": 0.0,
+    "f1": 0.0,
+    "tasa_marcados": 0.08333333333333333,
+    "verdaderos_positivos": 0,
+    "falsos_positivos": 3,
+    "umbral_elegido_en_entrenamiento": 3.0,
+    "ic95": {
+     "average_precision": [
+      0.045454545454545456,
+      0.21428571428571427
+     ],
+     "sensibilidad": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "azar": {
+    "average_precision": 0.027777777777777776,
+    "roc_auc": 0.5
+   }
+  }
+ },
+ "versiones": {
+  "sklearn": "1.4.1.post1",
+  "xgboost": "2.0.3"
+ },
+ "nota": "La nota anual incluye la del T1, por eso predecir la reprobación desde el T1 es más fácil que predecir el abandono; no es fuga (el T1 se conoce en la fecha de corte), pero obliga a comparar con reglas simples.",
+ "curva_aprendizaje_abandono": [
+  {
+   "fraccion": 0.25,
+   "positivos_entrenamiento": 2.43,
+   "roc_auc": 0.9144824366903956,
+   "average_precision": 0.703757638335113,
+   "sensibilidad": 0.5,
+   "precision": 0.8198719336219336,
+   "f1": 0.6088238477209066,
+   "average_precision_std": 0.11596185068021321,
+   "sensibilidad_std": 0.1335434041813671
+  },
+  {
+   "fraccion": 0.5,
+   "positivos_entrenamiento": 4.4,
+   "roc_auc": 0.9495827984595635,
+   "average_precision": 0.7386014687026611,
+   "sensibilidad": 0.5818181818181818,
+   "precision": 0.7628318903318904,
+   "f1": 0.6507546490616217,
+   "average_precision_std": 0.10682322625681677,
+   "sensibilidad_std": 0.12991113501661405
+  },
+  {
+   "fraccion": 0.75,
+   "positivos_entrenamiento": 6.45,
+   "roc_auc": 0.987300151709651,
+   "average_precision": 0.7965568417182547,
+   "sensibilidad": 0.7181818181818181,
+   "precision": 0.7888830613830613,
+   "f1": 0.7478794235258766,
+   "average_precision_std": 0.06707817358868927,
+   "sensibilidad_std": 0.08290086419354471
+  },
+  {
+   "fraccion": 1.0,
+   "positivos_entrenamiento": 8.8,
+   "roc_auc": 0.9893978293849924,
+   "average_precision": 0.8587746516171721,
+   "sensibilidad": 0.8409090909090908,
+   "precision": 0.7736538461538462,
+   "f1": 0.804089026915114,
+   "average_precision_std": 0.07930855860048504,
+   "sensibilidad_std": 0.09268598386512207
+  }
+ ],
+ "curva_aprendizaje_ampliada": [
+  {
+   "fraccion": 0.25,
+   "positivos_entrenamiento": 6.9799999999999995,
+   "roc_auc": 0.9616291390728477,
+   "average_precision": 0.9339880936645522,
+   "sensibilidad": 0.9199999999999999,
+   "precision": 0.9686881419234361,
+   "f1": 0.942463331124902,
+   "average_precision_std": 0.04780792613803468,
+   "sensibilidad_std": 0.04957390949567406
+  },
+  {
+   "fraccion": 0.5,
+   "positivos_entrenamiento": 14.1,
+   "roc_auc": 0.9944787133396404,
+   "average_precision": 0.9835331232500197,
+   "sensibilidad": 0.97,
+   "precision": 0.9492039020444594,
+   "f1": 0.9590796604162612,
+   "average_precision_std": 0.013610567423267158,
+   "sensibilidad_std": 0.021690132986178546
+  },
+  {
+   "fraccion": 0.75,
+   "positivos_entrenamiento": 21.16,
+   "roc_auc": 0.998438032166509,
+   "average_precision": 0.9915193275548443,
+   "sensibilidad": 0.9771428571428572,
+   "precision": 0.9353922332327904,
+   "f1": 0.9553420052796037,
+   "average_precision_std": 0.010985402116914804,
+   "sensibilidad_std": 0.023814535813328323
+  },
+  {
+   "fraccion": 1.0,
+   "positivos_entrenamiento": 28.0,
+   "roc_auc": 0.9996215704824977,
+   "average_precision": 0.9960026782541245,
+   "sensibilidad": 0.9842857142857143,
+   "precision": 0.9355706505164709,
+   "f1": 0.9589233906318396,
+   "average_precision_std": 0.007681507606659767,
+   "sensibilidad_std": 0.025344034523514806
+  }
+ ]
+}
