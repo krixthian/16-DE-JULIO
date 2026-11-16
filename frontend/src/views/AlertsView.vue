@@ -162,7 +162,7 @@ onMounted(load)
       <tr v-if="!visible.length"><td colspan="6" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : 'No hay alertas con estos filtros.' }}</td></tr>
       <tr v-for="a in visible" :key="a.id" @click="open(a)" class="border-t border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700" :class="selected?.id===a.id?'bg-blue-50 dark:bg-slate-700':''">
        <td class="p-3 font-medium">{{ etiquetaCodigo(a.estudiante) }}</td>
-       <td class="p-3">{{ a.gestion }} · {{ a.curso }}<span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">Retrospectivo (usado en entrenamiento)</span><span v-else class="block text-xs text-blue-600">Cohorte actual</span></td>
+       <td class="p-3">{{ a.gestion }} · {{ a.curso }}<span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">Retrospectivo (usado en entrenamiento)</span><span v-else class="block text-xs text-blue-600">Gestión actual</span></td>
        <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(a.nivel)">{{ a.nivel }}</span><span class="block text-xs text-slate-500 mt-1">Puesto {{ a.prioridad.puesto }} de {{ a.prioridad.de }}</span></td>
        <td class="p-3">{{ label(states,a.estado) }}</td>
        <td class="p-3 text-xs">{{ a.responsable.rol }}</td>

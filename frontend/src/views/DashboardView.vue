@@ -24,14 +24,14 @@ const cardGroups=computed(()=>{const r=data.value?.resumen;if(!r)return []
    {l:'Prioridad media',v:r.medio,c:'text-amber-600',d:`Puntaje entre ${th('medio')} y ${th('alto')}.`}]},
   {titulo:'2. De qué año son las alertas',items:[
    {l:'Retrospectivas',v:r.retrospectivas,d:'Años usados para entrenar el modelo: muestran que el modelo reconoce casos pasados; no requieren acción.'},
-   {l:'Cohorte actual',v:r.cohorte_actual,c:'text-blue-600',d:'Estudiantes de la gestión en curso: son las que la escuela debe atender.'}]},
+   {l:'Gestión actual',v:r.cohorte_actual,c:'text-blue-600',d:'Estudiantes de la gestión en curso: son las que la escuela debe atender.'}]},
   {titulo:'3. Qué se hizo con ellas',items:[
    {l:'Sin intervención',v:r.sin_intervencion,c:r.sin_intervencion?'text-amber-600':'',d:`${r.sin_intervencion} de ${r.alertas} alertas aún no tienen ninguna acción registrada.`},
    {l:'Intervenciones ejecutadas',v:r.intervenciones_ejecutadas,c:'text-emerald-600',d:`Pendientes: ${r.intervenciones_pendientes}.`},
    {l:'Alertas cerradas',v:r.alertas_cerradas,d:'Cerradas con motivo (por ejemplo, el estudiante asiste con normalidad).'}]}]})
 const summaryText=computed(()=>{const r=data.value?.resumen;if(!r)return ''
  const partes=[`${r.alertas===1?'Se generó 1 alerta':`Se generaron ${r.alertas} alertas`} ${scope.value} sobre ${r.predicciones} matrículas evaluadas (${pctText(r.alertas,r.predicciones)}): ${r.alto} de prioridad alta y ${r.medio} de prioridad media.`]
- if(r.retrospectivas)partes.push(`${r.retrospectivas} ${r.retrospectivas===1?'es retrospectiva':'son retrospectivas'} (años usados para entrenar) y ${r.cohorte_actual} ${r.cohorte_actual===1?'corresponde':'corresponden'} a la cohorte actual.`)
+ if(r.retrospectivas)partes.push(`${r.retrospectivas} ${r.retrospectivas===1?'es retrospectiva':'son retrospectivas'} (años usados para entrenar) y ${r.cohorte_actual} ${r.cohorte_actual===1?'corresponde':'corresponden'} a la gestión actual.`)
  partes.push(`Las alertas están en ${r.cursos_con_alerta} de ${r.cursos} cursos.`)
  partes.push(r.con_intervencion?`${r.con_intervencion} de ${r.alertas} alertas ya tienen al menos una intervención; ${r.alertas_cerradas} se cerraron.`:`Ninguna alerta tiene todavía una intervención registrada.`)
  return partes.join(' ')})
@@ -57,7 +57,7 @@ const byGrade=computed(()=>{const rows=data.value?.promedio_por_grado||[];return
  labels:rows.map(g=>`${g.grado}.º (n=${g.n})`),
  datasets:(data.value?.bandas||[]).map(b=>({label:b.etiqueta,data:rows.map(g=>g.n?100*g[b.codigo]/g.n:0),counts:rows.map(g=>g[b.codigo]),backgroundColor:bandColors[b.codigo],...bar,borderRadius:0}))}})
 const byYear=computed(()=>{const rows=data.value?.evolucion||[];return {
- labels:rows.map(e=>[`${e.gestion}`,e.retrospectiva?'retrospectiva':'cohorte actual']),
+ labels:rows.map(e=>[`${e.gestion}`,e.retrospectiva?'retrospectiva':'gestión actual']),
  datasets:levels.map(([k,l,c])=>({label:l,data:rows.map(r=>r[k]),backgroundColor:c,...bar}))}})
 const gradeOptions=computed(()=>options({horizontal:true,percent:true,tooltip:{label:c=>`${c.dataset.label}: ${c.dataset.counts[c.dataIndex]} (${c.raw.toFixed(0)} %)`}}))
 const yearOptions=computed(()=>{const o=options({tooltip:{footer:items=>{const e=data.value.evolucion[items[0].dataIndex];return `${e.ALTO+e.MEDIO} alertas de ${e.predicciones} matrículas (${pctText(e.ALTO+e.MEDIO,e.predicciones)})`}}})
@@ -206,7 +206,7 @@ onBeforeUnmount(()=>observer.disconnect())
      <p class="text-xs text-slate-500 mt-1">Cuántas alertas hubo cada año y de qué prioridad. Pasa el mouse sobre una barra para ver de cuántas matrículas.</p>
      <div class="mt-3 h-64"><Bar :data="byYear" :options="yearOptions" aria-label="Alertas por gestión" /></div>
      <table class="w-full text-xs mt-3"><thead class="text-left text-slate-500"><tr><th>Gestión</th><th>Matrículas</th><th>Alertas</th><th>% del año</th><th>Tipo</th></tr></thead>
-      <tbody><tr v-for="e in data.evolucion" :key="e.gestion" class="border-t border-slate-100 dark:border-slate-700"><td class="py-1">{{ e.gestion }}</td><td>{{ e.predicciones }}</td><td>{{ e.ALTO+e.MEDIO }} <span class="text-slate-500">({{ e.ALTO }} alta · {{ e.MEDIO }} media)</span></td><td>{{ pctText(e.ALTO+e.MEDIO,e.predicciones) }}</td><td>{{ e.retrospectiva?'Retrospectiva':'Cohorte actual' }}</td></tr></tbody></table>
+      <tbody><tr v-for="e in data.evolucion" :key="e.gestion" class="border-t border-slate-100 dark:border-slate-700"><td class="py-1">{{ e.gestion }}</td><td>{{ e.predicciones }}</td><td>{{ e.ALTO+e.MEDIO }} <span class="text-slate-500">({{ e.ALTO }} alta · {{ e.MEDIO }} media)</span></td><td>{{ pctText(e.ALTO+e.MEDIO,e.predicciones) }}</td><td>{{ e.retrospectiva?'Retrospectiva':'Gestión actual' }}</td></tr></tbody></table>
     </article>
     <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
      <h2 class="font-semibold">Seguimiento de las alertas</h2>
