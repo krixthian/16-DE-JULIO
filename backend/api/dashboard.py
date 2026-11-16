@@ -67,10 +67,11 @@ def panel(gestion: int | None = None, db: Session = Depends(get_db)):
             evolucion[g.anio][p.nivel] += 1
     estados_alerta = Counter(a.estado for a in alertas.values())
     niveles = Counter(p.nivel for p, *_ in filas if p.id in alertas)
+    bajo = sum(1 for p, *_ in filas if p.nivel == 'BAJO')
     return {
         'gestion': gestion, 'gestiones': sorted(evolucion), 'nota': NOTA_PRIORIDAD,
         'umbrales': modelo_umbrales(db),
-        'resumen': {'predicciones': len(filas), 'alertas': len(alertas), 'alto': niveles['ALTO'], 'medio': niveles['MEDIO'],
+        'resumen': {'predicciones': len(filas), 'alertas': len(alertas), 'alto': niveles['ALTO'], 'medio': niveles['MEDIO'], 'bajo': bajo,
             'tasa_alerta': round(len(alertas) / len(filas), 4) if filas else 0, 'retrospectivas': uso['retrospectiva'],
             'cohorte_actual': uso['actual'], 'con_intervencion': len(con_intervencion), 'sin_intervencion': len(alertas) - len(con_intervencion),
             'intervenciones_pendientes': estados_int['PENDIENTE'], 'intervenciones_ejecutadas': estados_int['EJECUTADA'],

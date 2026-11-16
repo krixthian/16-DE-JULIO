@@ -21,7 +21,8 @@ const cardGroups=computed(()=>{const r=data.value?.resumen;if(!r)return []
    {l:'Matrículas evaluadas',v:r.predicciones,d:'Estudiantes a los que el modelo calculó un puntaje al cierre del 1.er trimestre.'},
    {l:'Alertas generadas',v:r.alertas,d:`${pctText(r.alertas,r.predicciones)} de las evaluadas: puntaje ≥ ${th('medio')}.`},
    {l:'Prioridad alta',v:r.alto,c:'text-red-600',d:`Puntaje ≥ ${th('alto')}: revisar primero.`},
-   {l:'Prioridad media',v:r.medio,c:'text-amber-600',d:`Puntaje entre ${th('medio')} y ${th('alto')}.`}]},
+   {l:'Prioridad media',v:r.medio,c:'text-amber-600',d:`Puntaje entre ${th('medio')} y ${th('alto')}.`},
+   {l:'Prioridad baja',v:r.bajo,c:'text-emerald-600',d:`Puntaje < ${th('medio')}: sin alerta, seguimiento normal.`}]},
   {titulo:'2. De qué año son las alertas',items:[
    {l:'Retrospectivas',v:r.retrospectivas,d:'Años usados para entrenar el modelo: muestran que el modelo reconoce casos pasados; no requieren acción.'},
    {l:'Gestión actual',v:r.cohorte_actual,c:'text-blue-600',d:'Estudiantes de la gestión en curso: son las que la escuela debe atender.'}]},
@@ -30,7 +31,7 @@ const cardGroups=computed(()=>{const r=data.value?.resumen;if(!r)return []
    {l:'Intervenciones ejecutadas',v:r.intervenciones_ejecutadas,c:'text-emerald-600',d:`Pendientes: ${r.intervenciones_pendientes}.`},
    {l:'Alertas cerradas',v:r.alertas_cerradas,d:'Cerradas con motivo (por ejemplo, el estudiante asiste con normalidad).'}]}]})
 const summaryText=computed(()=>{const r=data.value?.resumen;if(!r)return ''
- const partes=[`${r.alertas===1?'Se generó 1 alerta':`Se generaron ${r.alertas} alertas`} ${scope.value} sobre ${r.predicciones} matrículas evaluadas (${pctText(r.alertas,r.predicciones)}): ${r.alto} de prioridad alta y ${r.medio} de prioridad media.`]
+ const partes=[`${r.alertas===1?'Se generó 1 alerta':`Se generaron ${r.alertas} alertas`} ${scope.value} sobre ${r.predicciones} matrículas evaluadas (${pctText(r.alertas,r.predicciones)}): ${r.alto} de prioridad alta (rojo) y ${r.medio} de prioridad media (amarillo). Las otras ${r.bajo} quedaron en verde (prioridad baja, sin alerta).`]
  if(r.retrospectivas)partes.push(`${r.retrospectivas} ${r.retrospectivas===1?'es retrospectiva':'son retrospectivas'} (años usados para entrenar) y ${r.cohorte_actual} ${r.cohorte_actual===1?'corresponde':'corresponden'} a la gestión actual.`)
  partes.push(`Las alertas están en ${r.cursos_con_alerta} de ${r.cursos} cursos.`)
  partes.push(r.con_intervencion?`${r.con_intervencion} de ${r.alertas} alertas ya tienen al menos una intervención; ${r.alertas_cerradas} se cerraron.`:`Ninguna alerta tiene todavía una intervención registrada.`)
@@ -112,8 +113,7 @@ onBeforeUnmount(()=>observer.disconnect())
  <section class="p-4 md:p-8 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
   <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest font-semibold mb-2">Alerta temprana</p>
   <div class="flex flex-wrap items-end justify-between gap-4">
-   <div><h1 class="text-3xl font-bold">Panel analítico</h1>
-    <p class="mt-2 text-slate-500 dark:text-slate-400 max-w-3xl">Datos de la base (modelo vigente, corte del 1.er trimestre). El modelo apoya, no sustituye, el criterio docente.</p></div>
+   <div><h1 class="text-3xl font-bold">Panel analítico</h1></div>
    <select v-if="tab==='seguimiento'" v-model="gestion" @change="report.curso='';load()" aria-label="Gestión" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2">
     <option value="">Todas las gestiones</option><option v-for="y in data?.gestiones||[]" :key="y" :value="y">{{ y }}</option>
    </select>
@@ -122,14 +122,12 @@ onBeforeUnmount(()=>observer.disconnect())
    <button role="tab" :aria-selected="tab==='seguimiento'" @click="openTab('seguimiento')" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='seguimiento'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Seguimiento de alertas</button>
    <button role="tab" :aria-selected="tab==='dataset'" @click="openTab('dataset')" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='dataset'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Análisis del dataset y por materia</button>
   </div>
-  <p v-if="data&&tab==='seguimiento'" class="mt-3 text-xs text-slate-500 max-w-4xl">{{ data.nota }}</p>
   <div v-if="error" role="alert" class="mt-6 bg-red-50 text-red-800 rounded-xl p-4">{{ error }}</div>
   <p v-if="busy&&!data" class="mt-6 text-slate-500">Cargando…</p>
   <section v-if="tab==='dataset'" class="mt-4">
    <div v-if="dsError" role="alert" class="bg-red-50 text-red-800 rounded-xl p-4">{{ dsError }}</div>
    <p v-else-if="!ds" class="text-slate-500">Cargando…</p>
    <template v-else>
-    <p class="text-xs text-slate-500 max-w-4xl">{{ ds.nota }} Fuente: {{ ds.fuente }}</p>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
      <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Matrículas reales</p><p class="text-2xl font-bold mt-1">{{ ds.resumen.matriculas }}</p></div>
      <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Abandonaron</p><p class="text-2xl font-bold mt-1 text-red-600">{{ ds.resumen.abandonos }}</p></div>
@@ -193,7 +191,7 @@ onBeforeUnmount(()=>observer.disconnect())
    <div class="grid lg:grid-cols-2 gap-4 mt-4">
     <div v-for="g in cardGroups" :key="g.titulo" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4" :class="g.items.length>3?'lg:col-span-2':''">
      <p class="text-sm font-semibold">{{ g.titulo }}</p>
-     <div class="grid gap-3 mt-3" :class="g.items.length>3?'grid-cols-2 lg:grid-cols-4':g.items.length===3?'grid-cols-1 sm:grid-cols-3':'grid-cols-2'">
+     <div class="grid gap-3 mt-3" :class="g.items.length>4?'grid-cols-2 lg:grid-cols-5':g.items.length>3?'grid-cols-2 lg:grid-cols-4':g.items.length===3?'grid-cols-1 sm:grid-cols-3':'grid-cols-2'">
       <div v-for="i in g.items" :key="i.l" class="rounded-lg bg-slate-50 dark:bg-slate-900 p-3">
        <p class="text-xs text-slate-500">{{ i.l }}</p><p class="text-2xl font-bold" :class="i.c">{{ i.v }}</p><p class="text-xs text-slate-500 mt-1">{{ i.d }}</p>
       </div>

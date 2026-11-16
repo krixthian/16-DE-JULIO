@@ -231,6 +231,8 @@ class AlertasApiTests(unittest.TestCase):
                 self.assertEqual(panel['resumen']['predicciones'], rows)
                 self.assertEqual(panel['resumen']['alertas'], counts['alertas'])
                 self.assertEqual(panel['resumen']['alto'] + panel['resumen']['medio'], counts['alertas'])
+                bajo = self.db.scalar(select(func.count()).select_from(m.Prediccion).where(m.Prediccion.nivel == 'BAJO'))
+                self.assertEqual(panel['resumen']['bajo'], bajo)
                 self.assertEqual(sum(c['ALTO'] + c['MEDIO'] for c in panel['alertas_por_curso']), counts['alertas'])
                 self.assertEqual(sum(g['n'] for g in panel['promedio_por_grado']), rows)
                 self.assertTrue(all(g['n'] == sum(g[b['codigo']] for b in panel['bandas']) for g in panel['promedio_por_grado']))

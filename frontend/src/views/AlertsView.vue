@@ -35,7 +35,8 @@ const courses=computed(()=>[...new Map(alerts.value.filter(a=>!filter.value.gest
  .sort((a,b)=>a.grado-b.grado||a.curso.localeCompare(b.curso)).map(a=>[a.curso_id,`${a.curso} · ${a.gestion}`])).entries()])
 const visible=computed(()=>alerts.value.filter(a=>(!filter.value.estado||a.estado===filter.value.estado)&&(!filter.value.gestion||a.gestion===Number(filter.value.gestion))
  &&(!filter.value.curso||a.curso_id===Number(filter.value.curso))&&(!filter.value.nivel||a.nivel===filter.value.nivel)))
-const levelClass=n=>n==='ALTO'?'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200':'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+const levelClass=n=>n==='ALTO'?'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200':n==='MEDIO'?'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200':'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+const gaugeZones=(medio,alto)=>{const a=gaugeLeft(medio),b=gaugeLeft(alto);return {background:`linear-gradient(to right,#34d399 0 ${a},#fbbf24 ${a} ${b},#f87171 ${b} 100%)`}}
 const fields={estado:'Estado',responsable_id:'Responsable',motivo_cierre:'Motivo de cierre',accion_realizada:'Acción',resultado:'Resultado'}
 const who=id=>people.value.find(p=>p.id===id)?.nombre||`Usuario ${id}`
 const show=(k,v)=>v==null?'—':k==='responsable_id'?who(v):k==='estado'?label([...states,...stepStates],v):v
@@ -103,16 +104,16 @@ onMounted(load)
  <section class="p-4 md:p-8 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
   <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest font-semibold mb-2">Alerta temprana</p>
   <h1 class="text-3xl font-bold">Alertas de riesgo de abandono</h1>
-  <p class="mt-2 text-slate-500 dark:text-slate-400 max-w-3xl">Predicción XGBoost al cierre del 1.er trimestre. El modelo apoya, no sustituye, el criterio docente.</p>
   <div class="mt-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 p-4 text-sm max-w-4xl">
    <strong>Nivel = ranking de prioridad.</strong> {{ summary?.nota || 'El puntaje no está calibrado: ordena la revisión, no es un riesgo absoluto.' }}
   </div>
   <div v-if="error" role="alert" class="mt-6 bg-red-50 text-red-800 rounded-xl p-4">{{ error }}</div>
   <div v-if="notice" class="mt-6 bg-green-50 text-green-800 rounded-xl p-4">{{ notice }}</div>
-  <div v-if="summary" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+  <div v-if="summary" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mt-6">
    <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5"><p class="text-sm text-slate-500">Predicciones</p><p class="text-3xl font-bold mt-2">{{ Object.values(summary.predicciones).reduce((a,b)=>a+b,0) }}</p></div>
-   <div class="rounded-xl bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900 p-5"><p class="text-sm text-slate-500">Prioridad alta</p><p class="text-3xl font-bold mt-2 text-red-600">{{ summary.predicciones.ALTO||0 }}</p></div>
-   <div class="rounded-xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 p-5"><p class="text-sm text-slate-500">Prioridad media</p><p class="text-3xl font-bold mt-2 text-amber-600">{{ summary.predicciones.MEDIO||0 }}</p></div>
+   <div class="rounded-xl bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900 p-5"><p class="text-sm text-slate-500"><span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500 mr-1.5" aria-hidden="true"></span>Rojo · prioridad alta</p><p class="text-3xl font-bold mt-2 text-red-600">{{ summary.predicciones.ALTO||0 }}</p></div>
+   <div class="rounded-xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 p-5"><p class="text-sm text-slate-500"><span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400 mr-1.5" aria-hidden="true"></span>Amarillo · prioridad media</p><p class="text-3xl font-bold mt-2 text-amber-600">{{ summary.predicciones.MEDIO||0 }}</p></div>
+   <div class="rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-900 p-5"><p class="text-sm text-slate-500"><span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 mr-1.5" aria-hidden="true"></span>Verde · prioridad baja</p><p class="text-3xl font-bold mt-2 text-emerald-600">{{ summary.predicciones.BAJO||0 }}</p><p class="text-xs text-slate-500 mt-1">Sin alerta: puntaje &lt; {{ summary.modelo?.umbral_medio }}</p></div>
    <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5"><p class="text-sm text-slate-500">Modelo</p><p class="text-sm font-semibold mt-2 break-all">{{ summary.modelo?.version||'—' }}</p><p class="text-xs text-slate-500 mt-1">Medio ≥ {{ summary.modelo?.umbral_medio }} · Alto ≥ {{ summary.modelo?.umbral_alto }} (propuesta)</p></div>
   </div>
   <div class="flex flex-wrap gap-2 mt-6 border-b border-slate-200 dark:border-slate-700" role="tablist">
@@ -139,7 +140,7 @@ onMounted(load)
        <td class="p-3"><span class="font-semibold text-red-700 dark:text-red-300">{{ c.areas_bajo_51.length }} {{ c.areas_bajo_51.length===1?'área':'áreas' }}</span><span class="block text-xs text-slate-500">{{ c.areas_bajo_51.map(a=>`${a.area} ${a.nota}`).join(' · ') }}</span></td>
        <td class="p-3">{{ c.promedio_T1 }}</td>
        <td class="p-3">{{ c.faltas_T1 }} · {{ pct0(c.asistencia) }}</td>
-       <td class="p-3"><span v-if="c.modelo.alerta_id" class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(c.modelo.nivel)">Alerta {{ c.modelo.nivel }}</span><span v-else class="text-slate-500">Sin alerta</span><span class="block text-xs text-slate-500 mt-1">puntaje {{ comma(c.modelo.puntaje,3) }}</span></td>
+       <td class="p-3"><span v-if="c.modelo.alerta_id" class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(c.modelo.nivel)">Alerta {{ c.modelo.nivel }}</span><span v-else class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass('BAJO')">Verde · sin alerta</span><span class="block text-xs text-slate-500 mt-1">puntaje {{ comma(c.modelo.puntaje,3) }}</span></td>
        <td class="p-3 text-xs">{{ c.reglas.join(' ') }}</td>
       </tr>
      </tbody>
@@ -151,15 +152,18 @@ onMounted(load)
    <select v-model="filter.estado" aria-label="Estado" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los estados</option><option v-for="[k,l] in states" :key="k" :value="k">{{ l }}</option></select>
    <select v-model="filter.gestion" @change="filter.curso=''" aria-label="Gestión" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todas las gestiones</option><option v-for="y in years" :key="y" :value="y">{{ y }}</option></select>
    <select v-model="filter.curso" aria-label="Curso" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los cursos</option><option v-for="[id,l] in courses" :key="id" :value="id">{{ l }}</option></select>
-   <select v-model="filter.nivel" aria-label="Nivel" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los niveles</option><option value="ALTO">Alto (≥ 0,8)</option><option value="MEDIO">Medio (0,5 – 0,8)</option></select>
+   <select v-model="filter.nivel" aria-label="Nivel" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los niveles</option><option value="ALTO">Alto (≥ 0,8)</option><option value="MEDIO">Medio (0,5 – 0,8)</option><option value="BAJO">Bajo (&lt; 0,5)</option></select>
    <span class="self-center text-sm text-slate-500">{{ visible.length }} de {{ alerts.length }} alertas</span>
+  </div>
+  <div v-if="tab==='modelo'&&filter.nivel==='BAJO'" class="mt-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-sm text-emerald-900 dark:text-emerald-200">
+   <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 mr-1.5" aria-hidden="true"></span><strong>Nivel verde (prioridad baja): {{ summary?.predicciones?.BAJO||0 }} estudiantes</strong> con puntaje menor a {{ comma(summary?.modelo?.umbral_medio??0.5) }}. En este nivel el sistema no genera alerta: siguen con el seguimiento normal del docente. Si un docente ve una señal de riesgo, la escuela puede atenderla igual; el modelo apoya, no sustituye, el criterio docente.
   </div>
   <div v-if="tab==='modelo'" class="grid lg:grid-cols-5 gap-6 mt-4">
    <div class="lg:col-span-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
     <table class="w-full text-sm">
      <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="p-3">Estudiante</th><th class="p-3">Gestión / curso</th><th class="p-3">Prioridad</th><th class="p-3">Estado</th><th class="p-3">Responsable</th><th class="p-3">Interv.</th></tr></thead>
      <tbody>
-      <tr v-if="!visible.length"><td colspan="6" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : 'No hay alertas con estos filtros.' }}</td></tr>
+      <tr v-if="!visible.length"><td colspan="6" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : filter.nivel==='BAJO' ? 'El nivel verde no genera alertas.' : 'No hay alertas con estos filtros.' }}</td></tr>
       <tr v-for="a in visible" :key="a.id" @click="open(a)" class="border-t border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700" :class="selected?.id===a.id?'bg-blue-50 dark:bg-slate-700':''">
        <td class="p-3 font-medium">{{ etiquetaCodigo(a.estudiante) }}</td>
        <td class="p-3">{{ a.gestion }} · {{ a.curso }}<span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">Retrospectivo (usado en entrenamiento)</span><span v-else class="block text-xs text-blue-600">Gestión actual</span></td>
@@ -233,7 +237,8 @@ onMounted(load)
     <div class="lg:col-span-1 space-y-4">
      <div class="rounded-lg bg-slate-50 dark:bg-slate-900 p-4">
       <p class="text-sm font-semibold">1. Por qué está en este nivel</p>
-      <div class="relative mt-6 h-3 rounded-full bg-gradient-to-r from-slate-200 via-amber-200 to-red-300 dark:from-slate-700 dark:via-amber-800 dark:to-red-800" aria-hidden="true">
+      <div class="relative mt-6 h-3 rounded-full opacity-80" :style="gaugeZones(why.nivel.umbral_medio,why.nivel.umbral_alto)" aria-hidden="true">
+       <span class="absolute -top-5 text-[10px] text-slate-500 -translate-x-1/2" :style="{left:gaugeLeft(why.nivel.umbral_medio/2)}">bajo</span>
        <span class="absolute -top-5 text-[10px] text-slate-500 -translate-x-1/2" :style="{left:gaugeLeft(why.nivel.umbral_medio)}">medio {{ comma(why.nivel.umbral_medio) }}</span>
        <span class="absolute -top-5 text-[10px] text-slate-500 -translate-x-1/2" :style="{left:gaugeLeft(why.nivel.umbral_alto)}">alto {{ comma(why.nivel.umbral_alto) }}</span>
        <i class="absolute top-0 h-3 w-px bg-slate-500" :style="{left:gaugeLeft(why.nivel.umbral_medio)}"></i>
