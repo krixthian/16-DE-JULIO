@@ -298,6 +298,18 @@ class AlertasApiTests(unittest.TestCase):
                 pdf = await client.get('/reportes/alertas.pdf', params={'gestion': year, 'curso_id': first['curso_id']})
                 self.assertEqual(pdf.headers['content-type'], 'application/pdf')
                 self.assertTrue(pdf.content.startswith(b'%PDF'))
+                from openpyxl import load_workbook
+                xlsx = await client.get('/reportes/alertas.xlsx', params={'gestion': year})
+                self.assertEqual(xlsx.status_code, 200)
+                self.assertIn(f'reporte_alertas_{year}.xlsx', xlsx.headers['content-disposition'])
+                libro = load_workbook(io.BytesIO(xlsx.content))
+                self.assertEqual(libro.sheetnames, ['Reporte', 'Datos'])
+                filas = [r for r in libro['Datos'].iter_rows(min_row=2, values_only=True)]
+                self.assertEqual(len(filas), expected)
+                self.assertTrue(all(r[0].startswith('Estudiante ') for r in filas))
+                texto_libro = ' '.join(str(c.value) for ws in libro for row in ws.iter_rows() for c in row if c.value is not None)
+                self.assertIn('no sustituye', texto_libro)
+                self.assertNotIn('ANONIMO', texto_libro)
                 self.assertEqual((await client.get('/reportes/alertas.pdf', params={'gestion': 1999})).status_code, 404)
                 self.assertEqual((await client.get('/reportes/alertas.csv', params={'gestion': year, 'curso_id': 999999})).status_code, 404)
                 self.user.rol = 'Docente'

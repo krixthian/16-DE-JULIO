@@ -241,13 +241,14 @@ onBeforeUnmount(()=>observer.disconnect())
    </article>
    <article class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
     <h2 class="font-semibold">Reporte de alertas</h2>
-    <p class="text-sm text-slate-500 mt-1">PDF imprimible o CSV con alertas, factores e intervenciones. Estudiantes anonimizados; incluye la fecha, el nivel como ranking de prioridad y la nota de que el modelo apoya, no sustituye, el criterio docente.</p>
+    <p class="text-sm text-slate-500 mt-1">PDF imprimible, Excel con formato institucional o CSV de datos, con alertas, factores e intervenciones. Estudiantes anonimizados; incluye la fecha, el nivel como ranking de prioridad y la nota de que el modelo apoya, no sustituye, el criterio docente.</p>
     <p v-if="!gestion" class="mt-3 text-sm text-amber-700 dark:text-amber-300">Elige una gestión arriba para generar el reporte.</p>
     <div v-else class="flex flex-wrap items-center gap-3 mt-3">
      <select v-model="report.curso" aria-label="Curso del reporte" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 px-3 py-2 text-sm">
       <option value="">Todos los cursos de {{ gestion }}</option><option v-for="c in data.cursos" :key="c.id" :value="c.id">{{ c.curso }}</option>
      </select>
      <button :disabled="!!downloading" @click="download('pdf')" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-50">{{ downloading==='pdf'?'Generando…':'Descargar PDF' }}</button>
+     <button :disabled="!!downloading" @click="download('xlsx')" class="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm disabled:opacity-50">{{ downloading==='xlsx'?'Generando…':'Descargar Excel' }}</button>
      <button :disabled="!!downloading" @click="download('csv')" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-50">{{ downloading==='csv'?'Generando…':'Descargar CSV' }}</button>
     </div>
    </article>
