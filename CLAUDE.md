@@ -1,6 +1,6 @@
 # Proyecto: Sistema de alerta temprana (XGBoost), U.E. 16 de Julio
 
-Proyecto de grado: predice el riesgo de abandono escolar en primaria (La Paz) al cierre del 1.er trimestre. Stack: FastAPI + SQLAlchemy/PyMySQL (`backend/`), Vue 3 + Tailwind + Chart.js (`frontend/`), MySQL 8 (base `alerta_temprana_v2`: 28 tablas, 47 FK, 40 CHECK). Rama de trabajo: `recomendaciones-ingeniero`. El estado detallado está en `RESUMEN_PARA_CHAT.md` (fuera de Git) y en `docs/`.
+Proyecto de grado: predice el riesgo de abandono escolar en primaria (La Paz) al cierre del 1.er trimestre. Stack: FastAPI + SQLAlchemy/PyMySQL (`backend/`), Vue 3 + Tailwind + Chart.js (`frontend/`), MySQL 8 (base `alerta_temprana_v2`: 28 tablas, 47 FK, 40 CHECK). Rama de trabajo: `mejoras-alertas` (la más completa; respaldo previo en la rama `version-preliminar-defensa` y la etiqueta `v0.9-preliminar`). El estado detallado está en `RESUMEN_PARA_CHAT.md` (fuera de Git) y en `docs/`.
 
 ## Reglas del autor (obligatorias)
 

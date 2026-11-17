@@ -2,7 +2,7 @@
 
 GitHub conserva el código, el esquema SQL, la documentación y la evidencia. **No** conserva los registros de MySQL, el dataset real, los artefactos del modelo ni las conexiones privadas. `localhost` siempre apunta al equipo donde se ejecuta el servicio.
 
-## Traslado a la laptop (paquete del 6 de noviembre de 2026)
+## Traslado a la laptop (paquete del 17 de noviembre de 2026)
 
 En el equipo original se preparó, **fuera de Git**, la carpeta `TRASLADO_LAPTOP_16_DE_JULIO` (en el Escritorio, también comprimida en .zip). Es **privada**: contiene la base completa (con hashes de contraseñas) y los datos escolares anonimizados. Hay que copiarla por USB o por una nube privada; nunca subirla a GitHub ni compartirla.
 
@@ -13,6 +13,7 @@ En el equipo original se preparó, **fuera de Git**, la carpeta `TRASLADO_LAPTOP
 | `privado/backend/artifacts/` | `16-DE-JULIO/backend/artifacts/` (modelo XGBoost y reportes de métricas) |
 | `privado/backend/data/` | `16-DE-JULIO/backend/data/` |
 | `privado/seeds_sin_git/*.sql` | `16-DE-JULIO/seeds/` |
+| `privado/sin_subir/` | Misma ruta dentro de `16-DE-JULIO/` (experimento de pesos y umbral y evidencia del 14/11, aún no subidos a GitHub) |
 | `RESUMEN_PARA_CHAT.md` | Raíz de `16-DE-JULIO/` (resumen para Claude en el chat) |
 | `claude_memoria/*.md` | Memoria de Claude Code (paso 7, opcional) |
 
@@ -23,7 +24,7 @@ En el equipo original se preparó, **fuera de Git**, la carpeta `TRASLADO_LAPTOP
    ```powershell
    git clone https://github.com/krixthian/16-DE-JULIO.git
    cd 16-DE-JULIO
-   git checkout recomendaciones-ingeniero
+   git checkout mejoras-alertas
    ```
 3. **Restaurar la base** (crea `alerta_temprana_v2` con sus 28 tablas y todos los registros). En PowerShell, con el usuario de MySQL de la laptop:
    ```powershell
