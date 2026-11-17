@@ -37,6 +37,7 @@ const visible=computed(()=>alerts.value.filter(a=>(!filter.value.estado||a.estad
  &&(!filter.value.curso||a.curso_id===Number(filter.value.curso))&&(!filter.value.nivel||a.nivel===filter.value.nivel)))
 const levelClass=n=>n==='ALTO'?'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200':n==='MEDIO'?'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200':'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
 const caseClass=t=>t==='actual'?'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100':'border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200'
+const modelInfo=v=>{const m=/^xgb-(.+)-(\d{4})(\d{2})(\d{2})\d{6}$/.exec(v||'');return m?`Versión ${m[1]} · entrenado el ${m[4]}/${m[3]}/${m[2]}`:(v||'—')}
 const gaugeZones=(medio,alto)=>{const a=gaugeLeft(medio),b=gaugeLeft(alto);return {background:`linear-gradient(to right,#34d399 0 ${a},#fbbf24 ${a} ${b},#f87171 ${b} 100%)`}}
 const fields={estado:'Estado',responsable_id:'Responsable',motivo_cierre:'Motivo de cierre',accion_realizada:'Acción',resultado:'Resultado'}
 const who=id=>people.value.find(p=>p.id===id)?.nombre||`Usuario ${id}`
@@ -115,7 +116,7 @@ onMounted(load)
    <div class="rounded-xl bg-white dark:bg-slate-800 border border-red-200 dark:border-red-900 p-5"><p class="text-sm text-slate-500"><span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500 mr-1.5" aria-hidden="true"></span>Rojo · prioridad alta</p><p class="text-3xl font-bold mt-2 text-red-600">{{ summary.predicciones.ALTO||0 }}</p></div>
    <div class="rounded-xl bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-900 p-5"><p class="text-sm text-slate-500"><span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-400 mr-1.5" aria-hidden="true"></span>Amarillo · prioridad media</p><p class="text-3xl font-bold mt-2 text-amber-600">{{ summary.predicciones.MEDIO||0 }}</p></div>
    <div class="rounded-xl bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-900 p-5"><p class="text-sm text-slate-500"><span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 mr-1.5" aria-hidden="true"></span>Verde · prioridad baja</p><p class="text-3xl font-bold mt-2 text-emerald-600">{{ summary.predicciones.BAJO||0 }}</p><p class="text-xs text-slate-500 mt-1">Sin alerta: puntaje &lt; {{ summary.modelo?.umbral_medio }}</p></div>
-   <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5"><p class="text-sm text-slate-500">Modelo</p><p class="text-sm font-semibold mt-2 break-all">{{ summary.modelo?.version||'—' }}</p><p class="text-xs text-slate-500 mt-1">Medio ≥ {{ summary.modelo?.umbral_medio }} · Alto ≥ {{ summary.modelo?.umbral_alto }} (propuesta)</p></div>
+   <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5"><p class="text-sm text-slate-500">Modelo</p><p class="text-xl font-bold mt-2" :title="summary.modelo?.version">XGBoost</p><p class="text-xs text-slate-500 mt-1" :title="summary.modelo?.version">{{ modelInfo(summary.modelo?.version) }}</p><p class="text-xs text-slate-500 mt-1">Medio ≥ {{ summary.modelo?.umbral_medio }} · Alto ≥ {{ summary.modelo?.umbral_alto }} (propuesta)</p></div>
   </div>
   <div class="flex flex-wrap gap-2 mt-6 border-b border-slate-200 dark:border-slate-700" role="tablist">
    <button role="tab" :aria-selected="tab==='modelo'" @click="tab='modelo'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='modelo'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Alertas del modelo ({{ alerts.length }})</button>
@@ -159,24 +160,22 @@ onMounted(load)
   <div v-if="tab==='modelo'&&filter.nivel==='BAJO'" class="mt-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-sm text-emerald-900 dark:text-emerald-200">
    <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 mr-1.5" aria-hidden="true"></span><strong>Nivel verde (prioridad baja): {{ summary?.predicciones?.BAJO||0 }} estudiantes</strong> con puntaje menor a {{ comma(summary?.modelo?.umbral_medio??0.5) }}. En este nivel el sistema no genera alerta: siguen con el seguimiento normal del docente. Si un docente ve una señal de riesgo, la escuela puede atenderla igual; el modelo apoya, no sustituye, el criterio docente.
   </div>
-  <div v-if="tab==='modelo'" class="grid lg:grid-cols-5 gap-6 mt-4">
-   <div class="lg:col-span-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+  <div v-if="tab==='modelo'" class="grid lg:grid-cols-3 gap-6 mt-4">
+   <div class="lg:col-span-2 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
     <table class="w-full text-sm">
-     <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="p-3">Estudiante</th><th class="p-3">Gestión / curso</th><th class="p-3">Prioridad</th><th class="p-3">Estado</th><th class="p-3">Responsable</th><th class="p-3">Interv.</th></tr></thead>
+     <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="px-3 py-2.5">Estudiante</th><th class="px-3 py-2.5">Curso</th><th class="px-3 py-2.5">Prioridad</th><th class="px-3 py-2.5">Estado</th></tr></thead>
      <tbody>
-      <tr v-if="!visible.length"><td colspan="6" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : filter.nivel==='BAJO' ? 'El nivel verde no genera alertas.' : 'No hay alertas con estos filtros.' }}</td></tr>
+      <tr v-if="!visible.length"><td colspan="4" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : filter.nivel==='BAJO' ? 'El nivel verde no genera alertas.' : 'No hay alertas con estos filtros.' }}</td></tr>
       <tr v-for="a in visible" :key="a.id" @click="open(a)" class="border-t border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700" :class="selected?.id===a.id?'bg-blue-50 dark:bg-slate-700':''">
-       <td class="p-3 font-medium">{{ etiquetaCodigo(a.estudiante) }}</td>
-       <td class="p-3">{{ a.gestion }} · {{ a.curso }}<span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">{{ a.abandono_confirmado ? 'Histórico · abandonó' : 'Histórico · no abandonó' }}</span><span v-else class="block text-xs text-blue-600">Gestión actual</span></td>
-       <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(a.nivel)">{{ a.nivel }}</span><span class="block text-xs text-slate-500 mt-1">Puesto {{ a.prioridad.puesto }} de {{ a.prioridad.de }}</span></td>
-       <td class="p-3">{{ label(states,a.estado) }}</td>
-       <td class="p-3 text-xs">{{ a.responsable.rol }}</td>
-       <td class="p-3 text-center">{{ a.intervenciones }}</td>
+       <td class="px-3 py-2.5 font-medium whitespace-nowrap">{{ etiquetaCodigo(a.estudiante) }}</td>
+       <td class="px-3 py-2.5"><span class="whitespace-nowrap">{{ a.curso }} · {{ a.gestion }}</span><span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">{{ a.abandono_confirmado ? 'Histórico · abandonó' : 'Histórico · no abandonó' }}</span><span v-else class="block text-xs text-blue-600">Gestión actual</span></td>
+       <td class="px-3 py-2.5"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(a.nivel)">{{ a.nivel }}</span><span class="block text-xs text-slate-500 mt-1 whitespace-nowrap" :title="`Puesto ${a.prioridad.puesto} de ${a.prioridad.de} en ${a.gestion}`">Puesto {{ a.prioridad.puesto }}/{{ a.prioridad.de }}</span></td>
+       <td class="px-3 py-2.5"><span class="whitespace-nowrap">{{ label(states,a.estado) }}</span><span class="block text-xs text-slate-500 whitespace-nowrap" :title="`Responsable: ${a.responsable.nombre}`">{{ a.intervenciones }} interv.</span></td>
       </tr>
      </tbody>
     </table>
    </div>
-   <aside class="lg:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+   <aside class="lg:col-span-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
     <p v-if="!selected" class="text-slate-500">Selecciona una alerta para ver sus factores, asignar responsable y registrar intervenciones.</p>
     <template v-else>
      <h2 class="font-semibold text-lg">{{ etiquetaCodigo(selected.estudiante) }} · {{ selected.curso }} · {{ selected.gestion }}</h2>
@@ -194,7 +193,7 @@ onMounted(load)
      </select>
      <h3 class="font-semibold mt-5">Estado</h3>
      <div class="flex flex-wrap gap-2 mt-2"><button v-for="[k,l] in states.filter(s=>s[0]!=='CERRADA')" :key="k" :disabled="busy||selected.estado===k" @click="setState(k)" class="px-3 py-1.5 rounded-lg border text-sm disabled:opacity-40">{{ l }}</button></div>
-     <div class="flex gap-2 mt-2"><input v-model="closing" placeholder="Motivo de cierre (obligatorio)" class="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 px-3 py-1.5 text-sm"><button :disabled="busy||!closing.trim()" @click="setState('CERRADA')" class="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-sm disabled:opacity-40">Cerrar</button></div>
+     <div class="flex gap-2 mt-2"><input v-model="closing" placeholder="Motivo de cierre (obligatorio)" class="flex-1 min-w-0 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 px-3 py-1.5 text-sm"><button :disabled="busy||!closing.trim()" @click="setState('CERRADA')" class="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-sm disabled:opacity-40">Cerrar</button></div>
      <p v-if="selected.motivo_cierre" class="text-xs text-slate-500 mt-1">Cerrada: {{ selected.motivo_cierre }}</p>
      <h3 class="font-semibold mt-5">Recomendaciones pedagógicas <span class="text-xs font-normal text-slate-500">{{ recs?.version }}</span></h3>
      <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">{{ recs?.validacion || 'Propuesta pendiente de validación con docentes y Dirección' }}.</p>
@@ -220,7 +219,7 @@ onMounted(load)
      </li><li v-if="!items.length" class="text-sm text-slate-500">Aún no hay intervenciones.</li></ul>
      <form @submit.prevent="propose" class="mt-4 space-y-2">
       <textarea v-model="form.recomendacion" required minlength="3" rows="2" placeholder="Ej.: citar a la familia, tutoría de nivelación…" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 px-3 py-2 text-sm"></textarea>
-      <div class="flex gap-2"><input v-model="form.fecha_planificada" type="date" aria-label="Fecha planificada" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 px-3 py-1.5 text-sm"><button :disabled="busy||selected.estado==='CERRADA'" class="flex-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-40">Registrar intervención</button></div>
+      <div class="flex flex-wrap gap-2"><input v-model="form.fecha_planificada" type="date" aria-label="Fecha planificada" class="min-w-0 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-900 px-3 py-1.5 text-sm"><button :disabled="busy||selected.estado==='CERRADA'" class="flex-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-40">Registrar intervención</button></div>
      </form>
      <h3 class="font-semibold mt-5">Historial (auditoría)</h3>
      <ol class="mt-2 space-y-2 text-xs"><li v-for="h in history" :key="h.id" class="border-l-2 border-slate-300 dark:border-slate-600 pl-2">
