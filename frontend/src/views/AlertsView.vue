@@ -36,6 +36,7 @@ const courses=computed(()=>[...new Map(alerts.value.filter(a=>!filter.value.gest
 const visible=computed(()=>alerts.value.filter(a=>(!filter.value.estado||a.estado===filter.value.estado)&&(!filter.value.gestion||a.gestion===Number(filter.value.gestion))
  &&(!filter.value.curso||a.curso_id===Number(filter.value.curso))&&(!filter.value.nivel||a.nivel===filter.value.nivel)))
 const levelClass=n=>n==='ALTO'?'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200':n==='MEDIO'?'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200':'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+const caseClass=t=>t==='actual'?'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100':'border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200'
 const gaugeZones=(medio,alto)=>{const a=gaugeLeft(medio),b=gaugeLeft(alto);return {background:`linear-gradient(to right,#34d399 0 ${a},#fbbf24 ${a} ${b},#f87171 ${b} 100%)`}}
 const fields={estado:'Estado',responsable_id:'Responsable',motivo_cierre:'Motivo de cierre',accion_realizada:'Acción',resultado:'Resultado'}
 const who=id=>people.value.find(p=>p.id===id)?.nombre||`Usuario ${id}`
@@ -166,7 +167,7 @@ onMounted(load)
       <tr v-if="!visible.length"><td colspan="6" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : filter.nivel==='BAJO' ? 'El nivel verde no genera alertas.' : 'No hay alertas con estos filtros.' }}</td></tr>
       <tr v-for="a in visible" :key="a.id" @click="open(a)" class="border-t border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700" :class="selected?.id===a.id?'bg-blue-50 dark:bg-slate-700':''">
        <td class="p-3 font-medium">{{ etiquetaCodigo(a.estudiante) }}</td>
-       <td class="p-3">{{ a.gestion }} · {{ a.curso }}<span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">Retrospectivo (usado en entrenamiento)</span><span v-else class="block text-xs text-blue-600">Gestión actual</span></td>
+       <td class="p-3">{{ a.gestion }} · {{ a.curso }}<span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">{{ a.abandono_confirmado ? 'Histórico · abandonó' : 'Histórico · no abandonó' }}</span><span v-else class="block text-xs text-blue-600">Gestión actual</span></td>
        <td class="p-3"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(a.nivel)">{{ a.nivel }}</span><span class="block text-xs text-slate-500 mt-1">Puesto {{ a.prioridad.puesto }} de {{ a.prioridad.de }}</span></td>
        <td class="p-3">{{ label(states,a.estado) }}</td>
        <td class="p-3 text-xs">{{ a.responsable.rol }}</td>
@@ -181,6 +182,7 @@ onMounted(load)
      <h2 class="font-semibold text-lg">{{ etiquetaCodigo(selected.estudiante) }} · {{ selected.curso }} · {{ selected.gestion }}</h2>
      <p class="text-sm text-slate-500">Corte {{ selected.fecha_corte }} · puntaje {{ score(selected.probabilidad) }} · puesto {{ selected.prioridad.puesto }} de {{ selected.prioridad.de }} en {{ selected.gestion }}</p>
      <p class="text-xs text-slate-500 mt-1">Ranking de prioridad, no riesgo absoluto.</p>
+     <div v-if="why" class="mt-3 rounded-lg border p-3 text-sm" :class="caseClass(why.caso.tipo)"><strong>{{ why.caso.titulo }}</strong> {{ why.caso.texto }}</div>
      <h3 class="font-semibold mt-4">¿Por qué esta alerta?</h3>
      <p v-if="why" class="mt-1 text-sm">{{ why.resumen }}</p>
      <p v-else-if="whyError" class="mt-1 text-sm text-red-600">{{ whyError }}</p>
@@ -232,6 +234,13 @@ onMounted(load)
    <div class="flex flex-wrap items-baseline justify-between gap-2">
     <h2 class="text-xl font-semibold">¿Por qué {{ etiquetaCodigo(selected.estudiante) }} tiene prioridad {{ why.nivel.nivel==='ALTO'?'alta':'media' }}?</h2>
     <span class="text-sm text-slate-500">{{ why.curso }} · {{ why.gestion }} · comparado con {{ why.estudiantes_en_curso }} estudiantes del curso</span>
+   </div>
+   <div class="grid lg:grid-cols-2 gap-4 mt-4">
+    <div class="rounded-lg border p-4 text-sm" :class="caseClass(why.caso.tipo)"><p class="font-semibold">{{ why.caso.titulo }}</p><p class="mt-1">{{ why.caso.texto }}</p></div>
+    <div class="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-950 dark:text-amber-100">
+     <p class="font-semibold">Cómo leer esta alerta</p>
+     <ul class="mt-1 space-y-1 list-disc pl-5"><li v-for="l in why.como_leer" :key="l">{{ l }}</li></ul>
+    </div>
    </div>
    <div class="grid lg:grid-cols-3 gap-6 mt-4">
     <div class="lg:col-span-1 space-y-4">

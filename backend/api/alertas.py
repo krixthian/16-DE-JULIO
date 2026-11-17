@@ -88,12 +88,13 @@ def ranking(db, rows):
         for r in rows}
 
 
-def alerta_dict(row, total, puesto):
+def alerta_dict(row, total, puesto, abandonos=frozenset()):
     a, p, mod, c, cur, g, e, u = row
     return {'id': a.id, 'estado': a.estado, 'creada_en': a.creada_en, 'cerrada_en': a.cerrada_en, 'motivo_cierre': a.motivo_cierre,
         'probabilidad': float(p.probabilidad), 'nivel': p.nivel, 'factores': (p.factores or {}).get('principales', []),
         'uso': (p.factores or {}).get('uso'), 'modelo': mod.version, 'fecha_corte': c.fecha_corte, 'gestion': g.anio,
         'curso_id': cur.id, 'curso': f'{cur.grado}° {cur.paralelo}', 'grado': cur.grado, 'estudiante': e.codigo_anonimo,
+        'abandono_confirmado': c.matricula_id in abandonos,
         'intervenciones': total, 'responsable': {'id': u.id, 'nombre': f'{u.nombre} {u.apellido}', 'rol': u.rol},
         'prioridad': {'puesto': puesto[0], 'de': puesto[1], 'nota': NOTA_PRIORIDAD}}
 
@@ -116,7 +117,8 @@ def totales(db, ids):
 
 def responder(db, rows):
     count, puestos = totales(db, [r[0].id for r in rows]), ranking(db, rows)
-    return [alerta_dict(r, count.get(r[0].id, 0), puestos[r[0].id]) for r in rows]
+    abandonos = matriculas_con_abandono(db, [r[3].matricula_id for r in rows])
+    return [alerta_dict(r, count.get(r[0].id, 0), puestos[r[0].id], abandonos) for r in rows]
 
 
 @router.get('/alertas')
@@ -271,6 +273,58 @@ def recomendaciones(alert_id: int, db: Session = Depends(get_db)):
         'reglas': reglas_alerta(db, obtener(db, alert_id))}
 
 
+def matriculas_con_abandono(db, matriculas):
+    """Matrículas con abandono confirmado (situaciones_escolares), que es la etiqueta real con la que se entrenó."""
+    if not matriculas:
+        return frozenset()
+    return frozenset(db.scalars(select(m.SituacionEscolar.matricula_id).where(m.SituacionEscolar.tipo == 'ABANDONO_CONFIRMADO',
+        m.SituacionEscolar.matricula_id.in_(set(matriculas)))))
+
+
+def lectura(db, corte, indicadores, uso, anio):
+    """Ayuda para leer la alerta en lenguaje simple, con cifras de la base: si es un caso histórico y a quiénes se parece."""
+    from statistics import median
+    filas = db.execute(select(m.CortePredictivo.variables, m.CortePredictivo.matricula_id, m.Matricula.estudiante_id)
+        .join(m.Matricula, m.Matricula.id == m.CortePredictivo.matricula_id)
+        .where(m.CortePredictivo.version_variables == corte.version_variables)).all()
+    abandonos = matriculas_con_abandono(db, [f[1] for f in filas])
+    propio = db.get(m.Matricula, corte.matricula_id)
+    datos = [(((v or {}).get('indicadores') or {}), mat in abandonos, est) for v, mat, est in filas]
+    datos = [(ind.get('promedio_T1'), ind.get('n_areas_bajo_51_T1'), ab, est) for ind, ab, est in datos if ind.get('promedio_T1') is not None]
+    historico = uso == 'RETROSPECTIVO_EN_ENTRENAMIENTO'
+    abandono = corte.matricula_id in abandonos
+    if historico and abandono:
+        caso = dict(tipo='historico_abandono', titulo=f'Caso histórico: este estudiante abandonó en {anio}.',
+            texto='Esta matrícula se usó para entrenar el modelo; por eso su prioridad es alta. La alerta muestra que el modelo '
+                'reconoce el caso. No requiere acción: sirve como ejemplo de cómo eran los estudiantes que abandonaron.')
+    elif historico:
+        caso = dict(tipo='historico_continuo', titulo=f'Caso histórico: este estudiante no abandonó en {anio}.',
+            texto='Esta matrícula se usó para entrenar el modelo y aun así quedó marcada: es una falsa alarma. No requiere acción.')
+    else:
+        caso = dict(tipo='actual', titulo=f'Gestión actual ({anio}): la escuela todavía puede actuar.',
+            texto='Revise el caso con el docente y la familia antes de decidir una acción.')
+    ab = [d for d in datos if d[2]]
+    continuaron = [d[0] for d in datos if not d[2]]
+    texto = ['La prioridad no mide si las notas son malas: mide cuánto se parece el estudiante a los que abandonaron en años anteriores.']
+    if ab and continuaron:
+        aceptable = sum(1 for d in ab if 51 <= d[0] <= 68 and not d[1])
+        texto.append(f'De los {len(ab)} estudiantes que abandonaron, {aceptable} tenían un promedio de desarrollo aceptable (51 a 68) '
+            f'y ninguna área por debajo de 51. El estudiante típico que continuó tiene {median(continuaron):g} de promedio.')
+    prom = indicadores.get('promedio_T1')
+    if prom is not None:
+        lo, hi = prom - 2, prom + 2
+        cerca = [d for d in datos if lo <= d[0] <= hi and d[3] != propio.estudiante_id]
+        if cerca:
+            texto.append(f'Este estudiante tiene {prom:g}. Entre los demás estudiantes con promedio de {lo:g} a {hi:g}, '
+                f'{sum(1 for d in cerca if d[2])} de {len(cerca)} abandonaron.')
+        else:
+            texto.append(f'Este estudiante tiene {prom:g}. No hay otros estudiantes con promedio de {lo:g} a {hi:g}.')
+    if not historico:
+        texto.append('Qué hacer: conversar con el docente y la familia para saber si hay señales recientes (inasistencias, cambio '
+            'de domicilio, situación familiar). La alerta orienta la revisión; no es un diagnóstico.')
+    return dict(caso=caso, como_leer=texto, abandono_confirmado=abandono)
+
+
 def indicadores_de(db, *condiciones):
     rows = db.scalars(select(m.CortePredictivo.variables).join(m.Matricula, m.Matricula.id == m.CortePredictivo.matricula_id)
         .join(m.Curso, m.Curso.id == m.Matricula.curso_id).where(*condiciones)).all()
@@ -290,10 +344,11 @@ def explicacion(alert_id: int, db: Session = Depends(get_db)):
     contrib, base = ex.aportes(model, indicadores)
     misma_version = m.CortePredictivo.version_variables == corte.version_variables
     otros = m.CortePredictivo.id != corte.id
-    return ex.construir(indicadores, contrib, base, float(pred.probabilidad), pred.nivel, float(modelo.umbral_medio),
+    return {**ex.construir(indicadores, contrib, base, float(pred.probabilidad), pred.nivel, float(modelo.umbral_medio),
         float(modelo.umbral_alto), indicadores_de(db, m.Curso.id == curso.id, misma_version, otros),
         indicadores_de(db, m.Curso.gestion_id == gestion.id, misma_version, otros), ranking(db, [row])[alerta.id],
-        f'{curso.grado}° {curso.paralelo}', gestion.anio)
+        f'{curso.grado}° {curso.paralelo}', gestion.anio),
+        **lectura(db, corte, indicadores, (pred.factores or {}).get('uso'), gestion.anio)}
 
 
 @router.post('/alertas/{alert_id}/recomendaciones/{codigo}', status_code=201)
