@@ -47,6 +47,10 @@ const balanceOptions=computed(()=>{const o=base({horizontal:true,max:1,title:'Me
 const separation=computed(()=>Object.entries(data.value?.separacion_promedio_le_66||{}))
 const ea=computed(()=>data.value?.etiqueta_ampliada)
 const reg=computed(()=>data.value?.registros)
+const alg=computed(()=>data.value?.algoritmos)
+const algRows=computed(()=>{const a=alg.value;if(!a)return []
+ return ['xgboost','regresion_logistica','random_forest','arbol_decision','regla_promedio_T1','siempre_continuidad'].filter(k=>a.modelos[k]).map(k=>({k,...a.modelos[k],dif:a.diferencia_ap_vs_xgboost[k]}))})
+const difText=d=>!d?'—':`${d.media>=0?'+':''}${n(d.media,2)} [${n(d.ic95[0],2)}; ${n(d.ic95[1],2)}] · ${d.ic95[0]>0?'mejor':d.ic95[1]<0?'peor':'no distinguible'}`
 const regRows=computed(()=>{const r=reg.value;if(!r)return []
  const c=r.calidad_datos,p=r.patrones_asistencia,racha=Object.entries(p.continuaron_racha_maxima_de_faltas).reduce((a,[k,v])=>Number(k)>a?Number(k):a,0)
  return [
@@ -127,6 +131,18 @@ onBeforeUnmount(()=>observer.disconnect())
      <tbody><tr v-for="c in compared" :key="c.modelo" class="border-t border-slate-100 dark:border-slate-700"><td class="py-1 pr-3">{{ c.nombre }}</td><td class="pr-3">{{ n(c.roc_auc) }} {{ ic(c,'roc_auc') }}</td><td class="pr-3">{{ n(c.average_precision) }} {{ ic(c,'average_precision') }}</td><td class="pr-3">{{ n(c.sensibilidad,2) }}</td><td class="pr-3">{{ n(c.precision,2) }}</td><td class="pr-3">{{ n(c.f1,2) }}</td><td>{{ c.tasa_marcados==null?'—':n(100*c.tasa_marcados,1)+' %' }}</td></tr></tbody>
     </table></div>
    </details>
+
+   <!-- ¿Un algoritmo más sencillo? -->
+   <article v-if="alg" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
+    <h2 class="font-semibold">¿Un algoritmo más sencillo rinde igual?</h2>
+    <p class="text-sm text-slate-500 mt-1">Mismas 19 variables y misma validación por estudiante (5 pliegues × 20 repeticiones); hiperparámetros fijados antes, sin búsqueda. Diferencia de AP frente a XGBoost con IC 95 % (bootstrap pareado por estudiante).</p>
+    <div class="overflow-x-auto mt-3"><table class="w-full text-sm"><thead class="text-left text-slate-500"><tr><th class="py-2 pr-3">Algoritmo</th><th class="py-2 pr-3">AP</th><th class="py-2 pr-3">Detecta (de {{ data.modelo.positivos }})</th><th class="py-2 pr-3">Falsas alarmas</th><th class="py-2">Frente a XGBoost</th></tr></thead>
+     <tbody class="divide-y divide-slate-100 dark:divide-slate-700"><tr v-for="r in algRows" :key="r.k" :class="r.k==='xgboost'?'font-semibold':''">
+      <td class="py-2 pr-3">{{ r.nombre }}</td><td class="py-2 pr-3">{{ n(r.average_precision) }} <span class="text-xs text-slate-500">{{ ic(r,'average_precision') }}</span></td>
+      <td class="py-2 pr-3">{{ r.verdaderos_positivos==null?'—':n(r.verdaderos_positivos,1) }}</td><td class="py-2 pr-3">{{ r.falsos_positivos==null?'—':n(r.falsos_positivos,1) }}</td>
+      <td class="py-2" :class="r.dif&&r.dif.ic95[1]<0?'text-red-600':''">{{ r.k==='xgboost'?'referencia':difText(r.dif) }}</td></tr></tbody></table></div>
+    <p class="mt-3 text-sm">Un <strong>árbol de decisión</strong> solo es peor de forma distinguible. La <strong>regresión logística</strong> y <strong>Random Forest</strong> rinden igual que XGBoost: XGBoost no es superior, se mantiene por las explicaciones de cada alerta. Con notas registradas de forma estándar para quienes abandonaron, cualquier método que use el promedio separa parecido.</p>
+   </article>
 
    <!-- Dimensiones de riesgo -->
    <article v-if="data.dimensiones" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">

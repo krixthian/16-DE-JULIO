@@ -28,6 +28,7 @@ Tenerlo presente durante toda la defensa: responde a "el análisis es superficia
 | Licencia de quien llega y se retira | Licencia parcial: presente en unas horas y con licencia en las siguientes | Desglose por estudiante (tarjeta "Días con licencia parcial") |
 | Citaciones por materia y por dirección | `citaciones` con origen (docente de materia, dirección, orientación) y materia; máximo de citaciones en una sola materia | Desglose por estudiante → Registrar citación |
 | Las 9 notas son una variable | Variables agrupadas en 4 dimensiones: académica, asistencia, seguimiento y contexto | **Resultados del modelo** → Variables de riesgo por dimensión |
+| Un algoritmo más sencillo podría rendir igual | Árbol de decisión, Random Forest, regresión logística y XGBoost con el mismo protocolo: el árbol es peor; logística y Random Forest, iguales | **Resultados del modelo** → ¿Un algoritmo más sencillo rinde igual? |
 | Análisis superficial | Se leyeron los registros originales: asistencia día por día y notas por actividad (SER, SABER, HACER, DECIDIR) | **Resultados del modelo** → Lo que muestran los registros pedagógicos originales |
 | XGBoost necesita muchos datos | Curva de aprendizaje: la AP sigue subiendo con cada caso; con 11 abandonos el límite son los datos | **Resultados del modelo** → ¿Son suficientes los casos? |
 
@@ -267,4 +268,6 @@ python -m predictivo metricas-ajuste --directorio artifacts/real_t1_ajuste_v1
 | ¿Qué encontraste en los registros originales? | Notas T1 casi iguales en las 9 áreas en 11 de 11 abandonos (1 de 779 en los demás); abandono marcado desde fin de mes; ningún estudiante que continuó con 3 faltas seguidas. Son patrones de registro: el modelo aprende en parte el registro. |
 | ¿La asistencia predice el abandono? | En el primer trimestre no: quienes abandonaron asistían normalmente (AP 0,025 frente a 0,014 del azar). Por eso agregué una alerta operativa de inasistencia continua (3 o más faltas seguidas), que se validará con los registros que capture el sistema. |
 | ¿Cómo se calcula la asistencia por materia? | Clases asistidas ÷ clases dictadas de esa materia: Religión (1 vez por semana) y Lenguaje (varios días) se comparan en la misma escala. |
+| ¿Por qué XGBoost y no un árbol de decisión? | Lo comparé con el mismo protocolo: un árbol solo es peor de forma distinguible (AP 0,55 frente a 0,86; diferencia −0,29, IC −0,68 a −0,02). Con 11 casos un árbol es inestable y da pocos puntajes distintos para ordenar. |
+| ¿Un algoritmo más sencillo no daría igual? | Sí: la regresión logística (AP 0,97) y Random Forest (0,88) rinden igual que XGBoost; las diferencias no son distinguibles. XGBoost no es superior; lo mantengo por las explicaciones SHAP. Con datos desglosados hay que repetir la comparación. |
 | ¿Se puede reproducir? | Sí: `metricas-real --excel` y `metricas-ajuste --excel` recalculan todo y confirman "reproducido exactamente". |

@@ -441,7 +441,7 @@ class AlertasApiTests(unittest.TestCase):
                         self.assertTrue(all(0 <= v <= 1 for v in ea['ap_abandono'].values()))
                     with mock.patch.object(resultados, 'AJUSTE', missing), mock.patch.object(resultados, 'SENSIBILIDAD', missing), \
                             mock.patch.object(resultados, 'SMOTE', missing), mock.patch.object(resultados, 'AMPLIADA', missing), \
-                            mock.patch.object(resultados, 'REGISTROS', missing):
+                            mock.patch.object(resultados, 'REGISTROS', missing), mock.patch.object(resultados, 'ALGORITMOS', missing):
                         bare = (await client.get('/modelo/resultados')).json()
                     self.assertIsNone(bare['ajuste'])
                     self.assertIsNone(bare['temporal'])
@@ -449,6 +449,7 @@ class AlertasApiTests(unittest.TestCase):
                     self.assertIsNone(bare['fuentes']['balanceo'])
                     self.assertIsNone(bare['etiqueta_ampliada'])
                     self.assertIsNone(bare['registros'])
+                    self.assertIsNone(bare['algoritmos'])
                     self.user.rol = 'Docente'
                     self.assertEqual((await client.get('/modelo/resultados')).status_code, 403)
             asyncio.run(run())

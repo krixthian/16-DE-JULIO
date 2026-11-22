@@ -28,6 +28,7 @@ SENSIBILIDAD = BACKEND / 'artifacts' / 'real_t1_v1' / 'sensibilidad.json'
 SMOTE = BACKEND.parent / 'docs' / 'experimento_smote_resumen_tabla.csv'
 AMPLIADA = BACKEND.parent / 'docs' / 'experimento_etiqueta_ampliada.json'
 REGISTROS = BACKEND.parent / 'docs' / 'analisis_registros_detallados.json'
+ALGORITMOS = BACKEND.parent / 'docs' / 'experimento_algoritmos.json'
 NOMBRES = {'xgboost': 'XGBoost (modelo en uso)', 'regresion_logistica': 'Regresión logística', 'regla_promedio_T1': 'Regla: promedio T1',
     'regla_n_areas_bajo_51': 'Regla: áreas bajo 51', 'regla_faltas_T1': 'Regla: faltas T1', 'siempre_continuidad': 'Siempre "continúa" (azar)'}
 VARIANTES = {'a_sin_balanceo': 'Sin balanceo', 'b_scale_pos_weight': 'scale_pos_weight (en uso)', 'c_smote': 'SMOTE',
@@ -163,11 +164,13 @@ def resultados(db: Session = Depends(get_db)):
         'balanceo': smote(),
         'etiqueta_ampliada': etiqueta_ampliada(),
         'registros': leer_json(REGISTROS),
+        'algoritmos': leer_json(ALGORITMOS),
         'limitaciones': met.get('limitaciones') or [],
         'fuentes': {'registro_del_modelo': 'Base de datos (modelos_predictivos.metricas)', 'importancia': 'Base de datos (790 cortes) + modelo registrado',
             'ajuste_umbrales_calibracion': 'backend/artifacts/real_t1_ajuste_v1/reporte_ajuste.json' if ajuste else None,
             'temporal': 'backend/artifacts/real_t1_v1/sensibilidad.json' if sens else None,
             'balanceo': 'docs/experimento_smote_resumen_tabla.csv' if SMOTE.exists() else None,
             'etiqueta_ampliada': 'docs/experimento_etiqueta_ampliada.json' if AMPLIADA.exists() else None,
-            'registros': 'docs/analisis_registros_detallados.json' if REGISTROS.exists() else None},
+            'registros': 'docs/analisis_registros_detallados.json' if REGISTROS.exists() else None,
+            'algoritmos': 'docs/experimento_algoritmos.json' if ALGORITMOS.exists() else None},
     }

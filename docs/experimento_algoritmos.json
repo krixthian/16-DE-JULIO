@@ -1,0 +1,328 @@
+{
+ "version": "experimento-algoritmos-v1",
+ "protocolo": "StratifiedGroupKFold 5 pliegues por estudiante x 20 repeticiones; IC 95 % bootstrap por estudiante (2000); umbral 0,5; hiperparámetros fijados antes, sin búsqueda.",
+ "hiperparametros": {
+  "arbol_decision": "max_depth=3, min_samples_leaf=5, class_weight=balanced",
+  "random_forest": "n_estimators=300, min_samples_leaf=3, class_weight=balanced_subsample",
+  "regresion_logistica": "estandarizada, class_weight=balanced",
+  "xgboost": "parámetros del modelo en uso"
+ },
+ "modelos": {
+  "xgboost": {
+   "nombre": "XGBoost (modelo en uso)",
+   "roc_auc": 0.9893978293849927,
+   "average_precision": 0.8587746516171721,
+   "precision": 0.7736538461538462,
+   "sensibilidad": 0.8409090909090908,
+   "f1": 0.8040890269151137,
+   "tasa_marcados": 0.015126582278481016,
+   "verdaderos_positivos": 9.25,
+   "falsos_positivos": 2.7,
+   "brier": 0.004928596969850101,
+   "ic95": {
+    "roc_auc": [
+     0.895164949131302,
+     1.0
+    ],
+    "average_precision": [
+     0.5317950415668019,
+     1.0
+    ],
+    "precision": [
+     0.44427083333333334,
+     1.0
+    ],
+    "sensibilidad": [
+     0.45454545454545453,
+     1.0
+    ],
+    "f1": [
+     0.5,
+     0.967741935483871
+    ]
+   }
+  },
+  "regresion_logistica": {
+   "nombre": "Regresión logística",
+   "roc_auc": 0.999591550939433,
+   "average_precision": 0.9736069296864752,
+   "precision": 0.6616625816993463,
+   "sensibilidad": 1.0,
+   "f1": 0.7961001642036125,
+   "tasa_marcados": 0.02107594936708861,
+   "verdaderos_positivos": 11.0,
+   "falsos_positivos": 5.65,
+   "brier": 0.005901518558295864,
+   "ic95": {
+    "roc_auc": [
+     0.9977586115538832,
+     1.0
+    ],
+    "average_precision": [
+     0.8472569444444447,
+     1.0
+    ],
+    "precision": [
+     0.375,
+     0.8947368421052632
+    ],
+    "sensibilidad": [
+     1.0,
+     1.0
+    ],
+    "f1": [
+     0.5454545454545454,
+     0.9444444444444444
+    ]
+   }
+  },
+  "random_forest": {
+   "nombre": "Random Forest",
+   "roc_auc": 0.9928871513595517,
+   "average_precision": 0.882772855888646,
+   "precision": 1.0,
+   "sensibilidad": 0.7,
+   "f1": 0.8178358273133816,
+   "tasa_marcados": 0.009746835443037975,
+   "verdaderos_positivos": 7.7,
+   "falsos_positivos": 0.0,
+   "ic95": {
+    "roc_auc": [
+     0.9723198123378793,
+     1.0
+    ],
+    "average_precision": [
+     0.6067129810154004,
+     1.0
+    ],
+    "precision": [
+     1.0,
+     1.0
+    ],
+    "sensibilidad": [
+     0.25,
+     1.0
+    ],
+    "f1": [
+     0.4,
+     1.0
+    ]
+   }
+  },
+  "arbol_decision": {
+   "nombre": "Árbol de decisión (profundidad 3)",
+   "roc_auc": 0.8517417434939901,
+   "average_precision": 0.5502718507903644,
+   "precision": 0.5117747162967751,
+   "sensibilidad": 0.709090909090909,
+   "f1": 0.5922312599066963,
+   "tasa_marcados": 0.019493670886075946,
+   "verdaderos_positivos": 7.8,
+   "falsos_positivos": 7.6,
+   "ic95": {
+    "roc_auc": [
+     0.6728135110478531,
+     0.9986481741573033
+    ],
+    "average_precision": [
+     0.18484098259057039,
+     0.8866452991452988
+    ],
+    "precision": [
+     0.1875,
+     0.8
+    ],
+    "sensibilidad": [
+     0.35714285714285715,
+     1.0
+    ],
+    "f1": [
+     0.26666666666666666,
+     0.8235294117647058
+    ]
+   }
+  },
+  "regla_promedio_T1": {
+   "nombre": "Regla: promedio T1",
+   "roc_auc": 0.9714085657602988,
+   "average_precision": 0.3027597498966538,
+   "precision": 0.2794127209916684,
+   "sensibilidad": 0.95,
+   "f1": 0.4317650418169118,
+   "tasa_marcados": 0.04727848101265823,
+   "verdaderos_positivos": 10.45,
+   "falsos_positivos": 26.9,
+   "ic95": {
+    "roc_auc": [
+     0.9573638277353409,
+     0.9838085836420396
+    ],
+    "average_precision": [
+     0.11416111987771471,
+     0.5119048231791006
+    ],
+    "precision": [
+     0.1111111111111111,
+     0.4468225083986561
+    ],
+    "sensibilidad": [
+     0.6666666666666666,
+     1.0
+    ],
+    "f1": [
+     0.19601518026565465,
+     0.6129652605459054
+    ]
+   }
+  },
+  "regla_n_areas_bajo_51": {
+   "nombre": "Regla: áreas bajo 51",
+   "roc_auc": 0.5314505776636713,
+   "average_precision": 0.10356731875719219,
+   "precision": 0.019288158110580725,
+   "sensibilidad": 0.2772727272727272,
+   "f1": 0.03606567853725577,
+   "tasa_marcados": 0.1987974683544304,
+   "verdaderos_positivos": 3.05,
+   "falsos_positivos": 154.0,
+   "ic95": {
+    "roc_auc": [
+     0.47947761194029853,
+     0.6565796092922594
+    ],
+    "average_precision": [
+     0.006234413965087282,
+     0.3385764879981074
+    ],
+    "precision": [
+     0.0,
+     0.05660711896159506
+    ],
+    "sensibilidad": [
+     0.0,
+     0.7142857142857143
+    ],
+    "f1": [
+     0.0,
+     0.10323136818687427
+    ]
+   }
+  },
+  "regla_faltas_T1": {
+   "nombre": "Regla: faltas T1",
+   "roc_auc": 0.6490839071070138,
+   "average_precision": 0.11740505555761782,
+   "precision": 0.12235500610500609,
+   "sensibilidad": 0.11363636363636362,
+   "f1": 0.11442471305218645,
+   "tasa_marcados": 0.013987341772151902,
+   "verdaderos_positivos": 1.25,
+   "falsos_positivos": 9.8,
+   "ic95": {
+    "roc_auc": [
+     0.41196469369578687,
+     0.8505975142979936
+    ],
+    "average_precision": [
+     0.008978845482383905,
+     0.34978414510887085
+    ],
+    "precision": [
+     0.0,
+     0.4444444444444444
+    ],
+    "sensibilidad": [
+     0.0,
+     0.375
+    ],
+    "f1": [
+     0.0,
+     0.33362068965517083
+    ]
+   }
+  },
+  "siempre_continuidad": {
+   "nombre": "Azar (\"nadie abandona\")",
+   "average_precision": 0.013924050632911392,
+   "roc_auc": 0.5,
+   "sensibilidad": 0.0,
+   "precision": 0.0,
+   "f1": 0.0,
+   "tasa_marcados": 0.0
+  }
+ },
+ "diferencia_ap_vs_xgboost": {
+  "regresion_logistica": {
+   "media": 0.11558836746815536,
+   "ic95": [
+    -0.046220238095238037,
+    0.42009500188964416
+   ]
+  },
+  "random_forest": {
+   "media": 0.02045980844444603,
+   "ic95": [
+    -0.0846109736824023,
+    0.17736298050856636
+   ]
+  },
+  "arbol_decision": {
+   "media": -0.28932113659299863,
+   "ic95": [
+    -0.6838510611414871,
+    -0.023317537392004598
+   ]
+  }
+ },
+ "temporal_2021_2023_a_2024": {
+  "evaluacion": 320,
+  "positivos": 2,
+  "modelos": {
+   "xgboost": {
+    "roc_auc": 0.9716981132075472,
+    "average_precision": 0.14090909090909093,
+    "precision": 0.16666666666666666,
+    "sensibilidad": 1.0,
+    "f1": 0.2857142857142857,
+    "tasa_marcados": 0.0375,
+    "verdaderos_positivos": 2,
+    "falsos_positivos": 10
+   },
+   "regresion_logistica": {
+    "roc_auc": 0.9716981132075472,
+    "average_precision": 0.14090909090909093,
+    "precision": 0.18181818181818182,
+    "sensibilidad": 1.0,
+    "f1": 0.3076923076923077,
+    "tasa_marcados": 0.034375,
+    "verdaderos_positivos": 2,
+    "falsos_positivos": 9
+   },
+   "random_forest": {
+    "roc_auc": 0.9716981132075472,
+    "average_precision": 0.14090909090909093,
+    "precision": 0.18181818181818182,
+    "sensibilidad": 1.0,
+    "f1": 0.3076923076923077,
+    "tasa_marcados": 0.034375,
+    "verdaderos_positivos": 2,
+    "falsos_positivos": 9
+   },
+   "arbol_decision": {
+    "roc_auc": 0.9858490566037736,
+    "average_precision": 0.18181818181818182,
+    "precision": 0.18181818181818182,
+    "sensibilidad": 1.0,
+    "f1": 0.3076923076923077,
+    "tasa_marcados": 0.034375,
+    "verdaderos_positivos": 2,
+    "falsos_positivos": 9
+   }
+  }
+ },
+ "versiones": {
+  "sklearn": "1.4.1.post1",
+  "xgboost": "2.0.3"
+ },
+ "nota": "Con 11 abandonos y notas T1 registradas de forma estándar para quienes abandonaron (docs/HALLAZGO_REGISTROS_PEDAGOGICOS.md), cualquier método que use el promedio separa casi igual: las diferencias entre algoritmos no son distinguibles."
+}
