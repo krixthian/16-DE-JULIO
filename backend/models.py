@@ -213,6 +213,48 @@ class Asistencia(Base):
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_0900_ai_ci"},
     )
 
+class SesionClase(Base):
+    """Una clase (hora) de una materia en un día: denominador de la asistencia por materia."""
+    __tablename__ = "sesiones_clase"
+    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True, nullable=False)
+    jornada_id = Column(BIGINT(unsigned=True), nullable=False)
+    curso_id = Column(BIGINT(unsigned=True), nullable=False)
+    materia_id = Column(BIGINT(unsigned=True), nullable=False)
+    periodo = Column(TINYINT(unsigned=True), nullable=False)
+    dictada = Column(Boolean, nullable=False, server_default=text('TRUE'))
+    registrado_por = Column(BIGINT(unsigned=True), nullable=False)
+    registrado_en = Column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    __table_args__ = (
+        UniqueConstraint('jornada_id','periodo'),
+        UniqueConstraint('id','curso_id'),
+        ForeignKeyConstraint(['jornada_id', 'curso_id'], ['jornadas_clase.id', 'jornadas_clase.curso_id']),
+        ForeignKeyConstraint(['materia_id'], ['materias.id']),
+        ForeignKeyConstraint(['registrado_por'], ['usuarios.id']),
+        CheckConstraint('periodo BETWEEN 1 AND 8'),
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_0900_ai_ci"},
+    )
+
+class AsistenciaMateria(Base):
+    """Asistencia de un estudiante en una clase (hora) de una materia; permite la licencia parcial del día."""
+    __tablename__ = "asistencias_materia"
+    id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True, nullable=False)
+    sesion_id = Column(BIGINT(unsigned=True), nullable=False)
+    curso_id = Column(BIGINT(unsigned=True), nullable=False)
+    matricula_id = Column(BIGINT(unsigned=True), nullable=False)
+    estado = Column(Enum('PRESENTE','FALTA','ATRASO','LICENCIA'), nullable=False)
+    justificada = Column(Boolean, nullable=True)
+    observacion = Column(String(500), nullable=True)
+    registrado_por = Column(BIGINT(unsigned=True), nullable=False)
+    registrado_en = Column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP'))
+    __table_args__ = (
+        UniqueConstraint('sesion_id','matricula_id'),
+        ForeignKeyConstraint(['sesion_id', 'curso_id'], ['sesiones_clase.id', 'sesiones_clase.curso_id']),
+        ForeignKeyConstraint(['matricula_id', 'curso_id'], ['matriculas.id', 'matriculas.curso_id']),
+        ForeignKeyConstraint(['registrado_por'], ['usuarios.id']),
+        CheckConstraint("estado <> 'PRESENTE' OR justificada IS NULL"),
+        {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_0900_ai_ci"},
+    )
+
 class Evaluacion(Base):
     __tablename__ = "evaluaciones"
     id = Column(BIGINT(unsigned=True), primary_key=True, autoincrement=True, nullable=False)
@@ -414,6 +456,8 @@ class Citacion(Base):
     intervencion_id = Column(BIGINT(unsigned=True), nullable=True)
     fecha_programada = Column(DateTime, nullable=False)
     motivo = Column(Text, nullable=False)
+    origen = Column(Enum('DOCENTE_MATERIA','DIRECCION','ORIENTACION'), nullable=False, server_default=text("'DIRECCION'"))
+    materia_id = Column(BIGINT(unsigned=True), nullable=True)
     estado = Column(Enum('PROGRAMADA','ASISTIO','NO_ASISTIO','CANCELADA'), nullable=False, server_default=text("'PROGRAMADA'"))
     acuerdos = Column(Text, nullable=True)
     registrado_por = Column(BIGINT(unsigned=True), nullable=False)
@@ -423,6 +467,8 @@ class Citacion(Base):
         ForeignKeyConstraint(['apoderado_id'], ['apoderados.id']),
         ForeignKeyConstraint(['intervencion_id'], ['intervenciones.id']),
         ForeignKeyConstraint(['registrado_por'], ['usuarios.id']),
+        ForeignKeyConstraint(['materia_id'], ['materias.id']),
+        CheckConstraint("(origen = 'DOCENTE_MATERIA' AND materia_id IS NOT NULL) OR (origen <> 'DOCENTE_MATERIA' AND materia_id IS NULL)"),
         {"mysql_engine": "InnoDB", "mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_0900_ai_ci"},
     )
 

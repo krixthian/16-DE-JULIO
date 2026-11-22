@@ -26,7 +26,7 @@ En el equipo original se preparó, **fuera de Git**, la carpeta `TRASLADO_LAPTOP
    cd 16-DE-JULIO
    git checkout mejoras-alertas
    ```
-3. **Restaurar la base** (crea `alerta_temprana_v2` con sus 28 tablas y todos los registros). En PowerShell, con el usuario de MySQL de la laptop:
+3. **Restaurar la base** (crea `alerta_temprana_v2` con sus tablas y todos los registros). Si el respaldo es anterior al 22/11/2026 (28 tablas), después de restaurarlo ejecutar también `docs/AMPLIACION_ASISTENCIA_POR_MATERIA.sql`, que agrega la asistencia por materia y las citaciones con origen sin tocar los datos. En PowerShell, con el usuario de MySQL de la laptop:
    ```powershell
    & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p --default-character-set=utf8mb4 -e "source RUTA\TRASLADO_LAPTOP_16_DE_JULIO\base_de_datos\alerta_temprana_v2.sql"
    ```
@@ -48,7 +48,7 @@ En el equipo original se preparó, **fuera de Git**, la carpeta `TRASLADO_LAPTOP
    ```powershell
    cd backend; python -c "from sqlalchemy import inspect, text; from database import engine; i=inspect(engine); c=engine.connect(); print(len(i.get_table_names()), sum(len(i.get_foreign_keys(t)) for t in i.get_table_names()), c.execute(text('select count(*) from matriculas')).scalar(), c.execute(text('select count(*) from alertas')).scalar())"
    ```
-   Debe imprimir `28 47 940 13` (o 790 matrículas si ya se ejecutó la limpieza de las simuladas).
+   Debe imprimir `30 54 940 13` (o 790 matrículas si ya se ejecutó la limpieza de las simuladas).
 7. **Claude Code** (opcional): `CLAUDE.md`, en la raíz del repositorio, ya trae el contexto y las reglas del proyecto. Para conservar también la memoria, copiar `claude_memoria/*.md` a `%USERPROFILE%\.claude\projects\<carpeta>\memory\`. `<carpeta>` es la ruta del proyecto en la laptop con `:` y `\` cambiados por `-` (por ejemplo `C--Users-Cristhian-Desktop-16-DE-JULIO`). Se crea al abrir Claude Code por primera vez en el proyecto.
 8. **Arrancar**: backend con `python -m uvicorn main:app --host 127.0.0.1 --port 8000 --app-dir backend` y frontend con `npm --prefix frontend run dev -- --host 127.0.0.1 --port 5173`. En el panel de Claude Code basta con la configuración de `.claude/launch.json`.
 
@@ -60,7 +60,7 @@ No ejecutar el esquema vacío ni repetir el seed sobre el respaldo restaurado: y
 
 ## Comenzar con una base vacía
 
-Ejecutar `database_schema_actual.sql` en un esquema nuevo y vacío. Este archivo reúne las 28 tablas actuales y no necesita los antiguos ajustes SQL de contexto. Antes de ejecutar `seeds/seed_150_estudiantes_matriculas.sql` hay que crear de forma segura un administrador con contraseña hasheada y configurar la gestión 2026 con su calendario. No se incluyen credenciales iniciales.
+Ejecutar `database_schema_actual.sql` en un esquema nuevo y vacío. Este archivo reúne las 30 tablas actuales y no necesita los antiguos ajustes SQL de contexto. Antes de ejecutar `seeds/seed_150_estudiantes_matriculas.sql` hay que crear de forma segura un administrador con contraseña hasheada y configurar la gestión 2026 con su calendario. No se incluyen credenciales iniciales.
 
 El seed crea 150 estudiantes ficticios y sus matrículas SIMULADO, 25 por grado de primero a sexto A. Reutiliza los cursos existentes, valida conflictos y toma la fecha inicial del calendario. Necesita permisos para crear temporalmente una rutina. No agrega asistencia, notas, materias ni asignaciones docentes.
 

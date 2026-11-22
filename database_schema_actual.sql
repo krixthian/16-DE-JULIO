@@ -1,6 +1,6 @@
 -- Estructura actual completa. Solo ejecutar en una base NUEVA y VACIA.
--- Verificado el 2026-11-06 contra la base real alerta_temprana_v2 (MySQL 8.0.46) y backend/models.py:
--- 28 tablas, 47 claves foráneas, 40 CHECK; columnas, tipos, índices y restricciones idénticos.
+-- Verificado el 2026-11-22 contra la base real alerta_temprana_v2 (MySQL 8.0.46) y backend/models.py:
+-- 30 tablas, 54 claves foráneas, 43 CHECK; incluye la asistencia por materia y las citaciones con origen; columnas, tipos, índices y restricciones idénticos.
 
 -- No incluye usuarios, contraseñas ni datos escolares.
 
@@ -256,6 +256,48 @@ CREATE TABLE asistencias (
 	FOREIGN KEY(matricula_id, curso_id) REFERENCES matriculas (id, curso_id), 
 	FOREIGN KEY(jornada_id, curso_id) REFERENCES jornadas_clase (id, curso_id), 
 	FOREIGN KEY(registrado_por) REFERENCES usuarios (id)
+)ENGINE=InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci
+
+;
+
+
+CREATE TABLE sesiones_clase (
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	jornada_id BIGINT UNSIGNED NOT NULL,
+	curso_id BIGINT UNSIGNED NOT NULL,
+	materia_id BIGINT UNSIGNED NOT NULL,
+	periodo TINYINT UNSIGNED NOT NULL,
+	dictada BOOL NOT NULL DEFAULT TRUE,
+	registrado_por BIGINT UNSIGNED NOT NULL,
+	registrado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (id),
+	UNIQUE (jornada_id, periodo),
+	UNIQUE (id, curso_id),
+	FOREIGN KEY(jornada_id, curso_id) REFERENCES jornadas_clase (id, curso_id),
+	FOREIGN KEY(materia_id) REFERENCES materias (id),
+	FOREIGN KEY(registrado_por) REFERENCES usuarios (id),
+	CHECK (periodo BETWEEN 1 AND 8)
+)ENGINE=InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci
+
+;
+
+
+CREATE TABLE asistencias_materia (
+	id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+	sesion_id BIGINT UNSIGNED NOT NULL,
+	curso_id BIGINT UNSIGNED NOT NULL,
+	matricula_id BIGINT UNSIGNED NOT NULL,
+	estado ENUM('PRESENTE','FALTA','ATRASO','LICENCIA') NOT NULL,
+	justificada BOOL,
+	observacion VARCHAR(500),
+	registrado_por BIGINT UNSIGNED NOT NULL,
+	registrado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (id),
+	UNIQUE (sesion_id, matricula_id),
+	FOREIGN KEY(sesion_id, curso_id) REFERENCES sesiones_clase (id, curso_id),
+	FOREIGN KEY(matricula_id, curso_id) REFERENCES matriculas (id, curso_id),
+	FOREIGN KEY(registrado_por) REFERENCES usuarios (id),
+	CHECK (estado <> 'PRESENTE' OR justificada IS NULL)
 )ENGINE=InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci
 
 ;
@@ -540,16 +582,20 @@ CREATE TABLE citaciones (
 	apoderado_id BIGINT UNSIGNED NOT NULL, 
 	intervencion_id BIGINT UNSIGNED, 
 	fecha_programada DATETIME NOT NULL, 
-	motivo TEXT NOT NULL, 
-	estado ENUM('PROGRAMADA','ASISTIO','NO_ASISTIO','CANCELADA') NOT NULL DEFAULT 'PROGRAMADA', 
+		motivo TEXT NOT NULL,
+	origen ENUM('DOCENTE_MATERIA','DIRECCION','ORIENTACION') NOT NULL DEFAULT 'DIRECCION',
+	materia_id BIGINT UNSIGNED,
+	estado ENUM('PROGRAMADA','ASISTIO','NO_ASISTIO','CANCELADA') NOT NULL DEFAULT 'PROGRAMADA',  
 	acuerdos TEXT, 
 	registrado_por BIGINT UNSIGNED NOT NULL, 
 	registrado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, 
 	PRIMARY KEY (id), 
 	FOREIGN KEY(matricula_id) REFERENCES matriculas (id), 
 	FOREIGN KEY(apoderado_id) REFERENCES apoderados (id), 
-	FOREIGN KEY(intervencion_id) REFERENCES intervenciones (id), 
-	FOREIGN KEY(registrado_por) REFERENCES usuarios (id)
+		FOREIGN KEY(intervencion_id) REFERENCES intervenciones (id),
+	FOREIGN KEY(registrado_por) REFERENCES usuarios (id),
+	FOREIGN KEY(materia_id) REFERENCES materias (id),
+	CHECK ((origen = 'DOCENTE_MATERIA' AND materia_id IS NOT NULL) OR (origen <> 'DOCENTE_MATERIA' AND materia_id IS NULL))
 )ENGINE=InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_0900_ai_ci
 
 ;

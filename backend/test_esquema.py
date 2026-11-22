@@ -1,4 +1,4 @@
-"""El diseño de la base (models.py), el script SQL y el diagrama Mermaid deben coincidir: 28 tablas, 47 FK, 40 CHECK."""
+"""El diseño de la base (models.py), el script SQL y el diagrama Mermaid deben coincidir: 30 tablas, 54 FK, 43 CHECK."""
 import re
 import unittest
 from pathlib import Path
@@ -18,15 +18,15 @@ def foreign_keys():
 class EsquemaTests(unittest.TestCase):
     def test_models_match_thesis_counts(self):
         tables = m.Base.metadata.tables.values()
-        self.assertEqual(len(tables), 28)
-        self.assertEqual(len(foreign_keys()), 47)
-        self.assertEqual(sum(isinstance(c, CheckConstraint) for t in tables for c in t.constraints), 40)
+        self.assertEqual(len(tables), 30)
+        self.assertEqual(len(foreign_keys()), 54)
+        self.assertEqual(sum(isinstance(c, CheckConstraint) for t in tables for c in t.constraints), 43)
 
     def test_sql_script_matches_models(self):
         sql = (ROOT / 'database_schema_actual.sql').read_text(encoding='utf-8')
         self.assertEqual(set(re.findall(r'CREATE TABLE (\w+) \(', sql)), set(m.Base.metadata.tables))
-        self.assertEqual(sql.count('FOREIGN KEY'), 47)
-        self.assertEqual(sql.count('CHECK ('), 40)
+        self.assertEqual(sql.count('FOREIGN KEY'), 54)
+        self.assertEqual(sql.count('CHECK ('), 43)
 
     def test_mermaid_diagram_has_every_foreign_key(self):
         mmd = (ROOT / 'docs' / 'diagrama_relaciones.mmd').read_text(encoding='utf-8')

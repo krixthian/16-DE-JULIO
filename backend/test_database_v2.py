@@ -16,7 +16,8 @@ class DatabaseV2Tests(unittest.TestCase):
     def test_database_structure(self):
         inspector = inspect(engine)
         self.assertEqual(set(inspector.get_table_names()), set(models.Base.metadata.tables))
-        self.assertEqual(sum(len(inspector.get_foreign_keys(t)) for t in inspector.get_table_names()), 47)
+        # 54 desde la ampliación del 22/11/2026 (asistencia por materia y citaciones con origen).
+        self.assertEqual(sum(len(inspector.get_foreign_keys(t)) for t in inspector.get_table_names()), 54)
 
     def test_checks_and_course_foreign_keys(self):
         with engine.connect() as conn:

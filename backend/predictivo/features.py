@@ -3,7 +3,9 @@ from collections import defaultdict
 from datetime import date, datetime, time
 from statistics import mean
 
-VERSION = 'primaria-marzo-v1'
+from predictivo import asistencia_materia as am
+
+VERSION = 'primaria-materia-v2'  # v2: asistencia por materia, licencia parcial y citaciones por origen
 CONTEXT_FIELDS = (
     'actividades_propuestas actividades_iniciadas actividades_completadas '
     'clases_observadas clases_con_participacion reuniones_convocadas reuniones_atendidas '
@@ -38,6 +40,7 @@ DESCRIPTIONS = {
     'antiguedad_contexto_dias': 'Días desde la observación de la última ficha completa.',
 }
 DESCRIPTIONS.update({f'contexto_{k}': f'Última ficha completa: {k}. Vacío = no recabado; booleanos 0/1.' for k in CONTEXT_FIELDS})
+DESCRIPTIONS.update(am.DESCRIPCIONES)
 FEATURE_NAMES = list(DESCRIPTIONS)
 
 
@@ -94,6 +97,9 @@ def validate_tables(tables):
         'evaluaciones': [('curso_id', 'cursos'), ('asignacion_id', 'asignaciones_docentes')],
         'calificaciones': [('matricula_id', 'matriculas'), ('evaluacion_id', 'evaluaciones')],
         'asistencias': [('matricula_id', 'matriculas'), ('jornada_id', 'jornadas_clase')],
+        'sesiones_clase': [('jornada_id', 'jornadas_clase')],
+        'asistencias_materia': [('matricula_id', 'matriculas'), ('sesion_id', 'sesiones_clase')],
+        'citaciones': [('matricula_id', 'matriculas')],
         'tareas': [('curso_id', 'cursos')],
         'entregas_tareas': [('matricula_id', 'matriculas'), ('tarea_id', 'tareas')],
         'contextos_permanencia': [('matricula_id', 'matriculas')],
@@ -108,11 +114,12 @@ def validate_tables(tables):
                     raise ValueError(f'Relación inexistente: {name}.{key}.')
                 if 'curso_id' in row and 'curso_id' in parent and row['curso_id'] != parent['curso_id']:
                     raise ValueError(f'Relación entre cursos diferentes: {name}.{key}.')
-    states = {'asistencias': {'PRESENTE', 'FALTA', 'ATRASO', 'LICENCIA'},
+    states = {'asistencias': {'PRESENTE', 'FALTA', 'ATRASO', 'LICENCIA'}, 'asistencias_materia': {'PRESENTE', 'FALTA', 'ATRASO', 'LICENCIA'},
         'calificaciones': {'CALIFICADA', 'PENDIENTE', 'NO_PRESENTADA', 'EXENTA'},
         'entregas_tareas': {'PENDIENTE', 'ENTREGADA', 'NO_ENTREGADA', 'EXENTA'}}
     unique_keys = {'asistencias': ('matricula_id', 'jornada_id'), 'calificaciones': ('matricula_id', 'evaluacion_id'),
-        'entregas_tareas': ('matricula_id', 'tarea_id'), 'jornadas_clase': ('curso_id', 'fecha')}
+        'entregas_tareas': ('matricula_id', 'tarea_id'), 'jornadas_clase': ('curso_id', 'fecha'),
+        'asistencias_materia': ('matricula_id', 'sesion_id'), 'sesiones_clase': ('jornada_id', 'periodo')}
     for name, allowed in states.items():
         if any(r['estado'] not in allowed for r in tables.get(name, [])):
             raise ValueError(f'Estado desconocido en {name}.')
@@ -172,6 +179,10 @@ def build_features(tables, cutoff, origin, gestion_id=None):
     deliveries = grouped(data.get('entregas_tareas', []), 'matricula_id')
     contexts = grouped(data.get('contextos_permanencia', []), 'matricula_id')
     incidents = grouped(data.get('registros_convivencia', []), 'matricula_id')
+    day_by_id = indexed(data.get('jornadas_clase', []))
+    sessions = grouped(data.get('sesiones_clase', []), 'curso_id')
+    subject_attendance = grouped(data.get('asistencias_materia', []), 'matricula_id')
+    summons = grouped(data.get('citaciones', []), 'matricula_id')
     rows = []
     for enrollment in data.get('matriculas', []):
         if not known(enrollment, available, 'creado_en') or day(enrollment['fecha_ingreso']) > cutoff:
@@ -257,6 +268,13 @@ def build_features(tables, cutoff, origin, gestion_id=None):
         forms = [c for c in contexts[enrollment['id']] if c['origen'] == origin and start <= day(c['fecha_observacion']) <= end and known(c, available)]
         form = max(forms, key=lambda c: (day(c['fecha_observacion']), instant(c['registrado_en']), c['id'])) if forms else None
         values['contexto_disponible'] = int(form is not None)
+        # Asistencia por materia (por hora) y citaciones por origen, solo con hechos conocidos al corte.
+        own_sessions = [dict(s, jornada_id=s['jornada_id']) for s in sessions[course['id']] if known(s, available)
+            and s['jornada_id'] in day_ids]
+        session_ids = {s['id'] for s in own_sessions}
+        own_records = [r for r in subject_attendance[enrollment['id']] if r['sesion_id'] in session_ids and known(r, available)]
+        own_summons = [c for c in summons[enrollment['id']] if known(c, available) and start <= day(c['fecha_programada']) <= end]
+        values.update(am.indicadores(own_sessions, own_records, own_summons))
         if form:
             values['antiguedad_contexto_dias'] = (cutoff - day(form['fecha_observacion'])).days
             values.update({f'contexto_{k}': float(form[k]) if form.get(k) is not None else None for k in CONTEXT_FIELDS})

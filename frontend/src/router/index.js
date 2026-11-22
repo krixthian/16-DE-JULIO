@@ -12,6 +12,7 @@ const router = createRouter({
     {path:'/tareas',name:'tareas',component:()=>import('../views/TasksView.vue'),meta:{requiresAuth:true,attendance:true}},
     {path:'/calificaciones',name:'calificaciones',component:()=>import('../views/GradesView.vue'),meta:{requiresAuth:true,attendance:true}},
     {path:'/asistencia',name:'asistencia',component:()=>import('../views/AttendanceView.vue'),meta:{requiresAuth:true,attendance:true}},
+    {path:'/asistencia-materia',name:'asistencia-materia',component:()=>import('../views/SubjectAttendanceView.vue'),meta:{requiresAuth:true,attendance:true}},
     ...['gestiones','cursos','estudiantes','matriculas','materias','asignaciones'].map(section=>({
       path:`/escolar/${section}`, name:section,
       component:()=>import('../views/SchoolView.vue'), props:{section},

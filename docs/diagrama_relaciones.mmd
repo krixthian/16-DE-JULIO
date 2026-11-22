@@ -1,5 +1,5 @@
-%% Generado desde la base real alerta_temprana_v2 (information_schema), 2026-11-06.
-%% 28 tablas, 47 claves foráneas. ||--o| = relación 1 a 0..1 (FK única); ||--o{ = 1 a muchos.
+%% Generado desde la base real alerta_temprana_v2 (information_schema), 2026-11-06; ampliado el 2026-11-22.
+%% 30 tablas, 54 claves foráneas. ||--o| = relación 1 a 0..1 (FK única); ||--o{ = 1 a muchos.
 erDiagram
     usuarios ||--o{ auditoria_cambios : "usuario_id"
     gestiones ||--o{ cursos : "gestion_id"
@@ -18,6 +18,12 @@ erDiagram
     jornadas_clase ||--o{ asistencias : "jornada_id, curso_id"
     matriculas ||--o{ asistencias : "matricula_id, curso_id"
     usuarios ||--o{ asistencias : "registrado_por"
+    jornadas_clase ||--o{ sesiones_clase : "jornada_id, curso_id"
+    materias ||--o{ sesiones_clase : "materia_id"
+    usuarios ||--o{ sesiones_clase : "registrado_por"
+    sesiones_clase ||--o{ asistencias_materia : "sesion_id, curso_id"
+    matriculas ||--o{ asistencias_materia : "matricula_id, curso_id"
+    usuarios ||--o{ asistencias_materia : "registrado_por"
     matriculas ||--o{ contextos_permanencia : "matricula_id"
     usuarios ||--o{ contextos_permanencia : "registrado_por"
     matriculas ||--o{ cortes_predictivos : "matricula_id"
@@ -47,4 +53,5 @@ erDiagram
     intervenciones ||--o{ citaciones : "intervencion_id"
     matriculas ||--o{ citaciones : "matricula_id"
     usuarios ||--o{ citaciones : "registrado_por"
+    materias ||--o{ citaciones : "materia_id"
     citaciones ||--o{ notificaciones : "citacion_id"

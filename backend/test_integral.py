@@ -26,7 +26,7 @@ ESCOLAR = {'Admin', 'Director'}
 PERSONAL = {'Admin', 'Director', 'Docente'}
 POLITICA = [  # (prefijo de ruta, roles permitidos); None = público
     ('/auth/login', None), ('/auth/me', set(ROLES)), ('/users', {'Admin'}), ('/escolar', ESCOLAR), ('/predictivo', ESCOLAR),
-    ('/asistencia', PERSONAL), ('/calificaciones/periodos', ESCOLAR), ('/calificaciones', PERSONAL), ('/tareas', PERSONAL),
+    ('/asistencia-materia', PERSONAL), ('/citaciones', PERSONAL), ('/asistencia', PERSONAL), ('/calificaciones/periodos', ESCOLAR), ('/calificaciones', PERSONAL), ('/tareas', PERSONAL),
     ('/alertas', SEGUIMIENTO), ('/intervenciones', SEGUIMIENTO), ('/dashboard', SEGUIMIENTO), ('/reportes', SEGUIMIENTO),
     ('/health', None), ('/', None)]
 

@@ -10,6 +10,8 @@ TABLES = (
     'asistencias', 'evaluaciones', 'calificaciones', 'tareas', 'entregas_tareas',
     'contextos_permanencia', 'registros_convivencia', 'situaciones_escolares',
 )
+# Agregadas en la versión primaria-materia-v2; opcionales en fuentes JSON anteriores.
+OPTIONAL_TABLES = ('sesiones_clase', 'asistencias_materia', 'citaciones')
 
 
 def serialize(value):
@@ -30,7 +32,7 @@ def from_json(path):
     missing = set(TABLES) - tables.keys()
     if missing:
         raise ValueError(f'Faltan tablas fuente: {sorted(missing)}')
-    return {k: tables.get(k, []) for k in (*TABLES, 'auditoria_cambios')}
+    return {k: tables.get(k, []) for k in (*TABLES, *OPTIONAL_TABLES, 'auditoria_cambios')}
 
 
 def from_mysql(db):
@@ -38,12 +40,12 @@ def from_mysql(db):
     import models as m
     tables = {}
     # Lectura consistente: el llamador mantiene una única transacción.
-    for name in TABLES:
+    for name in (*TABLES, *OPTIONAL_TABLES):
         table = m.Base.metadata.tables[name]
-        cols = [c for c in table.c if c.name not in ('descripcion_objetiva', 'accion_inmediata', 'observacion', 'titulo')]
+        cols = [c for c in table.c if c.name not in ('descripcion_objetiva', 'accion_inmediata', 'observacion', 'titulo', 'motivo', 'acuerdos')]
         tables[name] = [dict(row) for row in db.execute(select(*cols)).mappings()]
     audit = m.AuditoriaCambio.__table__
-    tables['auditoria_cambios'] = [dict(row) for row in db.execute(select(audit).where(audit.c.tabla_afectada.in_(TABLES))).mappings()]
+    tables['auditoria_cambios'] = [dict(row) for row in db.execute(select(audit).where(audit.c.tabla_afectada.in_((*TABLES, *OPTIONAL_TABLES)))).mappings()]
     return tables
 
 
