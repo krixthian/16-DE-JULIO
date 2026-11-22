@@ -46,6 +46,15 @@ const balanceOptions=computed(()=>{const o=base({horizontal:true,max:1,title:'Me
  o.plugins.tooltip={callbacks:{footer:items=>{const b=balance.value[items[0].dataIndex];return `Detecta ${n(b.verdaderos_positivos_media,2)} de ${data.value.modelo.positivos} · ${n(b.falsos_positivos_media,2)} falsas alarmas`}}};return o})
 const separation=computed(()=>Object.entries(data.value?.separacion_promedio_le_66||{}))
 const ea=computed(()=>data.value?.etiqueta_ampliada)
+const reg=computed(()=>data.value?.registros)
+const regRows=computed(()=>{const r=reg.value;if(!r)return []
+ const c=r.calidad_datos,p=r.patrones_asistencia,racha=Object.entries(p.continuaron_racha_maxima_de_faltas).reduce((a,[k,v])=>Number(k)>a?Number(k):a,0)
+ return [
+  ['Notas casi iguales en las 9 áreas (desviación < '+n(c.umbral_plano,0)+' puntos)',`${c.notas_planas.abandonaron} de ${c.notas_planas.de_abandonos}`,`${c.notas_planas.continuaron} de ${c.notas_planas.de_continuaron}`],
+  ['SER exactamente 3 de 5 en todas las áreas',c.ser_exacto_3_de_5.abandonaron,c.ser_exacto_3_de_5.continuaron],
+  ['Autoevaluación exactamente 6,0',c.autoevaluacion_exacta_6.abandonaron,c.autoevaluacion_exacta_6.continuaron],
+  ['Última asistencia el último día de clases de un mes',`${p.abandono_desde_fin_de_mes} de ${p.abandonos-p.abandonos_sin_ninguna_asistencia} que asistieron`,'—'],
+  ['Racha más larga de faltas seguidas en el año','desde fin de mes hasta noviembre',`${racha} días como máximo`]]})
 const pct=f=>`${Math.round(f*100)} %`
 const curveChart=computed(()=>{const e=ea.value;if(!e)return null
  return {labels:e.curva_abandono.map(c=>pct(c.fraccion)),datasets:[
@@ -119,6 +128,30 @@ onBeforeUnmount(()=>observer.disconnect())
     </table></div>
    </details>
 
+   <!-- Dimensiones de riesgo -->
+   <article v-if="data.dimensiones" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
+    <h2 class="font-semibold">Variables de riesgo por dimensión</h2>
+    <p class="text-sm text-slate-500 mt-1">Las 9 notas por área no son 9 riesgos distintos: forman una dimensión académica. El modelo actual usa {{ data.dimensiones.variables_modelo }} variables, las que existen en los registros históricos 2021-2025. El sistema ya calcula {{ data.dimensiones.variables_sistema }} (versión {{ data.dimensiones.version_sistema }}) desde sus módulos, para reentrenar cuando la escuela acumule registros.</p>
+    <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+     <div v-for="d in data.dimensiones.dimensiones" :key="d.clave" class="rounded-lg border border-slate-200 dark:border-slate-700 p-4 flex flex-col">
+      <p class="font-semibold">{{ d.nombre }}</p>
+      <p class="text-xs text-slate-500 mt-1">{{ d.descripcion }}</p>
+      <template v-if="d.porcentaje!=null">
+       <p class="text-2xl font-bold mt-3">{{ n(d.porcentaje,1) }} %</p>
+       <div class="h-2 rounded bg-slate-100 dark:bg-slate-700 mt-1"><div class="h-2 rounded bg-blue-600" :style="{width:`${Math.min(100,d.porcentaje)}%`}"></div></div>
+       <p class="text-xs text-slate-500 mt-1">del peso del modelo actual</p>
+      </template>
+      <p class="text-sm mt-3 font-medium">Modelo actual ({{ d.modelo.length }})</p>
+      <p v-if="d.modelo.length" class="text-xs text-slate-600 dark:text-slate-300 mt-1">{{ d.modelo.join(' · ') }}</p>
+      <p v-else class="text-xs text-amber-700 dark:text-amber-300 mt-1">Sin variables: los registros históricos no traen citaciones ni incidentes. El sistema ya los registra.</p>
+      <details class="mt-3 text-xs">
+       <summary class="cursor-pointer text-blue-700 dark:text-blue-300">El sistema además calcula {{ d.sistema.length }}</summary>
+       <ul class="mt-2 space-y-1 list-disc pl-4 text-slate-600 dark:text-slate-300"><li v-for="v in d.sistema" :key="v.variable">{{ v.descripcion }}</li></ul>
+      </details>
+     </div>
+    </div>
+   </article>
+
    <!-- Importancia -->
    <article v-if="data.importancia" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
     <h2 class="font-semibold">¿En qué se fija el modelo? Importancia de cada variable</h2>
@@ -165,6 +198,21 @@ onBeforeUnmount(()=>observer.disconnect())
      <ul class="mt-1 space-y-1 list-disc pl-5 text-slate-600 dark:text-slate-300"><li v-for="l in data.limitaciones" :key="l">{{ l }}</li></ul>
     </article>
    </div>
+   <!-- Registros pedagógicos originales -->
+   <article v-if="reg" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-800 p-5">
+    <h2 class="font-semibold">Lo que muestran los registros pedagógicos originales</h2>
+    <p class="text-sm text-slate-500 mt-1">Asistencia día por día y notas por actividad (SER, SABER, HACER, DECIDIR) de los registros entregados por la Dirección: {{ reg.matriculas }} matrículas emparejadas sin nombres. Análisis pedido por el docente revisor para ir más allá de los totales trimestrales.</p>
+    <div class="overflow-x-auto mt-3"><table class="w-full text-sm"><thead class="text-left text-slate-500"><tr><th class="py-2 pr-3">Señal en el registro</th><th class="py-2 pr-3">Abandonaron ({{ reg.abandonos }})</th><th class="py-2">Continuaron ({{ reg.matriculas-reg.abandonos }})</th></tr></thead>
+     <tbody class="divide-y divide-slate-100 dark:divide-slate-700"><tr v-for="[s,a,c] in regRows" :key="s"><td class="py-2 pr-3">{{ s }}</td><td class="py-2 pr-3 font-semibold">{{ a }}</td><td class="py-2">{{ c }}</td></tr></tbody></table></div>
+    <div class="grid md:grid-cols-2 gap-4 mt-4 text-sm">
+     <div class="rounded-lg bg-slate-50 dark:bg-slate-900 p-3"><p class="font-semibold">La asistencia del 1.er trimestre no anticipa el abandono</p>
+      <p class="mt-1">Modelo solo con asistencia, incluso día por día: AP {{ n(reg.senal_asistencia_t1.asistencia_dia_a_dia_t1.average_precision) }} frente a {{ n(reg.senal_asistencia_t1.azar.average_precision) }} del azar; detecta {{ n(reg.senal_asistencia_t1.asistencia_dia_a_dia_t1.detectados,1) }} de {{ reg.abandonos }}. Quienes abandonaron asistían con normalidad de febrero a abril.</p></div>
+     <div class="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-3"><p class="font-semibold">Conclusión</p>
+      <p class="mt-1">Las notas de quienes abandonaron se registraron de forma estándar: el patrón que aprende el modelo (promedio 62-66) es en buena parte un patrón de registro, y eso explica sus métricas altas. No se agregaron variables de "uniformidad" (inflarían el resultado). El método es válido; cuánto anticipa en la realidad se medirá con los registros que el sistema capture día a día.</p></div>
+    </div>
+    <p class="mt-3 text-xs text-slate-500">Pendiente: confirmar con la Dirección cómo se completan las notas y la asistencia de un estudiante que deja de asistir. Detalle en docs/HALLAZGO_REGISTROS_PEDAGOGICOS.md.</p>
+   </article>
+
    <!-- Etiqueta ampliada y curva de aprendizaje -->
    <article v-if="ea" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
     <h2 class="font-semibold">¿Son suficientes los casos? Curva de aprendizaje y etiqueta ampliada</h2>

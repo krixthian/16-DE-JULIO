@@ -1,0 +1,249 @@
+{
+ "version": "analisis-registros-v1",
+ "matriculas": 790,
+ "abandonos": 11,
+ "fuente": "Registros pedagógicos originales 2021-2025 (asistencia diaria A/F/R/L y notas por actividad), emparejados sin nombres.",
+ "calidad_datos": {
+  "umbral_plano": 4.0,
+  "notas_planas": {
+   "abandonaron": 11,
+   "de_abandonos": 11,
+   "continuaron": 1,
+   "de_continuaron": 779
+  },
+  "dispersion_mediana": {
+   "abandonaron": 2.8327886186626583,
+   "continuaron": 10.327955589886445,
+   "continuaron_percentil_5": 6.7759109578783985
+  },
+  "ser_exacto_3_de_5": {
+   "abandonaron": 5,
+   "continuaron": 0
+  },
+  "autoevaluacion_exacta_6": {
+   "abandonaron": 7,
+   "continuaron": 0
+  },
+  "medianas": {
+   "faltas_feb": {
+    "abandonaron": 0.0625,
+    "continuaron": 0.0
+   },
+   "faltas_abr": {
+    "abandonaron": 0.05555555555555555,
+    "continuaron": 0.0
+   },
+   "tendencia_faltas": {
+    "abandonaron": 0.0,
+    "continuaron": 0.0
+   },
+   "faltas_ultimas_4_semanas": {
+    "abandonaron": 0.05,
+    "continuaron": 0.0
+   },
+   "cambio_faltas_final_inicio": {
+    "abandonaron": 0.0,
+    "continuaron": 0.0
+   },
+   "racha_max_faltas": {
+    "abandonaron": 1.0,
+    "continuaron": 0.0
+   },
+   "racha_final_faltas": {
+    "abandonaron": 0.0,
+    "continuaron": 0.0
+   },
+   "faltas_lunes_viernes": {
+    "abandonaron": 0.5,
+    "continuaron": 0.5
+   },
+   "retrasos_ultimas_4_semanas": {
+    "abandonaron": 0.0,
+    "continuaron": 0.0
+   },
+   "ser_media": {
+    "abandonaron": 0.6,
+    "continuaron": 0.7555555555555555
+   },
+   "ser_minimo": {
+    "abandonaron": 0.2,
+    "continuaron": 0.2
+   },
+   "saber_media": {
+    "abandonaron": 0.6395061728395062,
+    "continuaron": 0.7530864197530864
+   },
+   "hacer_media": {
+    "abandonaron": 0.6333333333333333,
+    "continuaron": 0.7527777777777778
+   },
+   "decidir_media": {
+    "abandonaron": 0.6222222222222222,
+    "continuaron": 0.7555555555555555
+   },
+   "autoevaluacion_media": {
+    "abandonaron": 6.0,
+    "continuaron": 7.555555555555555
+   },
+   "tendencia_actividades": {
+    "abandonaron": 0.003009259259259255,
+    "continuaron": 0.0004629629629629675
+   },
+   "areas_en_caida": {
+    "abandonaron": 1.0,
+    "continuaron": 1.0
+   },
+   "actividades_bajas": {
+    "abandonaron": 1.0,
+    "continuaron": 1.0
+   },
+   "dispersion_areas": {
+    "abandonaron": 2.8327886186626583,
+    "continuaron": 10.327955589886445
+   }
+  }
+ },
+ "senal_asistencia_t1": {
+  "asistencia_total_t1": {
+   "variables": [
+    "faltas_T1",
+    "atrasos_T1",
+    "licencias_T1",
+    "tasa_asistencia_T1",
+    "edad_31marzo",
+    "grado"
+   ],
+   "roc_auc": 0.5117487454778853,
+   "average_precision": 0.01625843586166147,
+   "average_precision_de": 0.0027074743122109633,
+   "detectados": 0.15,
+   "falsas_alarmas": 50.95
+  },
+  "asistencia_dia_a_dia_t1": {
+   "variables": [
+    "faltas_T1",
+    "atrasos_T1",
+    "licencias_T1",
+    "tasa_asistencia_T1",
+    "edad_31marzo",
+    "grado",
+    "faltas_feb",
+    "faltas_abr",
+    "tendencia_faltas",
+    "faltas_ultimas_4_semanas",
+    "cambio_faltas_final_inicio",
+    "racha_max_faltas",
+    "racha_final_faltas",
+    "faltas_lunes_viernes",
+    "retrasos_ultimas_4_semanas"
+   ],
+   "roc_auc": 0.586454078655619,
+   "average_precision": 0.0246984323978147,
+   "average_precision_de": 0.006112030555990505,
+   "detectados": 0.4,
+   "falsas_alarmas": 29.3
+  },
+  "azar": {
+   "average_precision": 0.013924050632911392
+  }
+ },
+ "alerta_inasistencia": {
+  "faltas_3_dias": {
+   "codigos": [
+    "F"
+   ],
+   "racha": 3,
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 0,
+   "continuaron": 779,
+   "precision": 1.0,
+   "anticipacion_dias_mediana": 85,
+   "anticipacion_dias_min": 85,
+   "demora_desde_ultima_asistencia_mediana": 6.0
+  },
+  "faltas_5_dias": {
+   "codigos": [
+    "F"
+   ],
+   "racha": 5,
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 0,
+   "continuaron": 779,
+   "precision": 1.0,
+   "anticipacion_dias_mediana": 82,
+   "anticipacion_dias_min": 81,
+   "demora_desde_ultima_asistencia_mediana": 9.0
+  },
+  "faltas_10_dias": {
+   "codigos": [
+    "F"
+   ],
+   "racha": 10,
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 0,
+   "continuaron": 779,
+   "precision": 1.0,
+   "anticipacion_dias_mediana": 74,
+   "anticipacion_dias_min": 73,
+   "demora_desde_ultima_asistencia_mediana": 17.0
+  },
+  "faltas_o_licencias_3_dias": {
+   "codigos": [
+    "F",
+    "L"
+   ],
+   "racha": 3,
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 14,
+   "continuaron": 779,
+   "precision": 0.44,
+   "anticipacion_dias_mediana": 85,
+   "anticipacion_dias_min": 85,
+   "demora_desde_ultima_asistencia_mediana": 6.0
+  },
+  "faltas_o_licencias_5_dias": {
+   "codigos": [
+    "F",
+    "L"
+   ],
+   "racha": 5,
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 0,
+   "continuaron": 779,
+   "precision": 1.0,
+   "anticipacion_dias_mediana": 82,
+   "anticipacion_dias_min": 81,
+   "demora_desde_ultima_asistencia_mediana": 9.0
+  },
+  "faltas_o_licencias_10_dias": {
+   "codigos": [
+    "F",
+    "L"
+   ],
+   "racha": 10,
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 0,
+   "continuaron": 779,
+   "precision": 1.0,
+   "anticipacion_dias_mediana": 74,
+   "anticipacion_dias_min": 73,
+   "demora_desde_ultima_asistencia_mediana": 17.0
+  }
+ },
+ "patrones_asistencia": {
+  "abandono_desde_fin_de_mes": 10,
+  "abandonos_sin_ninguna_asistencia": 1,
+  "abandonos": 11,
+  "continuaron_racha_maxima_de_faltas": {
+   "0": 138,
+   "1": 607,
+   "2": 34
+  }
+ }
+}

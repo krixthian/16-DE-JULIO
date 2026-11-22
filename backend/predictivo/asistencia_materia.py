@@ -46,6 +46,32 @@ def licencias_parciales(sesiones, registros):
     return total
 
 
+def estado_del_dia(diario, horas):
+    """Estado de un día para la alerta de inasistencia continua.
+    diario: estado de la asistencia diaria (o None). horas: estados por hora (asistencia por materia) de ese día.
+    Devuelve 'FALTA', 'ASISTE', 'LICENCIA' o None (sin registro). La asistencia diaria manda si existe."""
+    if diario is not None:
+        return 'ASISTE' if diario in ASISTE else diario
+    if not horas:
+        return None
+    if any(e in ASISTE for e in horas):
+        return 'ASISTE'
+    return 'FALTA' if all(e == 'FALTA' for e in horas) else 'LICENCIA'
+
+
+def racha_actual(dias):
+    """dias: [(fecha, estado_del_dia)] ordenados. Racha de FALTAS seguidas al final del registro, desde cuándo y la
+    última fecha en que asistió. Los días sin registro se omiten (no cortan ni suman la racha)."""
+    conocidos = [(f, e) for f, e in dias if e is not None]
+    racha, desde = 0, None
+    for f, e in reversed(conocidos):
+        if e != 'FALTA':
+            break
+        racha, desde = racha + 1, f
+    ultima = max((f for f, e in conocidos if e == 'ASISTE'), default=None)
+    return dict(racha=racha, desde=desde, ultima_asistencia=ultima, ultimo_registro=conocidos[-1][0] if conocidos else None)
+
+
 def indicadores(sesiones, registros, citaciones):
     """Indicadores condensados para el modelo; cada uno es None si no hay registros que lo sustenten."""
     materias = por_materia(sesiones, registros)

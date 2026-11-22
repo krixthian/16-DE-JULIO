@@ -18,6 +18,26 @@ Cada actividad tiene tres partes: **Mostrar** (qué abrir o hacer), **Decir** (g
 
 ---
 
+## Observaciones del docente revisor (22/11/2026): qué se hizo
+
+Tenerlo presente durante toda la defensa: responde a "el análisis es superficial", "las 9 notas son una variable", "asistencia por materia", "citaciones por materia o dirección" y "XGBoost necesita muchos datos".
+
+| Observación | Respuesta en el sistema | Dónde mostrarlo |
+|---|---|---|
+| Asistencia por materia y en porcentaje | Tablas `sesiones_clase` y `asistencias_materia`: registro por hora y materia; % = clases asistidas ÷ clases dictadas de esa materia, para las 9 áreas | **Asistencia por materia** → Registrar por hora / Desglose por estudiante |
+| Licencia de quien llega y se retira | Licencia parcial: presente en unas horas y con licencia en las siguientes | Desglose por estudiante (tarjeta "Días con licencia parcial") |
+| Citaciones por materia y por dirección | `citaciones` con origen (docente de materia, dirección, orientación) y materia; máximo de citaciones en una sola materia | Desglose por estudiante → Registrar citación |
+| Las 9 notas son una variable | Variables agrupadas en 4 dimensiones: académica, asistencia, seguimiento y contexto | **Resultados del modelo** → Variables de riesgo por dimensión |
+| Análisis superficial | Se leyeron los registros originales: asistencia día por día y notas por actividad (SER, SABER, HACER, DECIDIR) | **Resultados del modelo** → Lo que muestran los registros pedagógicos originales |
+| XGBoost necesita muchos datos | Curva de aprendizaje: la AP sigue subiendo con cada caso; con 11 abandonos el límite son los datos | **Resultados del modelo** → ¿Son suficientes los casos? |
+
+**Decir (1 min):**
+> "Atendí las observaciones del revisor en dos frentes.
+>
+> **En el sistema:** ahora registra la asistencia por materia y por hora, en porcentaje para cada una de las 9 áreas, la licencia de quien llega y se retira, y las citaciones separadas por materia y por dirección. Con eso calcula 11 variables nuevas; en total el sistema mide 59 variables en cuatro dimensiones.
+>
+> **En el análisis:** leí los registros pedagógicos originales, con la asistencia día por día y las notas por actividad, y encontré algo importante: las notas del primer trimestre de los 11 estudiantes que abandonaron son casi idénticas en todas las áreas, mientras que solo 1 de 779 que continuaron es así; además, su asistencia figura completa hasta fin de mes y luego en falta todos los días. Es un patrón de cómo se registró al estudiante que se fue. Eso significa que el modelo aprende en buena parte el registro, y no una señal temprana. No lo escondí ni lo usé para inflar métricas: lo documenté, y por eso el valor del sistema está en registrar bien desde ahora, en detalle, para reentrenar con datos reales."
+
 ## Actividad 9: Extracción y consolidación de registros históricos
 
 **Mostrar:** en VS Code, el Excel `data/DATASET_REAL_CONSOLIDADO_2021_2025.xlsx` (hoja `DATOS_REAL`) y luego en la terminal:
@@ -61,10 +81,14 @@ python -m predictivo metricas-real --directorio artifacts/real_t1_v1
 **Decir:**
 > "Se construyeron **19 variables disponibles al 30 de abril**, el corte del primer trimestre: las notas de las 9 áreas, el promedio, la nota mínima, el número de áreas bajo 51, faltas, atrasos, licencias, tasa de asistencia, edad, grado y género.
 >
-> La regla más importante: **no se usa ninguna variable del segundo trimestre, del tercero ni anual** (las columnas POST_*), porque el sistema debe predecir con lo que se sabe en abril. Usarlas sería fuga de información. Tampoco se usan la gestión, el paralelo ni los códigos. Un test automático verifica que ninguna columna POST_* entre al modelo."
+> La regla más importante: **no se usa ninguna variable del segundo trimestre, del tercero ni anual** (las columnas POST_*), porque el sistema debe predecir con lo que se sabe en abril. Usarlas sería fuga de información. Tampoco se usan la gestión, el paralelo ni los códigos. Un test automático verifica que ninguna columna POST_* entre al modelo.
+>
+> Contadas como conceptos, como pidió el revisor, esas 19 columnas son pocas variables de riesgo: **rendimiento académico** (las 9 notas, el promedio, la mínima y las áreas bajo 51), **asistencia**, y tres datos del estudiante. Por eso el sistema ya calcula 59 variables en cuatro dimensiones, incluida la asistencia por materia, la licencia parcial y las citaciones por origen. Se usarán para reentrenar cuando la escuela acumule registros, porque los históricos no las traen."
+
+**Mostrar luego:** en **Resultados del modelo**, "Variables de riesgo por dimensión". Peso en el modelo actual: académica 97,8 %, asistencia 2,2 %, seguimiento 0 % (sin datos históricos), contexto 0,1 %.
 
 **Si preguntan, ¿por qué el género o la edad?**
-> "Son variables de contexto disponibles al inicio del año. No determinan la alerta por sí solas: en las explicaciones de cada alerta se ve que el peso real lo tienen las notas y la asistencia."
+> "Se incluyeron como contexto, porque los estudios sobre abandono reportan diferencias entre niños y niñas y por sobreedad. En mis datos el género no aporta: toda la dimensión de contexto pesa 0,1 %. Además no es algo sobre lo que la escuela pueda actuar, y usarlo podría producir alertas desiguales; por eso propongo retirarlo como predictor y usarlo solo para verificar que el sistema trate igual a niños y niñas."
 
 ## Actividad 12: Entrenamiento base del modelo predictivo (XGBoost)
 
@@ -78,6 +102,8 @@ python -m predictivo metricas-real --directorio artifacts/real_t1_v1
 > El sistema verifica el hash del modelo guardado: lo que se usa en producción es exactamente lo que se evaluó."
 
 **Si preguntan, ¿no son métricas demasiado altas?** (la pregunta más probable)
+> "Sí, y encontré por qué. En los registros originales, las notas del primer trimestre de los 11 que abandonaron son casi iguales en las 9 áreas (11 de 11, frente a 1 de 779 que continuaron), con autoevaluación y SER repetidos. Es un patrón de registro: el modelo reconoce cómo se llenó el registro de quien se fue. Además, la asistencia del primer trimestre, incluso día por día, no anticipa el abandono (AP 0,025 frente a 0,014 del azar). Lo documenté en Resultados del modelo y queda por confirmar con la Dirección."
+>
 > "Sí, y lo reporto como advertencia. Solo hay **11 abandonos**, y en 2021-2023 todas las matrículas con promedio ≤ 66 abandonaron: es una separación casi perfecta que infla las métricas. En la prueba temporal, entrenando con 2021-2023 y evaluando en 2024, detectó los 2 abandonos, pero con 10 falsas alarmas (AP 0,14). Por eso el sistema lo usa como **ranking de prioridad**, no como diagnóstico."
 
 **Si preguntan, ¿y la regresión logística?**
@@ -187,18 +213,18 @@ python -m predictivo metricas-ajuste --directorio artifacts/real_t1_ajuste_v1
 **Mostrar:** el diagrama EER de Workbench y `docs/REVISION_ESQUEMA_BD.md`.
 
 **Decir:**
-> "La base final tiene **28 tablas, 47 claves foráneas y 40 restricciones CHECK**. Verifiqué que la base real, el modelo en código y el script SQL coinciden exactamente. Las restricciones protegen la integridad: una alerta no puede quedar cerrada sin fecha ni motivo, y una intervención no puede marcarse como realizada sin describir la acción. Con EXPLAIN comprobé que las consultas del panel usan índices; dejé propuestos tres índices opcionales para cuando crezca el volumen, sin aplicarlos."
+> "La base final tiene **30 tablas, 54 claves foráneas y 43 restricciones CHECK**. Las dos últimas tablas, `sesiones_clase` y `asistencias_materia`, y el origen de las citaciones se agregaron por las observaciones del revisor con un script no destructivo, después de respaldar la base. Verifiqué que la base real, el modelo en código y el script SQL coinciden exactamente. Las restricciones protegen la integridad: una alerta no puede quedar cerrada sin fecha ni motivo, y una intervención no puede marcarse como realizada sin describir la acción. Con EXPLAIN comprobé que las consultas del panel usan índices; dejé propuestos tres índices opcionales para cuando crezca el volumen, sin aplicarlos."
 
-**Si preguntan por las tablas sin uso (apoderados, citaciones, notificaciones):**
-> "Forman parte del diseño para módulos futuros: citación formal y notificación a la familia. Hoy la citación se registra como tipo de intervención."
+**Si preguntan por las tablas sin uso (notificaciones):**
+> "Las citaciones ya se registran, con su origen y materia, desde Asistencia por materia. Las notificaciones a la familia quedan como módulo futuro."
 
 ## Actividad 20: Ejecución de pruebas generales e integrales
 
 **Mostrar:** `docs/PLAN_PRUEBAS.md` (matriz de permisos y flujo) y `docs/figuras/evidencia_terminal/25_tests_recomendaciones_panel.txt`. *(No correr la batería en vivo: tarda unos 25 minutos.)*
 
 **Decir:**
-> "Hay **54 pruebas automáticas en verde**: unitarias, por módulo, del esquema e integrales.
-> - **Permisos:** se probaron los 64 endpoints con los 4 roles, y sin sesión todos responden 401.
+> "Hay **60 pruebas automáticas en verde**: unitarias, por módulo, del esquema e integrales, incluidas las de asistencia por materia, licencia parcial, citaciones e inasistencia continua.
+> - **Permisos:** se probaron todos los endpoints con los 4 roles, y sin sesión todos responden 401.
 > - **Flujo completo:** alerta, recomendación, intervención, cierre, panel, reporte y auditoría.
 > - **MySQL real:** el mismo flujo se ejecutó en una base de pruebas, con las claves foráneas y las restricciones activas.
 >
@@ -214,7 +240,7 @@ python -m predictivo metricas-ajuste --directorio artifacts/real_t1_ajuste_v1
 > "En resumen, el sistema ordena a quién revisar primero y registra qué se hizo, dejando la decisión en los docentes.
 >
 > Las limitaciones son claras:
-> - solo 11 abandonos, con una separación por promedio que infla las métricas;
+> - solo 11 abandonos, con una separación por promedio que infla las métricas; los registros originales muestran que las notas de quienes abandonaron se registraron de forma estándar, así que el modelo aprende en buena parte ese registro;
 > - el modelo depende sobre todo del promedio, y en el historial los reprobados no abandonaron; por eso lo complementé con una regla académica;
 > - etiquetas por confirmar con Dirección: se infirieron del cuaderno (asistencia en cero o notas fijas);
 > - umbrales y reglas por validar con la escuela.
@@ -237,4 +263,8 @@ python -m predictivo metricas-ajuste --directorio artifacts/real_t1_ajuste_v1
 | ¿Por qué no usaste el registro de abandono o las notas del T2? | Porque en abril no existen: sería fuga de información. Inflarían las métricas hasta 1,0 sin servir en la práctica. |
 | ¿Hay más datos que podrías usar? | Ya se usan edad, grado, género, faltas, atrasos y licencias. "Abandonó el año anterior" muestra una diferencia, pero con solo 2 casos. Los factores de contexto están diseñados en la base, pero sin datos reales todavía. |
 | ¿Por qué el puntaje no es una probabilidad? | El balanceo con `scale_pos_weight` eleva todos los puntajes, y con 11 casos la calibración no mejoró. Por eso se usa como ranking de prioridad. |
+| Tu análisis es superficial, solo usas notas | Lo era con los totales trimestrales. Leí los registros originales (asistencia día por día y notas por actividad) y el sistema ya registra asistencia por materia, licencias parciales y citaciones por origen: 59 variables en 4 dimensiones. |
+| ¿Qué encontraste en los registros originales? | Notas T1 casi iguales en las 9 áreas en 11 de 11 abandonos (1 de 779 en los demás); abandono marcado desde fin de mes; ningún estudiante que continuó con 3 faltas seguidas. Son patrones de registro: el modelo aprende en parte el registro. |
+| ¿La asistencia predice el abandono? | En el primer trimestre no: quienes abandonaron asistían normalmente (AP 0,025 frente a 0,014 del azar). Por eso agregué una alerta operativa de inasistencia continua (3 o más faltas seguidas), que se validará con los registros que capture el sistema. |
+| ¿Cómo se calcula la asistencia por materia? | Clases asistidas ÷ clases dictadas de esa materia: Religión (1 vez por semana) y Lenguaje (varios días) se comparan en la misma escala. |
 | ¿Se puede reproducir? | Sí: `metricas-real --excel` y `metricas-ajuste --excel` recalculan todo y confirman "reproducido exactamente". |

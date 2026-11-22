@@ -146,6 +146,50 @@ REGLA_ACADEMICA = ('Regla RP02: al menos un área con nota menor a 51 ("en desar
     'esos estudiantes no abandonaron.')
 
 
+@router.get('/alertas/inasistencia')
+def inasistencia_continua(dias: int = 3, db: Session = Depends(get_db)):
+    """Alerta operativa (regla, no modelo): estudiantes con `dias` o más faltas seguidas al último registro.
+
+    Usa la asistencia diaria y la asistencia por materia (un día es falta si faltó a todas las horas registradas).
+    Validación pendiente con los registros que capture el sistema: en los registros históricos el abandono figura
+    como faltas continuas desde fin de mes, por lo que no sirven para estimar sus falsas alarmas.
+    """
+    from predictivo import asistencia_materia as am
+    if not 2 <= dias <= 30:
+        raise HTTPException(422, 'La racha debe estar entre 2 y 30 días.')
+    jornadas = {j.id: j for j in db.scalars(select(m.JornadaClase).where(m.JornadaClase.es_lectiva == True))}
+    diario, horas = {}, {}
+    for a in db.scalars(select(m.Asistencia)):
+        if a.jornada_id in jornadas:
+            diario[(a.matricula_id, a.jornada_id)] = a.estado
+    sesion_jornada = {s.id: s.jornada_id for s in db.scalars(select(m.SesionClase).where(m.SesionClase.dictada == True))}
+    for r in db.scalars(select(m.AsistenciaMateria)):
+        j = sesion_jornada.get(r.sesion_id)
+        if j in jornadas:
+            horas.setdefault((r.matricula_id, j), []).append(r.estado)
+    por_matricula = {}
+    for (mat, j) in set(diario) | set(horas):
+        por_matricula.setdefault(mat, set()).add(j)
+    out = []
+    for mat_id, js in por_matricula.items():
+        dias_reg = sorted(((jornadas[j].fecha, am.estado_del_dia(diario.get((mat_id, j)), horas.get((mat_id, j), []))) for j in js),
+            key=lambda x: x[0])
+        r = am.racha_actual(dias_reg)
+        if r['racha'] < dias:
+            continue
+        mat = db.get(m.Matricula, mat_id)
+        if mat.fecha_fin is not None and mat.fecha_fin < r['ultimo_registro']:
+            continue
+        curso, est = db.get(m.Curso, mat.curso_id), db.get(m.Estudiante, mat.estudiante_id)
+        gestion = db.get(m.Gestion, curso.gestion_id)
+        out.append({'matricula_id': mat_id, 'estudiante': est.codigo_anonimo, 'curso_id': curso.id, 'curso': f'{curso.grado}° {curso.paralelo}',
+            'gestion': gestion.anio, **r})
+    out.sort(key=lambda x: (-x['racha'], x['gestion'], x['curso']))
+    return {'dias': dias, 'total': len(out), 'alertas': out,
+        'nota': 'Regla operativa: k faltas seguidas en la asistencia registrada. No es una predicción del modelo; su validación '
+            'depende de los registros que el sistema capture día a día.'}
+
+
 @router.get('/alertas/academicas')
 def academicas(gestion: int | None = None, db: Session = Depends(get_db)):
     """Riesgo académico por regla explícita (solo lectura): matrículas con áreas bajo 51, con o sin alerta del modelo."""

@@ -56,6 +56,17 @@ class CalculosTests(unittest.TestCase):
         # Sin registros, los indicadores de asistencia quedan desconocidos, no en cero.
         self.assertIsNone(am.indicadores([], [], [])['asistencia_materia_media'])
 
+    def test_inasistencia_continua(self):
+        d = lambda n: date(2026, 5, n)
+        self.assertEqual(am.estado_del_dia('FALTA', ['PRESENTE']), 'FALTA', 'La asistencia diaria manda.')
+        self.assertEqual(am.estado_del_dia(None, ['PRESENTE', 'LICENCIA']), 'ASISTE')
+        self.assertEqual(am.estado_del_dia(None, ['FALTA', 'FALTA']), 'FALTA')
+        self.assertEqual(am.estado_del_dia(None, ['FALTA', 'LICENCIA']), 'LICENCIA')
+        self.assertIsNone(am.estado_del_dia(None, []))
+        r = am.racha_actual([(d(4), 'ASISTE'), (d(5), 'FALTA'), (d(6), None), (d(7), 'FALTA'), (d(8), 'FALTA')])
+        self.assertEqual((r['racha'], r['desde'], r['ultima_asistencia'], r['ultimo_registro']), (3, d(5), d(4), d(8)))
+        self.assertEqual(am.racha_actual([(d(4), 'FALTA'), (d(5), 'LICENCIA')])['racha'], 0, 'Una licencia corta la racha de faltas.')
+
     def test_variables_nuevas_en_el_contrato(self):
         self.assertEqual(VERSION, 'primaria-materia-v2')
         self.assertTrue(set(am.DESCRIPCIONES) <= set(FEATURE_NAMES))
@@ -146,6 +157,15 @@ class AsistenciaMateriaApiTests(unittest.TestCase):
                         self.assertEqual(r.status_code, 201)
                         ind = r.json()['indicadores']
                         self.assertEqual((ind['citaciones_total'], ind['citaciones_direccion'], ind['citaciones_max_una_materia']), (3, 1, 2))
+
+                        # Alerta de inasistencia continua: 3 días seguidos faltando a todas sus horas.
+                        for dia in ('1992-03-16', '1992-03-17', '1992-03-18'):
+                            await put(dia, 1, lenguaje.id, 'FALTA')
+                        r = (await c.get('/alertas/inasistencia', params={'dias': 3})).json()
+                        fila = next(a for a in r['alertas'] if a['matricula_id'] == enrollment.id)
+                        self.assertEqual((fila['racha'], str(fila['desde']), fila['estudiante']), (3, '1992-03-16', 'EST-QA01'))
+                        self.assertNotIn(enrollment.id, [a['matricula_id'] for a in (await c.get('/alertas/inasistencia', params={'dias': 4})).json()['alertas']])
+                        self.assertEqual((await c.get('/alertas/inasistencia', params={'dias': 1})).status_code, 422)
 
                         # El docente solo registra sus materias y solo cita por sus materias.
                         app.dependency_overrides[get_current_user] = lambda: teacher

@@ -18,6 +18,7 @@ from api.alertas import seguimiento
 from database import get_db
 from predictivo import explicacion as ex
 from predictivo.real_t1 import FEATURE_NAMES
+from predictivo import dimensiones as dim
 import models as m
 
 router = APIRouter(prefix='/modelo', tags=['Resultados del modelo'], dependencies=[Depends(seguimiento)])
@@ -26,6 +27,7 @@ AJUSTE = BACKEND / 'artifacts' / 'real_t1_ajuste_v1' / 'reporte_ajuste.json'
 SENSIBILIDAD = BACKEND / 'artifacts' / 'real_t1_v1' / 'sensibilidad.json'
 SMOTE = BACKEND.parent / 'docs' / 'experimento_smote_resumen_tabla.csv'
 AMPLIADA = BACKEND.parent / 'docs' / 'experimento_etiqueta_ampliada.json'
+REGISTROS = BACKEND.parent / 'docs' / 'analisis_registros_detallados.json'
 NOMBRES = {'xgboost': 'XGBoost (modelo en uso)', 'regresion_logistica': 'Regresión logística', 'regla_promedio_T1': 'Regla: promedio T1',
     'regla_n_areas_bajo_51': 'Regla: áreas bajo 51', 'regla_faltas_T1': 'Regla: faltas T1', 'siempre_continuidad': 'Siempre "continúa" (azar)'}
 VARIANTES = {'a_sin_balanceo': 'Sin balanceo', 'b_scale_pos_weight': 'scale_pos_weight (en uso)', 'c_smote': 'SMOTE',
@@ -101,6 +103,26 @@ def etiqueta_ampliada():
                for k in ('xgboost', 'regla_promedio_T1')}})
 
 
+def por_dimension(imp):
+    """Peso del modelo actual por dimensión (suma de |SHAP| medio) y catálogo de variables: modelo actual frente a sistema."""
+    from predictivo.features import DESCRIPTIONS, VERSION
+    pesos = {k: 0.0 for k in dim.DIMENSIONES}
+    modelo_vars = {k: [] for k in dim.DIMENSIONES}
+    for v in (imp or {}).get('variables', []):
+        d = dim.dimension_modelo(v['variable'])
+        pesos[d] += v['porcentaje']
+        modelo_vars[d].append(v['etiqueta'])
+    if not imp:
+        for n in FEATURE_NAMES:
+            modelo_vars[dim.dimension_modelo(n)].append(ex.ETIQUETAS[n])
+    sistema = {k: [] for k in dim.DIMENSIONES}
+    for n, desc in DESCRIPTIONS.items():
+        sistema[dim.dimension_sistema(n)].append({'variable': n, 'descripcion': desc})
+    return dict(version_sistema=VERSION, variables_modelo=len(FEATURE_NAMES), variables_sistema=len(DESCRIPTIONS),
+        dimensiones=[dict(clave=k, nombre=n, descripcion=d, porcentaje=round(pesos[k], 1) if imp else None,
+            modelo=modelo_vars[k], sistema=sistema[k]) for k, (n, d) in dim.DIMENSIONES.items()])
+
+
 @router.get('/resultados')
 def resultados(db: Session = Depends(get_db)):
     modelo = db.scalar(select(m.ModeloPredictivo).order_by(m.ModeloPredictivo.id.desc()))
@@ -127,7 +149,8 @@ def resultados(db: Session = Depends(get_db)):
             gestiones=ev.get('gestiones')),
         'comparacion': [{'modelo': k, 'nombre': NOMBRES.get(k, k), **metrica(v)} for k, v in modelos.items()],
         'matriz_confusion': matriz,
-        'importancia': importancia(db, modelo),
+        'importancia': (imp := importancia(db, modelo)),
+        'dimensiones': por_dimension(imp),
         'ajuste': ajuste and dict(protocolo=ajuste.get('protocolo'), configuraciones=(ajuste.get('espacio') or {}).get('configuraciones'),
             decision=ajuste.get('decision'), diferencia=(ajuste.get('diferencias_pareadas') or {}).get('xgboost_ajustado - xgboost_base'),
             ajustado=metrica((ajuste.get('modelos') or {}).get('xgboost_ajustado') or {}),
@@ -139,10 +162,12 @@ def resultados(db: Session = Depends(get_db)):
         'separacion_promedio_le_66': sens and sens.get('separacion_promedio_le_66'),
         'balanceo': smote(),
         'etiqueta_ampliada': etiqueta_ampliada(),
+        'registros': leer_json(REGISTROS),
         'limitaciones': met.get('limitaciones') or [],
         'fuentes': {'registro_del_modelo': 'Base de datos (modelos_predictivos.metricas)', 'importancia': 'Base de datos (790 cortes) + modelo registrado',
             'ajuste_umbrales_calibracion': 'backend/artifacts/real_t1_ajuste_v1/reporte_ajuste.json' if ajuste else None,
             'temporal': 'backend/artifacts/real_t1_v1/sensibilidad.json' if sens else None,
             'balanceo': 'docs/experimento_smote_resumen_tabla.csv' if SMOTE.exists() else None,
-            'etiqueta_ampliada': 'docs/experimento_etiqueta_ampliada.json' if AMPLIADA.exists() else None},
+            'etiqueta_ampliada': 'docs/experimento_etiqueta_ampliada.json' if AMPLIADA.exists() else None,
+            'registros': 'docs/analisis_registros_detallados.json' if REGISTROS.exists() else None},
     }

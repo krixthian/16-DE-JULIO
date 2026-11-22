@@ -7,7 +7,8 @@ import api from '../services/api'
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip)
 const alerts=ref([]),summary=ref(null),people=ref([]),selected=ref(null),items=ref([]),history=ref([]),recs=ref(null),busy=ref(false),error=ref(''),notice=ref('')
 const why=ref(null),whyError=ref(''),showAll=ref(false),whySection=ref(null)
-const tab=ref('modelo'),academic=ref(null),academicYear=ref('')
+const tab=ref('modelo'),academic=ref(null),academicYear=ref(''),absence=ref(null),absenceDays=ref(3)
+async function loadAbsence(){try{absence.value=(await api.get('/alertas/inasistencia',{params:{dias:absenceDays.value}})).data}catch(e){error.value=message(e)}}
 const academicRows=computed(()=>(academic.value?.casos||[]).filter(c=>!academicYear.value||c.gestion===Number(academicYear.value)))
 const academicNew=computed(()=>academicRows.value.filter(c=>!c.modelo.alerta_id).length)
 const pct0=v=>v==null?'—':`${Math.round(v*100)} %`
@@ -45,7 +46,7 @@ const show=(k,v)=>v==null?'—':k==='responsable_id'?who(v):k==='estado'?label([
 const changes=h=>h.antes?Object.keys(fields).filter(k=>k in h.despues&&h.antes[k]!==h.despues[k]).map(k=>`${fields[k]}: ${show(k,h.antes[k])} → ${show(k,h.despues[k])}`):[h.motivo]
 async function load(){
  busy.value=true;error.value=''
- try{const [a,s,p,ac]=await Promise.all([api.get('/alertas'),api.get('/alertas/resumen'),api.get('/alertas/responsables'),api.get('/alertas/academicas')]);alerts.value=a.data;summary.value=s.data;people.value=p.data;academic.value=ac.data}catch(e){error.value=message(e)}finally{busy.value=false}
+ try{const [a,s,p,ac]=await Promise.all([api.get('/alertas'),api.get('/alertas/resumen'),api.get('/alertas/responsables'),api.get('/alertas/academicas')]);alerts.value=a.data;summary.value=s.data;people.value=p.data;academic.value=ac.data;loadAbsence()}catch(e){error.value=message(e)}finally{busy.value=false}
 }
 async function loadDetail(){
  const id=selected.value.id
@@ -121,7 +122,25 @@ onMounted(load)
   <div class="flex flex-wrap gap-2 mt-6 border-b border-slate-200 dark:border-slate-700" role="tablist">
    <button role="tab" :aria-selected="tab==='modelo'" @click="tab='modelo'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='modelo'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Alertas del modelo ({{ alerts.length }})</button>
    <button role="tab" :aria-selected="tab==='academico'" @click="tab='academico'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='academico'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Riesgo académico por reglas ({{ academic?.total ?? '…' }})</button>
+   <button role="tab" :aria-selected="tab==='inasistencia'" @click="tab='inasistencia'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='inasistencia'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Inasistencia continua ({{ absence?.total ?? '…' }})</button>
   </div>
+  <section v-if="tab==='inasistencia'&&absence" class="mt-4">
+   <div class="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 p-4 text-sm">
+    <strong>Qué muestra esta pestaña.</strong> Estudiantes que acumulan {{ absence.dias }} o más faltas seguidas en la asistencia registrada (diaria o por materia: un día cuenta como falta si faltó a todas sus horas). {{ absence.nota }}
+   </div>
+   <div class="flex flex-wrap items-end gap-3 mt-4">
+    <label class="text-sm font-medium">Faltas seguidas<select v-model.number="absenceDays" @change="loadAbsence" class="block mt-1 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option v-for="d in [3,5,10]" :key="d" :value="d">{{ d }} o más</option></select></label>
+    <span class="text-sm text-slate-500 pb-2">{{ absence.total }} estudiante(s)</span>
+   </div>
+   <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="px-3 py-2.5">Estudiante</th><th class="px-3 py-2.5">Curso</th><th class="px-3 py-2.5">Faltas seguidas</th><th class="px-3 py-2.5">Desde</th><th class="px-3 py-2.5">Última asistencia</th></tr></thead>
+     <tbody><tr v-for="a in absence.alertas" :key="a.matricula_id" class="border-t border-slate-100 dark:border-slate-700">
+      <td class="px-3 py-2.5 font-medium whitespace-nowrap">{{ etiquetaCodigo(a.estudiante) }}</td><td class="px-3 py-2.5 whitespace-nowrap">{{ a.curso }} · {{ a.gestion }}</td>
+      <td class="px-3 py-2.5"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="a.racha>=10?levelClass('ALTO'):levelClass('MEDIO')">{{ a.racha }} días</span></td>
+      <td class="px-3 py-2.5">{{ a.desde }}</td><td class="px-3 py-2.5">{{ a.ultima_asistencia || 'Sin asistencia registrada' }}</td></tr>
+      <tr v-if="!absence.alertas.length"><td colspan="5" class="p-6 text-center text-slate-500">Ningún estudiante tiene {{ absence.dias }} o más faltas seguidas en la asistencia registrada en el sistema.</td></tr></tbody></table>
+   </div>
+  </section>
   <section v-if="tab==='academico'&&academic" class="mt-4">
    <div class="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100 p-4 text-sm max-w-5xl">
     <strong>Qué muestra esta pestaña.</strong> {{ academic.criterio }}
