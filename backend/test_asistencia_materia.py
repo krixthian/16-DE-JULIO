@@ -161,11 +161,11 @@ class AsistenciaMateriaApiTests(unittest.TestCase):
                         # Alerta de inasistencia continua: 3 días seguidos faltando a todas sus horas.
                         for dia in ('1992-03-16', '1992-03-17', '1992-03-18'):
                             await put(dia, 1, lenguaje.id, 'FALTA')
-                        r = (await c.get('/alertas/inasistencia', params={'dias': 3})).json()
+                        r = (await c.get('/alertas/inasistencia', params={'gestion': 1992, 'dias': 3})).json()
                         fila = next(a for a in r['alertas'] if a['matricula_id'] == enrollment.id)
                         self.assertEqual((fila['racha'], str(fila['desde']), fila['estudiante']), (3, '1992-03-16', 'EST-QA01'))
-                        self.assertNotIn(enrollment.id, [a['matricula_id'] for a in (await c.get('/alertas/inasistencia', params={'dias': 4})).json()['alertas']])
-                        self.assertEqual((await c.get('/alertas/inasistencia', params={'dias': 1})).status_code, 422)
+                        self.assertNotIn(enrollment.id, [a['matricula_id'] for a in (await c.get('/alertas/inasistencia', params={'gestion': 1992, 'dias': 4})).json()['alertas']])
+                        self.assertEqual((await c.get('/alertas/inasistencia', params={'gestion': 1992, 'dias': 1})).status_code, 422)
 
                         # El docente solo registra sus materias y solo cita por sus materias.
                         app.dependency_overrides[get_current_user] = lambda: teacher

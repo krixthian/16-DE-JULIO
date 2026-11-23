@@ -1,0 +1,26 @@
+feb: AP 0.009 [0.003567369290038676, 0.0302782721864829]  AUC 0.546  VP 3.0  FP 262.1  | regla 5: {'detectados': 0, 'falsas_alarmas': 0}
+mar: AP 0.011 [0.0033763890678433625, 0.054794590822281906]  AUC 0.538  VP 0.9  FP 87.7  | regla 5: {'detectados': 0, 'falsas_alarmas': 0}
+abr: AP 0.016 [0.004046048182469722, 0.08026695433673466]  AUC 0.612  VP 0.8  FP 35.2  | regla 5: {'detectados': 0, 'falsas_alarmas': 0}
+may: AP 0.009 [0.004010407863547015, 0.02407132910025091]  AUC 0.594  VP 0.1  FP 34.9  | regla 5: {'detectados': 1, 'falsas_alarmas': 0}
+jun: AP 0.802 [0.5366073159255377, 1.0]  AUC 0.960  VP 8.8  FP 6.7  | regla 5: {'detectados': 9, 'falsas_alarmas': 0}
+jul: AP 0.790 [0.5045622147593214, 1.0]  AUC 0.952  VP 8.8  FP 4.3  | regla 5: {'detectados': 9, 'falsas_alarmas': 0}
+ago: AP 0.769 [0.48339398053397886, 1.0]  AUC 0.938  VP 8.5  FP 4.0  | regla 5: {'detectados': 9, 'falsas_alarmas': 0}
+sep: AP 1.000 [0.9999999999999999, 1.0]  AUC 1.000  VP 9.8  FP 0.0  | regla 5: {'detectados': 11, 'falsas_alarmas': 0}
+oct: AP 1.000 [0.9999999999999999, 1.0]  AUC 1.000  VP 9.8  FP 0.0  | regla 5: {'detectados': 11, 'falsas_alarmas': 0}
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Python312\Lib\site-packages\reportlab\lib\rl_safe_eval.py:12: DeprecationWarning: ast.NameConstant is deprecated and will be removed in Python 3.14; use ast.Constant instead
+  haveNameConstant = hasattr(ast,'NameConstant')
+.....
+----------------------------------------------------------------------
+Ran 24 tests in 1520.799s
+
+OK
+
+[exited with code 0]

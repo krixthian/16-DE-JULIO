@@ -146,24 +146,45 @@ REGLA_ACADEMICA = ('Regla RP02: al menos un área con nota menor a 51 ("en desar
     'esos estudiantes no abandonaron.')
 
 
+NOTA_INASISTENCIA = ('Regla operativa, no es una predicción del modelo. Validada con los registros completos de la institución '
+    '2021-2025: con 5 faltas seguidas se detectaron los 11 abandonos de cinco gestiones, sin falsas alarmas entre 1878 estudiantes '
+    'que continuaron (ninguno pasó de 3 faltas seguidas), unos 84 días antes de que la escuela registre el abandono al cierre del trimestre.')
+
+
+@router.get('/alertas/seguimiento')
+def seguimiento_continuo(gestion: int | None = None, fecha: date | None = None, db: Session = Depends(get_db)):
+    """Riesgo a la fecha (seguimiento continuo): XGBoost del mes en curso con lo registrado hasta `fecha`, más la alerta
+    inmediata de 5 faltas seguidas. Solo lectura. Por defecto: la gestión más reciente y su último día con asistencia."""
+    from predictivo import seguimiento as sg
+    if gestion is None:
+        gestion = db.scalar(select(func.max(m.Gestion.anio)))
+    try:
+        return sg.calcular(db, gestion, fecha)
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+
+
 @router.get('/alertas/inasistencia')
-def inasistencia_continua(dias: int = 3, db: Session = Depends(get_db)):
+def inasistencia_continua(dias: int = 5, gestion: int | None = None, db: Session = Depends(get_db)):
     """Alerta operativa (regla, no modelo): estudiantes con `dias` o más faltas seguidas al último registro.
 
     Usa la asistencia diaria y la asistencia por materia (un día es falta si faltó a todas las horas registradas).
-    Validación pendiente con los registros que capture el sistema: en los registros históricos el abandono figura
-    como faltas continuas desde fin de mes, por lo que no sirven para estimar sus falsas alarmas.
+    Validada con los registros completos de la institución 2021-2025 (docs/experimento_seguimiento_mensual.json):
+    con 5 faltas seguidas detecta 11 de 11 abandonos y 0 falsas alarmas entre 1878 estudiantes que continuaron.
     """
     from predictivo import asistencia_materia as am
     if not 2 <= dias <= 30:
         raise HTTPException(422, 'La racha debe estar entre 2 y 30 días.')
-    jornadas = {j.id: j for j in db.scalars(select(m.JornadaClase).where(m.JornadaClase.es_lectiva == True))}
+    if gestion is None:
+        gestion = db.scalar(select(func.max(m.Gestion.anio)))
+    cursos = select(m.Curso.id).join(m.Gestion, m.Gestion.id == m.Curso.gestion_id).where(m.Gestion.anio == gestion)
+    jornadas = {j.id: j for j in db.scalars(select(m.JornadaClase).where(m.JornadaClase.es_lectiva == True, m.JornadaClase.curso_id.in_(cursos)))}
     diario, horas = {}, {}
-    for a in db.scalars(select(m.Asistencia)):
+    for a in db.scalars(select(m.Asistencia).where(m.Asistencia.curso_id.in_(cursos))):
         if a.jornada_id in jornadas:
             diario[(a.matricula_id, a.jornada_id)] = a.estado
-    sesion_jornada = {s.id: s.jornada_id for s in db.scalars(select(m.SesionClase).where(m.SesionClase.dictada == True))}
-    for r in db.scalars(select(m.AsistenciaMateria)):
+    sesion_jornada = {s.id: s.jornada_id for s in db.scalars(select(m.SesionClase).where(m.SesionClase.dictada == True, m.SesionClase.curso_id.in_(cursos)))}
+    for r in db.scalars(select(m.AsistenciaMateria).where(m.AsistenciaMateria.curso_id.in_(cursos))):
         j = sesion_jornada.get(r.sesion_id)
         if j in jornadas:
             horas.setdefault((r.matricula_id, j), []).append(r.estado)
@@ -185,9 +206,8 @@ def inasistencia_continua(dias: int = 3, db: Session = Depends(get_db)):
         out.append({'matricula_id': mat_id, 'estudiante': est.codigo_anonimo, 'curso_id': curso.id, 'curso': f'{curso.grado}° {curso.paralelo}',
             'gestion': gestion.anio, **r})
     out.sort(key=lambda x: (-x['racha'], x['gestion'], x['curso']))
-    return {'dias': dias, 'total': len(out), 'alertas': out,
-        'nota': 'Regla operativa: k faltas seguidas en la asistencia registrada. No es una predicción del modelo; su validación '
-            'depende de los registros que el sistema capture día a día.'}
+    return {'dias': dias, 'gestion': gestion, 'total': len(out), 'alertas': out,
+        'nota': NOTA_INASISTENCIA}
 
 
 @router.get('/alertas/academicas')

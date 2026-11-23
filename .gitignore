@@ -2,7 +2,7 @@
 .env
 .env.*
 .database-url
-backend/.database-url
+backend/.database-url*
 backend/.jwt-secret
 backups/
 __pycache__/

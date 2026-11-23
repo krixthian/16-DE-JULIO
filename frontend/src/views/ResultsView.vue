@@ -71,6 +71,15 @@ const rulesChart=computed(()=>{const e=ea.value;if(!e)return null
  return {labels:e.metodos.map(m=>m.nombre),datasets:[
   {label:'Para detectar abandono',data:e.metodos.map(m=>e.ap_abandono[m.modelo]),backgroundColor:colors.orange,...bar},
   {label:'Para detectar "no aprueba el año"',data:e.metodos.map(m=>e.ap_ampliada[m.modelo]),backgroundColor:colors.blue,...bar}]}})
+const seg=computed(()=>data.value?.seguimiento)
+const mesLargo={feb:'Febrero',mar:'Marzo',abr:'Abril',may:'Mayo',jun:'Junio',jul:'Julio',ago:'Agosto',sep:'Septiembre',oct:'Octubre'}
+const segChart=computed(()=>{const s=seg.value;if(!s)return null
+ return {labels:s.cortes.map(c=>mesLargo[c.mes]),datasets:[
+  {label:'XGBoost con lo registrado hasta fin de mes',data:s.cortes.map(c=>c.average_precision),borderColor:colors.blue,backgroundColor:colors.blue,borderWidth:2,pointRadius:5},
+  {label:'Azar',data:s.cortes.map(c=>c.azar),borderColor:colors.gray,backgroundColor:colors.gray,borderWidth:2,pointRadius:0,borderDash:[6,4]}]}})
+const segOptions=computed(()=>{const o=base({title:'Average precision (AP)'});o.scales.y.max=1
+ o.plugins.tooltip={callbacks:{footer:items=>{const c=seg.value.cortes[items[0].dataIndex];return `Detecta ${n(c.verdaderos_positivos,1)} de ${c.abandonos} · ${n(c.falsos_positivos,1)} falsas alarmas`}}};return o})
+const d5=computed(()=>seg.value?.diario?.['5_faltas'])
 const curveFirst=computed(()=>ea.value?.curva_abandono?.[0]),curveLast=computed(()=>ea.value?.curva_abandono?.at(-1))
 
 async function load(){
@@ -88,8 +97,29 @@ onBeforeUnmount(()=>observer.disconnect())
   <div v-if="error" role="alert" class="mt-6 bg-red-50 text-red-800 rounded-xl p-4">{{ error }}</div>
   <p v-if="busy&&!data" class="mt-6 text-slate-500">Cargando…</p>
   <template v-if="data">
+   <!-- Seguimiento continuo: modelo vigente con los registros completos -->
+   <article v-if="seg" class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-900 p-5">
+    <h2 class="font-semibold text-lg">Seguimiento continuo: cuándo detecta el sistema el abandono</h2>
+    <p class="text-sm text-slate-500 mt-1">Registros completos de la institución ({{ seg.dataset }}): {{ seg.matriculas }} matrículas y {{ seg.abandonos }} abandonos en 2021-2025. El riesgo se recalcula al final de cada mes, con {{ seg.variables }} variables y solo con lo registrado hasta esa fecha. {{ seg.protocolo }}</p>
+    <div class="grid sm:grid-cols-3 gap-3 mt-4">
+     <div v-if="d5" class="rounded-xl border border-red-200 dark:border-red-900 p-4"><p class="text-xs text-slate-500">Alerta inmediata: 5 faltas seguidas (revisión diaria)</p><p class="text-2xl font-bold mt-1">{{ d5.detectados }} de {{ d5.abandonos }}</p><p class="text-xs text-slate-500">abandonos detectados · {{ d5.falsas_alarmas }} falsas alarmas entre {{ d5.continuaron }} que continuaron</p></div>
+     <div v-if="d5" class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Anticipación frente al registro oficial</p><p class="text-2xl font-bold mt-1">{{ n(d5.dias_antes_del_cierre_del_trimestre_mediana,0) }} días</p><p class="text-xs text-slate-500">antes del cierre del trimestre en que la escuela registra el abandono (mediana; mínimo {{ d5.dias_antes_del_cierre_del_trimestre_min }})</p></div>
+     <div v-if="seg.corte_unico?.abril" class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Un solo corte (30 de abril o trayectoria de febrero)</p><p class="text-2xl font-bold mt-1">AP {{ n(seg.corte_unico.abril.average_precision,3) }}</p><p class="text-xs text-slate-500">frente a {{ n(seg.corte_unico.abril.azar,3) }} del azar: sin señal. Trayectoria previa: AP {{ n(seg.corte_unico.trayectoria?.average_precision,3) }}.</p></div>
+    </div>
+    <div class="h-72 mt-4"><Line :data="segChart" :options="segOptions" aria-label="Average precision por mes del seguimiento continuo frente al azar" /></div>
+    <div class="mt-4 overflow-x-auto"><table class="w-full text-sm"><thead class="text-left text-slate-500"><tr><th class="py-2 pr-3">Fin de mes</th><th class="py-2 pr-3 text-right">AP [IC 95 %]</th><th class="py-2 pr-3 text-right">ROC AUC</th><th class="py-2 pr-3 text-right">Detecta (XGBoost)</th><th class="py-2 pr-3 text-right">Falsas alarmas</th><th class="py-2 pr-3 text-right">5 faltas seguidas</th></tr></thead>
+     <tbody><tr v-for="c in seg.cortes" :key="c.mes" class="border-t border-slate-100 dark:border-slate-700">
+      <td class="py-2 pr-3">{{ mesLargo[c.mes] }}</td><td class="py-2 pr-3 text-right tabular-nums">{{ n(c.average_precision,3) }} <span class="text-xs text-slate-500">[{{ n(c.ic95_ap?.[0],2) }} – {{ n(c.ic95_ap?.[1],2) }}]</span></td>
+      <td class="py-2 pr-3 text-right tabular-nums">{{ n(c.roc_auc,2) }}</td><td class="py-2 pr-3 text-right tabular-nums">{{ n(c.verdaderos_positivos,1) }} de {{ c.abandonos }}</td>
+      <td class="py-2 pr-3 text-right tabular-nums">{{ n(c.falsos_positivos,1) }}</td><td class="py-2 pr-3 text-right tabular-nums">{{ c.regla_5.detectados }} · {{ c.regla_5.falsas_alarmas }} FA</td></tr></tbody></table></div>
+    <div class="mt-4 rounded-lg bg-slate-50 dark:bg-slate-900 p-4 text-sm">
+     <p><strong>Cómo leerlo.</strong> De febrero a mayo nadie se distingue: quienes abandonan tienen notas, asistencia y trayectoria normales hasta el día en que dejan de venir. Desde que dejan de asistir, el sistema lo detecta en días, mucho antes de que la escuela lo registre al cierre del trimestre, cuando todavía se puede contactar a la familia.</p>
+     <p class="mt-1 text-slate-500">En septiembre y octubre la detección es casi automática: la escuela define el abandono por no asistir en el 3.er trimestre. {{ seg.nota }}</p>
+    </div>
+   </article>
    <!-- Datos y protocolo -->
    <div class="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 text-sm">
+    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1">Modelo anterior: un solo corte al 30 de abril, entrenado con la versión parcial de los registros</p>
     <p><strong>{{ data.modelo.version }}</strong> · {{ data.modelo.algoritmo }} · {{ data.modelo.variables }} variables del 1.er trimestre (sin datos posteriores al corte)</p>
     <p class="mt-1">Datos: <strong>{{ data.modelo.filas }} matrículas</strong> de {{ data.modelo.estudiantes }} estudiantes ({{ data.modelo.gestiones?.join(', ') }}), con <strong>{{ data.modelo.positivos }} abandonos</strong> ({{ data.modelo.estudiantes_positivos }} estudiantes).</p>
     <p class="mt-1 text-slate-500">{{ data.modelo.protocolo }}</p>

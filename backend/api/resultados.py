@@ -29,6 +29,9 @@ SMOTE = BACKEND.parent / 'docs' / 'experimento_smote_resumen_tabla.csv'
 AMPLIADA = BACKEND.parent / 'docs' / 'experimento_etiqueta_ampliada.json'
 REGISTROS = BACKEND.parent / 'docs' / 'analisis_registros_detallados.json'
 ALGORITMOS = BACKEND.parent / 'docs' / 'experimento_algoritmos.json'
+MENSUAL = BACKEND.parent / 'docs' / 'experimento_seguimiento_mensual.json'
+TRAYECTORIA = BACKEND.parent / 'docs' / 'experimento_trayectoria.json'
+DESGLOSADO = BACKEND.parent / 'docs' / 'experimento_desglosado.json'
 NOMBRES = {'xgboost': 'XGBoost (modelo en uso)', 'regresion_logistica': 'Regresión logística', 'regla_promedio_T1': 'Regla: promedio T1',
     'regla_n_areas_bajo_51': 'Regla: áreas bajo 51', 'regla_faltas_T1': 'Regla: faltas T1', 'siempre_continuidad': 'Siempre "continúa" (azar)'}
 VARIANTES = {'a_sin_balanceo': 'Sin balanceo', 'b_scale_pos_weight': 'scale_pos_weight (en uso)', 'c_smote': 'SMOTE',
@@ -104,6 +107,25 @@ def etiqueta_ampliada():
                for k in ('xgboost', 'regla_promedio_T1')}})
 
 
+def seguimiento_continuo():
+    """Seguimiento continuo con los registros completos de la institución: validación de cada corte mensual del modelo en
+    uso por el sistema (artifacts/seguimiento_mensual_v1/metricas.json), la regla de faltas seguidas revisada a diario y
+    los cortes únicos que no anticipan (30 de abril y trayectoria previa)."""
+    from predictivo import seguimiento as sg
+    met, mensual, tray, desg = sg.metricas(), leer_json(MENSUAL) or {}, leer_json(TRAYECTORIA) or {}, leer_json(DESGLOSADO) or {}
+    if met is None:
+        return None
+    cortes = [dict(mes=mes, matriculas=c['matriculas'], abandonos=c['abandonos'], azar=c['azar'],
+        **{k: c['xgboost'].get(k) for k in ('average_precision', 'roc_auc', 'verdaderos_positivos', 'falsos_positivos')},
+        ic95_ap=c['xgboost'].get('ic95', {}).get('average_precision'), regla_5=c['regla_5_faltas']) for mes, c in met['cortes'].items()]
+    t = (tray.get('modelos') or {}).get('trayectoria|xgboost') or {}
+    g = (desg.get('modelos') or {}).get('global|xgboost') or {}
+    return dict(version=met['version'], dataset=met['dataset'], protocolo=met['protocolo'], nota=met['nota'], variables=len(met['variables']),
+        cortes=cortes, diario=mensual.get('monitoreo_diario'), matriculas=mensual.get('matriculas'), abandonos=mensual.get('abandonos'),
+        corte_unico=dict(abril=g and dict(average_precision=g.get('average_precision'), roc_auc=g.get('roc_auc'), azar=((desg.get('modelos') or {}).get('siempre_continuidad') or {}).get('average_precision')),
+            trayectoria=t and dict(average_precision=t.get('average_precision'), roc_auc=t.get('roc_auc'), azar=tray.get('prevalencia_azar'))))
+
+
 def por_dimension(imp):
     """Peso del modelo actual por dimensión (suma de |SHAP| medio) y catálogo de variables: modelo actual frente a sistema."""
     from predictivo.features import DESCRIPTIONS, VERSION
@@ -165,6 +187,7 @@ def resultados(db: Session = Depends(get_db)):
         'etiqueta_ampliada': etiqueta_ampliada(),
         'registros': leer_json(REGISTROS),
         'algoritmos': leer_json(ALGORITMOS),
+        'seguimiento': seguimiento_continuo(),
         'limitaciones': met.get('limitaciones') or [],
         'fuentes': {'registro_del_modelo': 'Base de datos (modelos_predictivos.metricas)', 'importancia': 'Base de datos (790 cortes) + modelo registrado',
             'ajuste_umbrales_calibracion': 'backend/artifacts/real_t1_ajuste_v1/reporte_ajuste.json' if ajuste else None,
@@ -172,5 +195,6 @@ def resultados(db: Session = Depends(get_db)):
             'balanceo': 'docs/experimento_smote_resumen_tabla.csv' if SMOTE.exists() else None,
             'etiqueta_ampliada': 'docs/experimento_etiqueta_ampliada.json' if AMPLIADA.exists() else None,
             'registros': 'docs/analisis_registros_detallados.json' if REGISTROS.exists() else None,
-            'algoritmos': 'docs/experimento_algoritmos.json' if ALGORITMOS.exists() else None},
+            'algoritmos': 'docs/experimento_algoritmos.json' if ALGORITMOS.exists() else None,
+            'seguimiento': 'backend/artifacts/seguimiento_mensual_v1/metricas.json, docs/experimento_seguimiento_mensual.json, docs/experimento_trayectoria.json'},
     }

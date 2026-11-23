@@ -1,0 +1,414 @@
+{
+ "version": "seguimiento-mensual-v1",
+ "dataset": "DATASET_INSTITUCION_2021_2025.xlsx",
+ "matriculas": 1889,
+ "abandonos": 11,
+ "variables": [
+  "prop_faltas",
+  "prop_retrasos",
+  "prop_licencias",
+  "faltas_ult10",
+  "faltas_ult20",
+  "racha_actual",
+  "racha_max",
+  "dias_desde_asistencia",
+  "tendencia_faltas",
+  "dias_registrados",
+  "promedio_T1",
+  "nota_minima_T1",
+  "n_areas_bajo_51_T1",
+  "ser_media",
+  "saber_media",
+  "hacer_media",
+  "autoevaluacion_media",
+  "tendencia_actividades",
+  "areas_en_caida",
+  "promedio_T2",
+  "edad_31marzo",
+  "grado"
+ ],
+ "protocolo": "Un corte por fin de mes (febrero a octubre), variables solo con datos hasta el corte; XGBoost por corte; StratifiedGroupKFold 5 x 20 por estudiante; umbral 0,5. Regla operativa: racha actual de k faltas seguidas.",
+ "por_corte": {
+  "feb": {
+   "average_precision": 0.011211437662212833,
+   "average_precision_de": 0.005457002141789763,
+   "roc_auc": 0.5445493271371866,
+   "detectados": 3.05,
+   "falsas_alarmas": 244.45,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 0,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 0,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "mar": {
+   "average_precision": 0.010856666562968891,
+   "average_precision_de": 0.003633715973632833,
+   "roc_auc": 0.5526018975699486,
+   "detectados": 0.85,
+   "falsas_alarmas": 83.95,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 0,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 0,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "abr": {
+   "average_precision": 0.010600075593530692,
+   "average_precision_de": 0.0025577971794670364,
+   "roc_auc": 0.5678199728918578,
+   "detectados": 0.15,
+   "falsas_alarmas": 23.85,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 0,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 0,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "may": {
+   "average_precision": 0.00833308692417619,
+   "average_precision_de": 0.0013240255624339357,
+   "roc_auc": 0.5662600445348049,
+   "detectados": 0.05,
+   "falsas_alarmas": 25.05,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 1,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 1,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "jun": {
+   "average_precision": 0.7852072418211945,
+   "average_precision_de": 0.032972348158594025,
+   "roc_auc": 0.9617884112692419,
+   "detectados": 8.6,
+   "falsas_alarmas": 5.65,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 9,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 9,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "jul": {
+   "average_precision": 0.7755281039595621,
+   "average_precision_de": 0.035316966887690315,
+   "roc_auc": 0.9528354632587858,
+   "detectados": 8.6,
+   "falsas_alarmas": 4.45,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 9,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 9,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "ago": {
+   "average_precision": 0.7513078735974928,
+   "average_precision_de": 0.0538961523812095,
+   "roc_auc": 0.9510189756994867,
+   "detectados": 8.25,
+   "falsas_alarmas": 4.0,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 9,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 9,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "sep": {
+   "average_precision": 1.0,
+   "average_precision_de": 0.0,
+   "roc_auc": 1.0,
+   "detectados": 9.75,
+   "falsas_alarmas": 0.0,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 11,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 11,
+     "falsas_alarmas": 0
+    }
+   }
+  },
+  "oct": {
+   "average_precision": 1.0,
+   "average_precision_de": 0.0,
+   "roc_auc": 1.0,
+   "detectados": 9.75,
+   "falsas_alarmas": 0.0,
+   "azar": 0.005823186871360508,
+   "regla": {
+    "3": {
+     "detectados": 11,
+     "falsas_alarmas": 0
+    },
+    "5": {
+     "detectados": 11,
+     "falsas_alarmas": 0
+    }
+   }
+  }
+ },
+ "casos": [
+  {
+   "gestion": 2021,
+   "trimestre": "T2",
+   "ultima_asistencia": "2021-05-31",
+   "modelo": {
+    "mes": "jun",
+    "corte": "2021-06-29",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 63
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2021-06-29",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 63
+   }
+  },
+  {
+   "gestion": 2021,
+   "trimestre": "T2",
+   "ultima_asistencia": "2021-04-30",
+   "modelo": {
+    "mes": "feb",
+    "corte": "2021-02-26",
+    "momento": "antes de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 186
+   },
+   "regla_5_faltas": {
+    "mes": "may",
+    "corte": "2021-05-31",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 92
+   }
+  },
+  {
+   "gestion": 2021,
+   "trimestre": "T2",
+   "ultima_asistencia": "2021-05-31",
+   "modelo": {
+    "mes": "feb",
+    "corte": "2021-02-26",
+    "momento": "antes de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 186
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2021-06-29",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 63
+   }
+  },
+  {
+   "gestion": 2021,
+   "trimestre": "T3",
+   "ultima_asistencia": "2021-08-31",
+   "modelo": {
+    "mes": "sep",
+    "corte": "2021-09-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 61
+   },
+   "regla_5_faltas": {
+    "mes": "sep",
+    "corte": "2021-09-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 61
+   }
+  },
+  {
+   "gestion": 2022,
+   "trimestre": "T2",
+   "ultima_asistencia": "2022-05-30",
+   "modelo": {
+    "mes": "jun",
+    "corte": "2022-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2022-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   }
+  },
+  {
+   "gestion": 2022,
+   "trimestre": "T2",
+   "ultima_asistencia": "2022-05-31",
+   "modelo": {
+    "mes": "jun",
+    "corte": "2022-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2022-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   }
+  },
+  {
+   "gestion": 2022,
+   "trimestre": "T3",
+   "ultima_asistencia": "2022-08-30",
+   "modelo": null,
+   "regla_5_faltas": {
+    "mes": "sep",
+    "corte": "2022-09-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 61
+   }
+  },
+  {
+   "gestion": 2023,
+   "trimestre": "T2",
+   "ultima_asistencia": "2023-05-29",
+   "modelo": {
+    "mes": "jun",
+    "corte": "2023-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2023-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   }
+  },
+  {
+   "gestion": 2023,
+   "trimestre": "T2",
+   "ultima_asistencia": "2023-05-30",
+   "modelo": {
+    "mes": "jun",
+    "corte": "2023-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2023-06-30",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 62
+   }
+  },
+  {
+   "gestion": 2024,
+   "trimestre": "T2",
+   "ultima_asistencia": "2024-05-31",
+   "modelo": {
+    "mes": "jun",
+    "corte": "2024-06-28",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 64
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2024-06-28",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 64
+   }
+  },
+  {
+   "gestion": 2024,
+   "trimestre": "T2",
+   "ultima_asistencia": "2024-05-31",
+   "modelo": {
+    "mes": "jun",
+    "corte": "2024-06-28",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 64
+   },
+   "regla_5_faltas": {
+    "mes": "jun",
+    "corte": "2024-06-28",
+    "momento": "después de dejar de asistir",
+    "dias_antes_del_cierre_del_trimestre": 64
+   }
+  }
+ ],
+ "monitoreo_diario": {
+  "3_faltas": {
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 7,
+   "continuaron": 1878,
+   "dias_de_clase_desde_ultima_asistencia_mediana": 3.0,
+   "dias_antes_del_cierre_del_trimestre_mediana": 87.0,
+   "dias_antes_del_cierre_del_trimestre_min": 85
+  },
+  "5_faltas": {
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 0,
+   "continuaron": 1878,
+   "dias_de_clase_desde_ultima_asistencia_mediana": 5.0,
+   "dias_antes_del_cierre_del_trimestre_mediana": 84.0,
+   "dias_antes_del_cierre_del_trimestre_min": 82
+  },
+  "10_faltas": {
+   "detectados": 11,
+   "abandonos": 11,
+   "falsas_alarmas": 0,
+   "continuaron": 1878,
+   "dias_de_clase_desde_ultima_asistencia_mediana": 10.0,
+   "dias_antes_del_cierre_del_trimestre_mediana": 75.0,
+   "dias_antes_del_cierre_del_trimestre_min": 74
+  },
+  "continuaron_racha_maxima_de_faltas": {
+   "0": 276,
+   "1": 1471,
+   "2": 124,
+   "3": 7
+  }
+ }
+}

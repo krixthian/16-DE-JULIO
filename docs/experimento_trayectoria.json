@@ -1,0 +1,393 @@
+{
+ "version": "experimento-trayectoria-v1",
+ "dataset": "DATASET_INSTITUCION_2021_2025.xlsx",
+ "gestiones": [
+  2022,
+  2023,
+  2024,
+  2025
+ ],
+ "matriculas": 1444,
+ "abandonos": 7,
+ "estudiantes": 601,
+ "prevalencia_azar": 0.004847645429362881,
+ "variables": {
+  "trayectoria": [
+   "nuevo",
+   "repite_grado",
+   "desfase_edad",
+   "abandono_previo",
+   "reprobo_previo",
+   "promedio_anual_previo",
+   "areas_reprobadas_previo",
+   "prop_faltas_previo",
+   "prop_faltas_t3_previo",
+   "gestiones_previas",
+   "edad_31marzo",
+   "grado"
+  ],
+  "global": [
+   "CNAT_T1",
+   "LCO_T1",
+   "SOC_T1",
+   "APV_T1",
+   "EFI_T1",
+   "EMU_T1",
+   "MAT_T1",
+   "TTG_T1",
+   "VER_T1",
+   "promedio_T1",
+   "nota_minima_T1",
+   "n_areas_bajo_51_T1",
+   "faltas_T1",
+   "atrasos_T1",
+   "licencias_T1",
+   "tasa_asistencia_T1",
+   "edad_31marzo",
+   "grado",
+   "genero_f"
+  ],
+  "global_trayectoria": [
+   "CNAT_T1",
+   "LCO_T1",
+   "SOC_T1",
+   "APV_T1",
+   "EFI_T1",
+   "EMU_T1",
+   "MAT_T1",
+   "TTG_T1",
+   "VER_T1",
+   "promedio_T1",
+   "nota_minima_T1",
+   "n_areas_bajo_51_T1",
+   "faltas_T1",
+   "atrasos_T1",
+   "licencias_T1",
+   "tasa_asistencia_T1",
+   "edad_31marzo",
+   "grado",
+   "genero_f",
+   "nuevo",
+   "repite_grado",
+   "desfase_edad",
+   "abandono_previo",
+   "reprobo_previo",
+   "promedio_anual_previo",
+   "areas_reprobadas_previo",
+   "prop_faltas_previo",
+   "prop_faltas_t3_previo",
+   "gestiones_previas"
+  ]
+ },
+ "protocolo": "StratifiedGroupKFold 5 x 20 por estudiante; IC 95 % bootstrap por estudiante; umbral 0.5; parámetros fijos.",
+ "criterio": "La trayectoria anticipa solo si el IC 95 % de su AP queda entero por encima de la prevalencia (azar).",
+ "descriptivo": {
+  "nuevo": {
+   "0": {
+    "matriculas": 1213,
+    "abandonos": 6
+   },
+   "1": {
+    "matriculas": 231,
+    "abandonos": 1
+   }
+  },
+  "repite_grado": {
+   "0": {
+    "matriculas": 1394,
+    "abandonos": 7
+   },
+   "1": {
+    "matriculas": 50,
+    "abandonos": 0
+   }
+  },
+  "abandono_previo": {
+   "sin dato": {
+    "matriculas": 231,
+    "abandonos": 1
+   },
+   "0": {
+    "matriculas": 1213,
+    "abandonos": 6
+   }
+  },
+  "reprobo_previo": {
+   "sin dato": {
+    "matriculas": 231,
+    "abandonos": 1
+   },
+   "0": {
+    "matriculas": 1163,
+    "abandonos": 6
+   },
+   "1": {
+    "matriculas": 50,
+    "abandonos": 0
+   }
+  },
+  "sobreedad (desfase >= 7)": {
+   "matriculas": 0,
+   "abandonos": 0
+  },
+  "promedio_anual_previo": {
+   "mediana_abandonos": 76.5,
+   "mediana_resto": 76.0
+  },
+  "prop_faltas_previo": {
+   "mediana_abandonos": 0.018499583428008785,
+   "mediana_resto": 0.012269938650306749
+  },
+  "prop_faltas_t3_previo": {
+   "mediana_abandonos": 0.028846153846153848,
+   "mediana_resto": 0.019230769230769232
+  },
+  "desfase_edad": {
+   "mediana_abandonos": 5.0,
+   "mediana_resto": 5.0
+  }
+ },
+ "modelos": {
+  "trayectoria|xgboost": {
+   "roc_auc": 0.4123720051695,
+   "average_precision": 0.004747809243930511,
+   "precision": 0.0,
+   "sensibilidad": 0.0,
+   "f1": 0.0,
+   "tasa_marcados": 0.052943213296398894,
+   "verdaderos_positivos": 0.0,
+   "falsos_positivos": 76.45,
+   "ic95": {
+    "roc_auc": [
+     0.17030331422692532,
+     0.6855572274695655
+    ],
+    "average_precision": [
+     0.0019374634848318528,
+     0.011640210421318095
+    ],
+    "precision": [
+     0.0,
+     0.0
+    ],
+    "sensibilidad": [
+     0.0,
+     0.0
+    ],
+    "f1": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "trayectoria|logistica": {
+   "roc_auc": 0.4282831295357391,
+   "average_precision": 0.008372779747870162,
+   "precision": 0.004613183320139222,
+   "sensibilidad": 0.26428571428571435,
+   "f1": 0.009067677465783557,
+   "tasa_marcados": 0.28092105263157896,
+   "verdaderos_positivos": 1.85,
+   "falsos_positivos": 403.8,
+   "ic95": {
+    "roc_auc": [
+     0.14026833913626782,
+     0.749262133844706
+    ],
+    "average_precision": [
+     0.001780108569653499,
+     0.04505857759989916
+    ],
+    "precision": [
+     0.0,
+     0.013661357780350273
+    ],
+    "sensibilidad": [
+     0.0,
+     0.7142857142857143
+    ],
+    "f1": [
+     0.0,
+     0.026595744680851064
+    ]
+   }
+  },
+  "global|xgboost": {
+   "roc_auc": 0.7455761010040759,
+   "average_precision": 0.0159708215642883,
+   "precision": 0.0,
+   "sensibilidad": 0.0,
+   "f1": 0.0,
+   "tasa_marcados": 0.006163434903047092,
+   "verdaderos_positivos": 0.0,
+   "falsos_positivos": 8.9,
+   "ic95": {
+    "roc_auc": [
+     0.5327192949945135,
+     0.9125593983533661
+    ],
+    "average_precision": [
+     0.004443564014148372,
+     0.0585026938172894
+    ],
+    "precision": [
+     0.0,
+     0.0
+    ],
+    "sensibilidad": [
+     0.0,
+     0.0
+    ],
+    "f1": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "global|logistica": {
+   "roc_auc": 0.7002485336514565,
+   "average_precision": 0.05650161029694791,
+   "precision": 0.024504614824129734,
+   "sensibilidad": 0.3928571428571429,
+   "f1": 0.04612059985252082,
+   "tasa_marcados": 0.07752770083102493,
+   "verdaderos_positivos": 2.75,
+   "falsos_positivos": 109.2,
+   "ic95": {
+    "roc_auc": [
+     0.4239807611065956,
+     0.9383526807307363
+    ],
+    "average_precision": [
+     0.003819588736942112,
+     0.3435388167867815
+    ],
+    "precision": [
+     0.0,
+     0.061946902654867256
+    ],
+    "sensibilidad": [
+     0.0,
+     0.875
+    ],
+    "f1": [
+     0.0,
+     0.11268173557473872
+    ]
+   }
+  },
+  "global_trayectoria|xgboost": {
+   "roc_auc": 0.7285242071776519,
+   "average_precision": 0.017863568074955826,
+   "precision": 0.0,
+   "sensibilidad": 0.0,
+   "f1": 0.0,
+   "tasa_marcados": 0.004951523545706371,
+   "verdaderos_positivos": 0.0,
+   "falsos_positivos": 7.15,
+   "ic95": {
+    "roc_auc": [
+     0.4992843814989528,
+     0.9272114442605449
+    ],
+    "average_precision": [
+     0.004417283705316898,
+     0.07067974596270382
+    ],
+    "precision": [
+     0.0,
+     0.0
+    ],
+    "sensibilidad": [
+     0.0,
+     0.0
+    ],
+    "f1": [
+     0.0,
+     0.0
+    ]
+   }
+  },
+  "global_trayectoria|logistica": {
+   "roc_auc": 0.6133214037180634,
+   "average_precision": 0.12261675479862844,
+   "precision": 0.02356577333979836,
+   "sensibilidad": 0.25,
+   "f1": 0.04305372749813521,
+   "tasa_marcados": 0.051558171745152356,
+   "verdaderos_positivos": 1.75,
+   "falsos_positivos": 72.7,
+   "ic95": {
+    "roc_auc": [
+     0.33653992221155316,
+     0.851225986843658
+    ],
+    "average_precision": [
+     0.0024066299144256936,
+     0.4805106578032985
+    ],
+    "precision": [
+     0.0,
+     0.06522630078403416
+    ],
+    "sensibilidad": [
+     0.0,
+     0.6666666666666666
+    ],
+    "f1": [
+     0.0,
+     0.11428571428571428
+    ]
+   }
+  },
+  "siempre_continuidad": {
+   "average_precision": 0.004847645429362881,
+   "roc_auc": 0.5,
+   "sensibilidad": 0.0,
+   "precision": 0.0,
+   "f1": 0.0,
+   "tasa_marcados": 0.0
+  }
+ },
+ "diferencia_ap_vs_global_xgboost": {
+  "trayectoria|xgboost": {
+   "media": -0.015284369760390352,
+   "ic95": [
+    -0.05335866836234486,
+    -0.0008776009443620049
+   ]
+  },
+  "trayectoria|logistica": {
+   "media": -0.008953829774472233,
+   "ic95": [
+    -0.04328897004734331,
+    0.02471161908724256
+   ]
+  },
+  "global|logistica": {
+   "media": 0.05399982126678333,
+   "ic95": [
+    -0.02084882873187347,
+    0.3260614729900871
+   ]
+  },
+  "global_trayectoria|xgboost": {
+   "media": 0.003052067803466863,
+   "ic95": [
+    -0.012736412918722807,
+    0.029847121176711126
+   ]
+  },
+  "global_trayectoria|logistica": {
+   "media": 0.10934319716360301,
+   "ic95": [
+    -0.023765631395966307,
+    0.48261959217897127
+   ]
+  }
+ },
+ "versiones": {
+  "sklearn": "1.4.1.post1",
+  "xgboost": "2.0.3"
+ }
+}

@@ -7,8 +7,16 @@ import api from '../services/api'
 ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip)
 const alerts=ref([]),summary=ref(null),people=ref([]),selected=ref(null),items=ref([]),history=ref([]),recs=ref(null),busy=ref(false),error=ref(''),notice=ref('')
 const why=ref(null),whyError=ref(''),showAll=ref(false),whySection=ref(null)
-const tab=ref('modelo'),academic=ref(null),academicYear=ref(''),absence=ref(null),absenceDays=ref(3)
-async function loadAbsence(){try{absence.value=(await api.get('/alertas/inasistencia',{params:{dias:absenceDays.value}})).data}catch(e){error.value=message(e)}}
+const tab=ref('seguimiento'),academic=ref(null),academicYear=ref(''),absence=ref(null),absenceDays=ref(5)
+const follow=ref(null),followYear=ref(''),followDate=ref(''),followLevel=ref('riesgo')
+async function loadFollow(){try{const params={};if(followYear.value)params.gestion=followYear.value;if(followDate.value)params.fecha=followDate.value
+ follow.value=(await api.get('/alertas/seguimiento',{params})).data;if(!followYear.value)followYear.value=follow.value.gestion;if(!followDate.value)followDate.value=follow.value.fecha}catch(e){error.value=message(e)}}
+const followRows=computed(()=>(follow.value?.alertas||[]).filter(a=>followLevel.value==='todos'||a.alerta_inmediata||a.nivel!=='BAJO'))
+const followCount=computed(()=>(follow.value?.alertas||[]).filter(a=>a.alerta_inmediata||a.nivel!=='BAJO').length)
+const monthName={feb:'febrero',mar:'marzo',abr:'abril',may:'mayo',jun:'junio',jul:'julio',ago:'agosto',sep:'septiembre',oct:'octubre'}
+const factorValue=f=>f.valor==null?'sin dato':f.variable.startsWith('prop')?`${comma(f.valor*100,1)} %`:f.variable==='tendencia_faltas'?(f.valor>0?'en aumento':f.valor<0?'en descenso':'estable'):Number.isInteger(f.valor)?f.valor:comma(f.valor,1)
+const factorText=f=>`${f.descripcion}: ${factorValue(f)}`
+async function loadAbsence(){try{const params={dias:absenceDays.value};if(followYear.value)params.gestion=followYear.value;absence.value=(await api.get('/alertas/inasistencia',{params})).data}catch(e){error.value=message(e)}}
 const academicRows=computed(()=>(academic.value?.casos||[]).filter(c=>!academicYear.value||c.gestion===Number(academicYear.value)))
 const academicNew=computed(()=>academicRows.value.filter(c=>!c.modelo.alerta_id).length)
 const pct0=v=>v==null?'—':`${Math.round(v*100)} %`
@@ -46,7 +54,7 @@ const show=(k,v)=>v==null?'—':k==='responsable_id'?who(v):k==='estado'?label([
 const changes=h=>h.antes?Object.keys(fields).filter(k=>k in h.despues&&h.antes[k]!==h.despues[k]).map(k=>`${fields[k]}: ${show(k,h.antes[k])} → ${show(k,h.despues[k])}`):[h.motivo]
 async function load(){
  busy.value=true;error.value=''
- try{const [a,s,p,ac]=await Promise.all([api.get('/alertas'),api.get('/alertas/resumen'),api.get('/alertas/responsables'),api.get('/alertas/academicas')]);alerts.value=a.data;summary.value=s.data;people.value=p.data;academic.value=ac.data;loadAbsence()}catch(e){error.value=message(e)}finally{busy.value=false}
+ try{const [a,s,p,ac]=await Promise.all([api.get('/alertas'),api.get('/alertas/resumen'),api.get('/alertas/responsables'),api.get('/alertas/academicas')]);alerts.value=a.data;summary.value=s.data;people.value=p.data;academic.value=ac.data;loadFollow().then(loadAbsence)}catch(e){error.value=message(e)}finally{busy.value=false}
 }
 async function loadDetail(){
  const id=selected.value.id
@@ -120,16 +128,48 @@ onMounted(load)
    <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5"><p class="text-sm text-slate-500">Modelo</p><p class="text-xl font-bold mt-2" :title="summary.modelo?.version">XGBoost</p><p class="text-xs text-slate-500 mt-1" :title="summary.modelo?.version">{{ modelInfo(summary.modelo?.version) }}</p><p class="text-xs text-slate-500 mt-1">Medio ≥ {{ summary.modelo?.umbral_medio }} · Alto ≥ {{ summary.modelo?.umbral_alto }} (propuesta)</p></div>
   </div>
   <div class="flex flex-wrap gap-2 mt-6 border-b border-slate-200 dark:border-slate-700" role="tablist">
+   <button role="tab" :aria-selected="tab==='seguimiento'" @click="tab='seguimiento'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='seguimiento'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Seguimiento a la fecha ({{ follow ? followCount : '…' }})</button>
    <button role="tab" :aria-selected="tab==='modelo'" @click="tab='modelo'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='modelo'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Alertas del modelo ({{ alerts.length }})</button>
    <button role="tab" :aria-selected="tab==='academico'" @click="tab='academico'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='academico'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Riesgo académico por reglas ({{ academic?.total ?? '…' }})</button>
    <button role="tab" :aria-selected="tab==='inasistencia'" @click="tab='inasistencia'" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab==='inasistencia'?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">Inasistencia continua ({{ absence?.total ?? '…' }})</button>
   </div>
-  <section v-if="tab==='inasistencia'&&absence" class="mt-4">
+  <section v-if="tab==='seguimiento'&&follow" class="mt-4">
    <div class="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 p-4 text-sm">
-    <strong>Qué muestra esta pestaña.</strong> Estudiantes que acumulan {{ absence.dias }} o más faltas seguidas en la asistencia registrada (diaria o por materia: un día cuenta como falta si faltó a todas sus horas). {{ absence.nota }}
+    <strong>Qué muestra esta pestaña.</strong> El riesgo recalculado con todo lo registrado hasta la fecha elegida: XGBoost del mes en curso
+    ({{ monthName[follow.mes] || '—' }}) con la asistencia día por día{{ follow.notas_t1_incluidas ? ', las notas del 1.er trimestre' : '' }}{{ follow.promedio_t2_incluido ? ' y el promedio del 2.º trimestre' : '' }}.
+    Arriba van las <strong>alertas inmediatas</strong>: {{ follow.racha_alerta }} o más faltas seguidas. En los registros 2021-2025 esa señal se cumplió en los 11 abandonos y en ningún estudiante que continuó.
    </div>
    <div class="flex flex-wrap items-end gap-3 mt-4">
-    <label class="text-sm font-medium">Faltas seguidas<select v-model.number="absenceDays" @change="loadAbsence" class="block mt-1 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option v-for="d in [3,5,10]" :key="d" :value="d">{{ d }} o más</option></select></label>
+    <label class="text-sm font-medium">Gestión<input v-model.number="followYear" type="number" min="2000" max="2100" @change="followDate='';loadFollow();loadAbsence()" class="block mt-1 w-28 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"></label>
+    <label class="text-sm font-medium">Fecha<input v-model="followDate" type="date" @change="loadFollow" class="block mt-1 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"></label>
+    <label class="text-sm font-medium">Mostrar<select v-model="followLevel" class="block mt-1 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="riesgo">Con alerta (inmediata, alta o media)</option><option value="todos">Todos, incluido verde</option></select></label>
+    <span class="text-sm text-slate-500 pb-2">{{ followRows.length }} de {{ follow.total }} estudiante(s) con asistencia registrada</span>
+   </div>
+   <div v-if="follow.validacion_del_corte" class="mt-3 text-xs text-slate-500">
+    Validación de este corte ({{ monthName[follow.mes] }}) con los registros de la institución: AP {{ comma(follow.validacion_del_corte.xgboost.average_precision,2) }}
+    frente a {{ comma(follow.validacion_del_corte.azar,3) }} del azar; detecta en promedio {{ comma(follow.validacion_del_corte.xgboost.verdaderos_positivos,1) }} de {{ follow.validacion_del_corte.abandonos }} abandonos
+    con {{ comma(follow.validacion_del_corte.xgboost.falsos_positivos,1) }} falsas alarmas entre {{ follow.validacion_del_corte.matriculas }} matrículas. Puntajes de esta pantalla: {{ follow.modelo_usado }}. El puntaje ordena la revisión; no es una probabilidad calibrada.
+   </div>
+   <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="px-3 py-2.5">Puesto</th><th class="px-3 py-2.5">Estudiante</th><th class="px-3 py-2.5">Curso</th><th class="px-3 py-2.5">Prioridad</th><th class="px-3 py-2.5">Faltas seguidas</th><th class="px-3 py-2.5">Última asistencia</th><th class="px-3 py-2.5">Por qué</th></tr></thead>
+     <tbody><tr v-for="a in followRows" :key="a.matricula_id" class="border-t border-slate-100 dark:border-slate-700 align-top">
+      <td class="px-3 py-2.5 tabular-nums">{{ a.puesto }}</td>
+      <td class="px-3 py-2.5 font-medium whitespace-nowrap">{{ etiquetaCodigo(a.estudiante) }}<span v-if="a.origen==='SIMULADO'" class="ml-1 text-xs text-slate-400">(simulado)</span></td>
+      <td class="px-3 py-2.5 whitespace-nowrap">{{ a.curso }}</td>
+      <td class="px-3 py-2.5 whitespace-nowrap"><span v-if="a.alerta_inmediata" class="px-2 py-1 rounded-full text-xs font-semibold bg-red-600 text-white">Alerta inmediata</span>
+       <span v-else class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(a.nivel)">{{ a.nivel==='ALTO'?'Rojo · alta':a.nivel==='MEDIO'?'Amarillo · media':'Verde · baja' }}</span>
+       <span class="ml-2 text-xs text-slate-500 tabular-nums">{{ comma(a.probabilidad,2) }}</span></td>
+      <td class="px-3 py-2.5 tabular-nums">{{ a.racha_actual }}</td><td class="px-3 py-2.5">{{ a.ultima_asistencia || 'Sin asistencia' }}</td>
+      <td class="px-3 py-2.5 text-xs text-slate-600 dark:text-slate-300"><span v-if="!a.factores.length">—</span><ul v-else class="space-y-0.5"><li v-for="f in a.factores" :key="f.variable">{{ factorText(f) }}</li></ul></td></tr>
+      <tr v-if="!followRows.length"><td colspan="7" class="p-6 text-center text-slate-500">{{ follow.motivo || 'Ningún estudiante con alerta a esta fecha.' }}</td></tr></tbody></table>
+   </div>
+  </section>
+  <section v-if="tab==='inasistencia'&&absence" class="mt-4">
+   <div class="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100 p-4 text-sm">
+    <strong>Qué muestra esta pestaña.</strong> Gestión {{ absence.gestion }}: estudiantes que acumulan {{ absence.dias }} o más faltas seguidas al último día registrado (diaria o por materia: un día cuenta como falta si faltó a todas sus horas). {{ absence.nota }}
+   </div>
+   <div class="flex flex-wrap items-end gap-3 mt-4">
+    <label class="text-sm font-medium">Faltas seguidas<select v-model.number="absenceDays" @change="loadAbsence" class="block mt-1 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option v-for="d in [3,5,10]" :key="d" :value="d">{{ d }} o más{{ d===5?' (validado)':'' }}</option></select></label>
     <span class="text-sm text-slate-500 pb-2">{{ absence.total }} estudiante(s)</span>
    </div>
    <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
