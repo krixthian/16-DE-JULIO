@@ -275,11 +275,11 @@ def inasistencia_continua(dias: int = 5, gestion: int | None = None, db: Session
     cursos = select(m.Curso.id).join(m.Gestion, m.Gestion.id == m.Curso.gestion_id).where(m.Gestion.anio == gestion)
     jornadas = {j.id: j for j in db.scalars(select(m.JornadaClase).where(m.JornadaClase.es_lectiva == True, m.JornadaClase.curso_id.in_(cursos)))}
     diario, horas = {}, {}
-    for a in db.scalars(select(m.Asistencia).where(m.Asistencia.curso_id.in_(cursos))):
+    for a in db.execute(select(m.Asistencia.matricula_id, m.Asistencia.jornada_id, m.Asistencia.estado).where(m.Asistencia.curso_id.in_(cursos))):
         if a.jornada_id in jornadas:
             diario[(a.matricula_id, a.jornada_id)] = a.estado
     sesion_jornada = {s.id: s.jornada_id for s in db.scalars(select(m.SesionClase).where(m.SesionClase.dictada == True, m.SesionClase.curso_id.in_(cursos)))}
-    for r in db.scalars(select(m.AsistenciaMateria).where(m.AsistenciaMateria.curso_id.in_(cursos))):
+    for r in db.execute(select(m.AsistenciaMateria.matricula_id, m.AsistenciaMateria.sesion_id, m.AsistenciaMateria.estado).where(m.AsistenciaMateria.curso_id.in_(cursos))):
         j = sesion_jornada.get(r.sesion_id)
         if j in jornadas:
             horas.setdefault((r.matricula_id, j), []).append(r.estado)

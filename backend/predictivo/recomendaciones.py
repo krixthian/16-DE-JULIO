@@ -1,4 +1,4 @@
-"""Reglas RP00-RP08: recomendaciones pedagógicas a partir de los indicadores de una alerta. RP06-RP08 siguen las dimensiones
+"""Reglas RP00-RP10: recomendaciones pedagógicas a partir de los indicadores de una alerta. RP06-RP08 siguen las dimensiones
 de predictivo/perfil.py con sus mismos cortes.
 
 Propuesta pendiente de validación con docentes y Dirección. Los umbrales siguen la escala de
@@ -67,6 +67,17 @@ def _faltas_leves(ind, nivel):
         and f'faltas en el año = {v * 100:.1f} %'.replace('.', ','))
 
 
+def _por_materia(ind, nivel):
+    return bool(ind.get('materias_asistencia_baja')) and f"asistencia por materia: {ind['materias_bajas_detalle']}"
+
+
+def _citaciones(ind, nivel):
+    partes = [ind['citaciones_materia_detalle']] if (ind.get('citaciones_max_una_materia') or 0) >= 3 else []
+    if (ind.get('citaciones_direccion_orientacion') or 0) >= 2:
+        partes.append(f"{ind['citaciones_direccion_orientacion']:g} citaciones de Dirección u Orientación")
+    return bool(partes) and ', '.join(partes)
+
+
 def _atrasos(ind, nivel):
     v = ind.get('atrasos_T1')
     if v is None and ind.get('prop_retrasos') is not None:  # seguimiento a la fecha
@@ -100,6 +111,12 @@ REGLAS = [
     dict(codigo='RP08', nombre='Faltas leves', condicion='Faltas ≥ 5 % del año, sin llegar a la regla de inasistencia',
         recomendacion='Conversación del docente asesor con el estudiante y aviso a la familia, para prevenir que las faltas aumenten.',
         tipo='ENTREVISTA', evaluar=_faltas_leves),
+    dict(codigo='RP09', nombre='Inasistencia en una materia', condicion='Asiste a menos del 80 % de las clases de alguna materia (mínimo 8 clases, sin contar licencias)',
+        recomendacion='El docente de la materia conversa con el estudiante para conocer por qué falta a esa clase y acuerda su asistencia; informa al asesor.',
+        tipo='ENTREVISTA', evaluar=_por_materia),
+    dict(codigo='RP10', nombre='Citaciones repetidas', condicion='3 o más citaciones en una materia, o 2 o más de Dirección u Orientación',
+        recomendacion='Revisar los acuerdos de las citaciones anteriores con la familia y coordinar un solo plan entre docente, asesor y Orientación.',
+        tipo='REUNION_CASO', evaluar=_citaciones),
     dict(codigo='RP05', nombre='Revisión de caso', condicion='Prioridad ALTA, o alerta sin otra regla activa',
         recomendacion='Reunión de caso (docente asesor, orientación y Dirección) para revisar la situación y definir seguimiento.',
         tipo='REUNION_CASO', evaluar=None),

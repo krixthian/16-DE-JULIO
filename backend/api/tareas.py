@@ -92,7 +92,7 @@ def lista(db,t,lock=False):
     rows=[]
     for mat,s in members:
         e=by_id.get(mat.id)
-        rows.append({'matricula_id':mat.id,'nombre':s.nombre,'apellido':s.apellido,'origen':mat.origen,
+        rows.append({'matricula_id':mat.id,'nombre':s.nombre,'apellido':s.apellido,'codigo':s.codigo_anonimo,'origen':mat.origen,
           'estado':e.estado if e else None,'fecha_entrega':e.fecha_entrega if e else None,
           'fuera_plazo':bool(e and e.fecha_entrega and e.fecha_entrega>t.fecha_limite),
           'registrado_en':e.registrado_en if e else None})

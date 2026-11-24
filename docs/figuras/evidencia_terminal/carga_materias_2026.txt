@@ -1,0 +1,14 @@
+sesiones_clase: 2304 | asistencias_materia: 57600 {'PRESENTE': 53936, 'ATRASO': 278, 'LICENCIA': 1608, 'FALTA': 1778}
+citaciones: 11 | apoderados de prueba: 2
+antes   {'URGENTE': 2, 'ROJO': 6, 'AMARILLO': 31, 'VERDE': 111}
+después {'URGENTE': 2, 'ROJO': 8, 'AMARILLO': 34, 'VERDE': 106}
+   | PB-2026-0018 | 6° A | AMARILLO | ROJO | Asistencia (rojo): por materia: Técnica Tecnológica General 73 %, Ciencias Naturales 75 %, Matematicas 76 %, 7,5 % de faltas, 6 faltas en los últimos 20 días de clase. | NO previsto
+   | PB-2026-0143 | 5° A | VERDE | VERDE |  | escenario
+   | PB-2026-0109 | 1° A | VERDE | AMARILLO | Asistencia (amarillo): por materia: Valores, Espiritualidad y Religiones 58 %. | escenario
+   | PB-2026-0121 | 1° A | VERDE | AMARILLO | Académica (amarillo): 5 citaciones en Matematicas. Actitud (amarillo): 2 citaciones de Dirección u Orientación. | escenario
+   | PB-2026-0026 | 2° A | VERDE | AMARILLO | Asistencia (amarillo): por materia: Educación Física y Deportes 44 %. | escenario
+   | PB-2026-0128 | 2° A | VERDE | VERDE |  | escenario
+   | PB-2026-0033 | 3° A | VERDE | AMARILLO | Asistencia (amarillo): por materia: Matematicas 67 %. | escenario
+   | PB-2026-0004 | 4° A | VERDE | ROJO | Asistencia (rojo): por materia: Artes Plásticas y Visuales 46 %, Técnica Tecnológica General 56 %, Educación Musical 77 %. | escenario
+   | PB-2026-0030 | 6° A | VERDE | VERDE |  | escenario
+Hecho.

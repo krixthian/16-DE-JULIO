@@ -29,6 +29,33 @@ def por_materia(sesiones, registros):
     return dict(out)
 
 
+MINIMO_CLASES = 8  # con menos clases registradas en la materia no se juzga (una falta en Religión no debe alertar)
+
+
+def senales(sesiones, registros, citaciones, nombres):
+    """Señales por materia para la alerta combinada (regla propuesta; el modelo no las usa). La licencia no cuenta ni a favor
+    ni en contra: porcentaje = asistidas / (registradas - licencias). None = sin registro por materia o sin citaciones."""
+    bajas, hay = [], False
+    for mid, x in por_materia(sesiones, registros).items():
+        n = x['observadas'] - x['licencias']
+        if n < MINIMO_CLASES:
+            continue
+        hay = True
+        p = (x['presentes'] + x['atrasos']) / n
+        if p < UMBRAL_MATERIA:
+            bajas.append((p, nombres.get(mid, 'materia')))
+    por = defaultdict(int)
+    for c in citaciones:
+        por[c['materia_id']] += 1
+    externas = por.pop(None, 0)
+    mayor = max(por.items(), key=lambda kv: kv[1], default=(None, 0))
+    return dict(materias_asistencia_baja=len(bajas) if hay else None,
+        materias_bajas_detalle=(', '.join(f'{n} {p * 100:.0f} %' for p, n in sorted(bajas)[:3]) + (f' y {len(bajas) - 3} más' if len(bajas) > 3 else '')) or None,
+        citaciones_max_una_materia=mayor[1] if citaciones else None,
+        citaciones_materia_detalle=f'{mayor[1]} citaciones en {nombres.get(mayor[0], "una materia")}' if mayor[1] else None,
+        citaciones_direccion_orientacion=externas if citaciones else None)
+
+
 def licencias_parciales(sesiones, registros):
     """Días en que el estudiante asistió a una o más horas y después tuvo licencia (llegó y se retiró)."""
     por_sesion = {s['id']: s for s in sesiones if s['dictada']}

@@ -80,7 +80,7 @@ onMounted(async () => {
    <div v-if="data.estudiantes.length" class="mt-3 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
     <table class="w-full text-sm">
      <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr>
-      <th class="px-4 py-2.5">Estudiante</th>
+      <th class="px-4 py-2.5">Estudiante<span v-if="data.estudiantes.some(x=>x.origen==='SIMULADO')" class="ml-2 text-xs font-normal text-slate-500">PB: datos de prueba</span></th>
       <th v-for="d in dims" :key="d.clave" class="px-3 py-2.5 text-right">{{ d.dimension }} <span class="font-normal text-slate-500">T{{ d.trimestre }}</span></th>
       <th v-for="t in tipos" :key="t" class="px-3 py-2.5 text-right">{{ TIPOS[t] }}</th>
       <th v-if="data.total_actividades" class="px-3 py-2.5 text-right">Promedio</th>
@@ -103,7 +103,6 @@ onMounted(async () => {
         <td class="px-4 py-2.5 font-medium whitespace-nowrap">
          <button v-if="hayDetalle" type="button" class="text-left hover:underline" :aria-expanded="abierto === e.matricula_id" @click="abierto = abierto === e.matricula_id ? null : e.matricula_id; lista = null">{{ etiquetaCodigo(e.estudiante) }}</button>
          <template v-else>{{ etiquetaCodigo(e.estudiante) }}</template>
-         <span v-if="e.origen==='SIMULADO'" class="ml-1 text-xs text-slate-400">(simulado)</span>
         </td>
         <td v-for="d in dims" :key="d.clave" class="celda" :class="e.dimensiones[d.clave] != null && e.dimensiones[d.clave] < 51 ? 'bajo' : ''">{{ num(e.dimensiones[d.clave]) }}</td>
         <td v-for="t in tipos" :key="t" class="celda" :class="e.por_tipo[t] != null && e.por_tipo[t] < 51 ? 'bajo' : ''">{{ num(e.por_tipo[t]) }}</td>

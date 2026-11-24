@@ -46,7 +46,7 @@ def lista(db, curso_id, fecha):
     rows = db.execute(select(m.Matricula, m.Estudiante).join(m.Estudiante, m.Estudiante.id == m.Matricula.estudiante_id).where(
         m.Matricula.curso_id == curso_id, m.Matricula.fecha_ingreso <= fecha,
         or_(m.Matricula.fecha_fin == None, m.Matricula.fecha_fin >= fecha)).order_by(m.Estudiante.apellido, m.Estudiante.nombre, m.Matricula.id)).all()
-    return [{'matricula_id': e.id, 'nombre': s.nombre, 'apellido': s.apellido, 'origen': e.origen} for e, s in rows]
+    return [{'matricula_id': e.id, 'nombre': s.nombre, 'apellido': s.apellido, 'codigo': s.codigo_anonimo, 'origen': e.origen} for e, s in rows]
 
 
 def dia(db, course, gestion, fecha, user):

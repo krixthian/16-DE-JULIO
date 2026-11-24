@@ -189,7 +189,7 @@ onMounted(load)
     <span class="text-sm text-slate-500 pb-2">{{ followRows.length }} estudiante(s)<template v-if="!follow.notas_t1_incluidas"> · las notas aparecen al cerrar el 1.er trimestre</template></span>
    </div>
    <AyudaPantalla class="mt-3" titulo="¿Cómo se lee esta lista?">
-    <p><strong>Urgente</strong>: {{ follow.racha_alerta }} o más faltas seguidas. <strong>Rojo</strong> y <strong>amarillo</strong>: por notas, actitud o asistencia; en rojo van primero quienes tienen notas y asistencia a la vez. <strong>Verde</strong>: sin alerta. Solo se muestran las dimensiones con problema.</p>
+    <p><strong>Urgente</strong>: {{ follow.racha_alerta }} o más faltas seguidas. <strong>Rojo</strong> y <strong>amarillo</strong>: por notas, actitud o asistencia; en rojo van primero quienes tienen notas y asistencia a la vez. <strong>Verde</strong>: sin alerta. Solo se muestran las dimensiones con problema. Asistencia incluye la de cada materia; Académica y Actitud, las citaciones. «PB» es un estudiante de prueba.</p>
     <p><strong>Regla propuesta.</strong> {{ follow.nota_perfil }}</p>
     <p><strong>Puntaje de XGBoost</strong> ({{ monthName[follow.mes] || '—' }}): ordena dentro de cada nivel. {{ summary?.nota || 'No está calibrado: no es un riesgo absoluto.' }}</p>
     <details class="text-xs"><summary class="cursor-pointer">Detalle técnico del modelo y de la regla de faltas</summary>
@@ -204,7 +204,7 @@ onMounted(load)
       <td class="px-3 py-2.5 font-medium whitespace-nowrap">{{ etiquetaCodigo(a.estudiante) }}</td>
       <td class="px-3 py-2.5 whitespace-nowrap">{{ a.curso }}</td>
       <td class="px-3 py-2.5 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="NIVEL[a.perfil.nivel][1]">{{ NIVEL[a.perfil.nivel][0] }}</span><span v-if="a.perfil.notas_y_asistencia" class="block mt-1 w-fit px-2 py-0.5 rounded-full border border-red-300 dark:border-red-800 text-[11px] text-red-800 dark:text-red-200">Notas y asistencia</span></td>
-      <td class="px-3 py-2.5"><PerfilRiesgo solo-alertas :colores="a.perfil.colores" /><p v-if="a.perfil.motivos.some(x=>x.dimension==='Modelo XGBoost')" class="text-xs text-slate-500">Solo el modelo</p></td>
+      <td class="px-3 py-2.5"><PerfilRiesgo solo-alertas :colores="a.perfil.colores" /><p v-if="a.perfil.por_materia" class="mt-1 text-xs text-slate-500">{{ a.perfil.por_materia }}</p><p v-if="a.perfil.motivos.some(x=>x.dimension==='Modelo XGBoost')" class="text-xs text-slate-500">Solo el modelo</p></td>
       <td class="px-3 py-2.5 tabular-nums">{{ a.racha_actual }}<span v-if="a.racha_actual" class="block text-xs text-slate-500 whitespace-nowrap">{{ a.ultima_asistencia ? `última vez: ${fechaCorta(a.ultima_asistencia)}` : 'Sin asistencia' }}</span></td>
       <td class="px-3 py-2.5 text-xs tabular-nums"><details v-if="a.factores.length"><summary class="cursor-pointer">{{ comma(a.probabilidad,2) }}</summary><ul class="mt-1 space-y-0.5 text-slate-600 dark:text-slate-300"><li v-for="f in a.factores" :key="f.variable">{{ factorText(f) }}</li></ul></details><template v-else>{{ comma(a.probabilidad,2) }}</template></td>
       <td class="px-3 py-2.5 whitespace-nowrap"><button v-if="a.caso" @click="viewCase(a.caso.id)" class="text-xs px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950">Ver caso · {{ label(states,a.caso.estado) }}</button>
@@ -238,11 +238,11 @@ onMounted(load)
    </div>
    <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
     <table class="w-full text-sm">
-     <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="p-3">Estudiante</th><th class="p-3">Gestión / curso</th><th class="p-3">Áreas con nota menor a 51</th><th class="p-3">Promedio T1</th><th class="p-3">Caso</th><th class="p-3">Reglas</th></tr></thead>
+     <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="p-3">Estudiante<span v-if="academicRows.some(x=>x.origen==='SIMULADO')" class="ml-2 text-xs font-normal text-slate-500">PB: datos de prueba</span></th><th class="p-3">Gestión / curso</th><th class="p-3">Áreas con nota menor a 51</th><th class="p-3">Promedio T1</th><th class="p-3">Caso</th><th class="p-3">Reglas</th></tr></thead>
      <tbody>
       <tr v-if="!academicRows.length"><td colspan="6" class="p-6 text-center text-slate-500">No hay estudiantes con áreas bajo 51 en esta gestión.</td></tr>
       <tr v-for="c in academicRows" :key="c.matricula_id" class="border-t border-slate-100 dark:border-slate-700 align-top">
-       <td class="p-3 font-medium">{{ etiquetaCodigo(c.estudiante) }}<span v-if="c.origen==='SIMULADO'" class="ml-1 text-xs text-slate-400">(simulado)</span></td>
+       <td class="p-3 font-medium">{{ etiquetaCodigo(c.estudiante) }}</td>
        <td class="p-3">{{ c.gestion }} · {{ c.curso }}</td>
        <td class="p-3"><span class="font-semibold text-red-700 dark:text-red-300">{{ c.areas_bajo_51.length }} {{ c.areas_bajo_51.length===1?'área':'áreas' }}</span><span class="block text-xs text-slate-500">{{ c.areas_bajo_51.map(a=>`${a.area} ${a.nota}`).join(' · ') }}</span></td>
        <td class="p-3">{{ c.promedio_T1 }}</td>

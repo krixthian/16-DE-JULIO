@@ -217,12 +217,25 @@ def calcular(db, anio, fecha=None, directorio=DIRECTORIO, solo_cursos=None):
     por_curso = defaultdict(list)
     for j in jornadas.values():
         por_curso[j.curso_id].append(j)
-    sesiones = {s.id: s.jornada_id for s in db.scalars(select(m.SesionClase).where(m.SesionClase.curso_id.in_(cursos), m.SesionClase.dictada == True))
+    from predictivo import asistencia_materia as am
+    sesion = {s.id: s for s in db.scalars(select(m.SesionClase).where(m.SesionClase.curso_id.in_(cursos), m.SesionClase.dictada == True))
         if s.jornada_id in jornadas} if cursos else {}
-    horas = defaultdict(list)
+    sesiones = {k: s.jornada_id for k, s in sesion.items()}
+    horas, por_hora = defaultdict(list), defaultdict(list)
     if sesiones:
-        for r in db.scalars(select(m.AsistenciaMateria).where(m.AsistenciaMateria.sesion_id.in_(sesiones))):
+        for r in db.execute(select(m.AsistenciaMateria.matricula_id, m.AsistenciaMateria.sesion_id, m.AsistenciaMateria.estado)
+                .where(m.AsistenciaMateria.curso_id.in_(cursos), m.AsistenciaMateria.sesion_id.in_(sesiones))):
             horas[(r.matricula_id, sesiones[r.sesion_id])].append(r.estado)
+            por_hora[r.matricula_id].append(dict(sesion_id=r.sesion_id, estado=r.estado))
+    sesiones_curso = defaultdict(list)
+    for s in sesion.values():
+        sesiones_curso[s.curso_id].append(dict(id=s.id, materia_id=s.materia_id, dictada=True))
+    citas = defaultdict(list)
+    if ids:
+        for c in db.scalars(select(m.Citacion).where(m.Citacion.matricula_id.in_(ids), m.Citacion.estado != 'CANCELADA')):
+            if c.fecha_programada.date() <= fecha:
+                citas[c.matricula_id].append(dict(materia_id=c.materia_id))
+    materias = {x.id: x.nombre for x in db.scalars(select(m.Materia))} if citas or sesion else {}
     notas, dimensiones = defaultdict(list), defaultdict(list)
     if ids:
         evaluaciones = {e.id: e for e in db.scalars(select(m.Evaluacion).where(m.Evaluacion.curso_id.in_(cursos), m.Evaluacion.fecha_aplicacion <= fecha))}
@@ -251,6 +264,8 @@ def calcular(db, anio, fecha=None, directorio=DIRECTORIO, solo_cursos=None):
         est = estudiantes[mat.estudiante_id]
         v.update(promedio_T1=p1[0], nota_minima_T1=p1[1], n_areas_bajo_51_T1=p1[2], promedio_T2=p2[0], grado=curso.grado)
         v.update(dg.variables(dimensiones.get((mat.id, 1)) if t1_cerrado else None, dimensiones.get((mat.id, 2)) if t2_cerrado else None))
+        if por_hora.get(mat.id) or citas.get(mat.id):
+            v.update(am.senales(sesiones_curso[curso.id], por_hora.get(mat.id, []), citas.get(mat.id, []), materias))
         filas.append(v)
         ultima = max((f for f, c in regs if c in ('A', 'R')), default=None)
         info.append(dict(matricula_id=mat.id, estudiante=est.codigo_anonimo, origen=mat.origen, curso_id=curso.id, curso=f'{curso.grado}° {curso.paralelo}',
@@ -264,7 +279,7 @@ def calcular(db, anio, fecha=None, directorio=DIRECTORIO, solo_cursos=None):
     for (prob, factores), extra, fila in zip(puntajes, info, filas):
         alertas.append(dict(**extra, probabilidad=round(prob, 4), nivel=nivel(prob), factores=factores,
             alerta_inmediata=extra['racha_actual'] >= RACHA_ALERTA,
-            notas_t1_disponibles=fila['promedio_T1'] is not None, indicadores={k: fila.get(k) for k in VARIABLES},
+            notas_t1_disponibles=fila['promedio_T1'] is not None, indicadores={k: fila.get(k) for k in VARIABLES + [s for s in pf.SENALES if s in fila]},
             perfil=pf.alerta(fila, nivel(prob), RACHA_ALERTA)))
     orden = sorted(alertas, key=lambda a: (pf.NIVELES.index(a['perfil']['nivel']), not a['perfil']['notas_y_asistencia'], -a['probabilidad']))
     for i, a in enumerate(orden, 1):

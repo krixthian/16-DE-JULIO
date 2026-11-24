@@ -48,6 +48,29 @@ class RecomendacionesPorDimensionTests(unittest.TestCase):
         self.assertEqual(pf.explicacion(pf.alerta(v), v), 'Académica (amarillo): 1 área bajo 51. Actitud (rojo): Ser 40, Decidir 55.')
 
 
+class PorMateriaTests(unittest.TestCase):
+    def test_senales_y_alerta(self):
+        from predictivo import asistencia_materia as am, recomendaciones as rp
+        nombres = {1: 'Lenguaje', 2: 'Religión'}
+        ses = [dict(id=i, materia_id=1 if i <= 20 else 2, dictada=True) for i in range(1, 31)]
+        reg = lambda faltas, lic=(): [dict(sesion_id=s['id'], estado='FALTA' if s['id'] in faltas else 'LICENCIA' if s['id'] in lic else 'PRESENTE') for s in ses]
+        s = am.senales(ses, reg({21, 22, 23}), [], nombres)
+        self.assertEqual((s['materias_asistencia_baja'], s['materias_bajas_detalle']), (1, 'Religión 70 %'))
+        self.assertEqual(am.senales(ses, reg(set(), {21, 22}), [], nombres)['materias_asistencia_baja'], 0, 'La licencia no resta.')
+        self.assertEqual(am.senales(ses[:5], reg({1, 2, 3})[:5], [], nombres)['materias_asistencia_baja'], None, 'Pocas clases: no se juzga.')
+        v = {**OK, **s}
+        a = pf.alerta(v)
+        self.assertEqual((a['nivel'], a['colores']['Asistencia']), ('AMARILLO', 'AMARILLO'))
+        self.assertEqual(pf.explicacion(a, v), 'Asistencia (amarillo): por materia: Religión 70 %.')
+        self.assertEqual([x['codigo'] for x in rp.evaluar(v, 'MEDIO')], ['RP09'])
+        c = am.senales([], [], [dict(materia_id=1)] * 5 + [dict(materia_id=None)] * 2, nombres)
+        w = {**OK, **c}
+        self.assertEqual((pf.dimensiones(w)['Académica'], pf.dimensiones(w)['Actitud']), ('AMARILLO', 'AMARILLO'))
+        self.assertEqual([x['codigo'] for x in rp.evaluar(w, 'MEDIO')], ['RP07', 'RP10'])
+        repartidas = am.senales([], [], [dict(materia_id=k) for k in (1, 1, 2, 2)], nombres)
+        self.assertEqual(pf.alerta({**OK, **repartidas})['nivel'], 'VERDE', 'Repartidas no equivalen a concentradas.')
+
+
 class MismosNumerosTests(unittest.TestCase):
     def test_panel_y_reportes_cuentan_como_alertas(self):
         """Solo lectura sobre la base en uso."""

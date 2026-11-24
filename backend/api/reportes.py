@@ -22,7 +22,7 @@ def etiqueta(codigo):
     """Igual que frontend/src/utils/estudiante.js: EST-0042 → "Estudiante 0042"."""
     match = re.fullmatch(r'(EST|EXT)-(\w+)', codigo or '')
     if not match:
-        return f'Estudiante {codigo}' if codigo else 'Estudiante'
+        return 'Estudiante ' + re.sub(r'^SIM-', 'PB-', codigo) if codigo else 'Estudiante'  # PB = prueba (datos simulados)
     return f'Estudiante ext. {match[2]}' if match[1] == 'EXT' else f'Estudiante {match[2]}'
 
 

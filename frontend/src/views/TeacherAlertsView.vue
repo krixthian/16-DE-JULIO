@@ -61,7 +61,7 @@ onMounted(load)
        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white whitespace-nowrap">{{ a.faltas_seguidas }} faltas seguidas</span>
       </div>
       <p class="mt-3 text-sm">Última asistencia: <strong>{{ a.ultima_asistencia || 'sin asistencia registrada' }}</strong></p>
-      <PerfilRiesgo class="mt-3" solo-alertas :colores="a.colores" />
+      <PerfilRiesgo class="mt-3" solo-alertas :colores="a.colores" /><p v-if="a.por_materia" class="mt-1 text-xs text-slate-500">{{ a.por_materia }}</p>
       <p class="mt-4 text-sm rounded-lg bg-red-50 dark:bg-red-950/40 text-red-900 dark:text-red-200 p-3">Avisa hoy a Dirección u Orientación.</p>
      </article>
     </div>
@@ -75,7 +75,7 @@ onMounted(load)
        <td class="px-4 py-2.5 font-medium whitespace-nowrap">{{ etiquetaCodigo(a.estudiante) }}</td>
        <td class="px-4 py-2.5 whitespace-nowrap">{{ a.curso }}</td>
        <td class="px-4 py-2.5 whitespace-nowrap"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="nivel(a.nivel)[1]">{{ nivel(a.nivel)[0] }}</span><span v-if="a.notas_y_asistencia" class="block mt-1 w-fit px-2 py-0.5 rounded-full border border-red-300 dark:border-red-800 text-[11px] text-red-800 dark:text-red-200">Notas y asistencia</span></td>
-       <td class="px-4 py-2.5"><PerfilRiesgo solo-alertas :colores="a.colores" /></td>
+       <td class="px-4 py-2.5"><PerfilRiesgo solo-alertas :colores="a.colores" /><p v-if="a.por_materia" class="mt-1 text-xs text-slate-500">{{ a.por_materia }}</p></td>
        <td class="px-4 py-2.5 tabular-nums">{{ a.faltas_seguidas }}</td>
       </tr></tbody></table>
     </div>

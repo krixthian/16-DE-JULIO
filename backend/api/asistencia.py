@@ -42,7 +42,7 @@ def resumen(db,course,gestion,fecha,lock=False):
     rows=db.execute(read(select(m.Matricula,m.Estudiante).join(m.Estudiante,m.Estudiante.id==m.Matricula.estudiante_id).where(m.Matricula.curso_id==course.id,m.Matricula.fecha_ingreso<=fecha,or_(m.Matricula.fecha_fin==None,m.Matricula.fecha_fin>=fecha)).order_by(m.Estudiante.apellido,m.Estudiante.nombre,m.Matricula.id))).all()
     stored=list(db.scalars(read(select(m.Asistencia).where(m.Asistencia.jornada_id==jornada.id)))) if jornada else []
     by_id={x.matricula_id:x for x in stored}
-    roster=[{'matricula_id':e.id,'nombre':s.nombre,'apellido':s.apellido,'origen':e.origen,
+    roster=[{'matricula_id':e.id,'nombre':s.nombre,'apellido':s.apellido,'codigo':s.codigo_anonimo,'origen':e.origen,
              'estado':by_id[e.id].estado if e.id in by_id else None,
              'justificada':by_id[e.id].justificada if e.id in by_id else None,
              'observacion':by_id[e.id].observacion if e.id in by_id else None,

@@ -3,7 +3,7 @@ const ANONIMO = 'ANONIMO'
 
 export function etiquetaCodigo(codigo) {
   const m = /^(EST|EXT)-(\w+)$/.exec(codigo || '')
-  if (!m) return codigo ? `Estudiante ${codigo}` : 'Estudiante'
+  if (!m) return codigo ? `Estudiante ${codigo.replace(/^SIM-/, 'PB-')}` : 'Estudiante' // PB = prueba (datos simulados)
   return m[1] === 'EXT' ? `Estudiante ext. ${m[2]}` : `Estudiante ${m[2]}`
 }
 
@@ -12,6 +12,8 @@ export const esAnonimo = s => s?.nombre === ANONIMO
 // "Apellido, Nombre" para registros con nombre; "Estudiante 0042" para anonimizados.
 export function nombreEstudiante(s) {
   if (!s) return ''
+  // Estudiante de prueba: se muestra su código para que coincida con Alertas.
+  if (s.codigo?.startsWith('SIM-')) return etiquetaCodigo(s.codigo)
   return esAnonimo(s) ? etiquetaCodigo(s.apellido) : `${s.apellido}, ${s.nombre}`
 }
 

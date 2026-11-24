@@ -48,7 +48,7 @@ def mis_alertas(gestion: int | None = None, fecha: date | None = None, db: Sessi
             'motivo': 'No tienes cursos asignados en esta gestión.'}
     r = sg.calcular(db, gestion, fecha, solo_cursos=cursos)
     alertas = [dict(matricula_id=a['matricula_id'], estudiante=a['estudiante'], curso=a['curso'], origen=a['origen'],
-        alerta_inmediata=a['alerta_inmediata'], nivel=a['perfil']['nivel'], colores=a['perfil']['colores'], motivos=a['perfil']['motivos'], notas_y_asistencia=a['perfil']['notas_y_asistencia'], faltas_seguidas=a['racha_actual'], ultima_asistencia=a['ultima_asistencia'],
+        alerta_inmediata=a['alerta_inmediata'], nivel=a['perfil']['nivel'], colores=a['perfil']['colores'], motivos=a['perfil']['motivos'], por_materia=a['perfil']['por_materia'], notas_y_asistencia=a['perfil']['notas_y_asistencia'], faltas_seguidas=a['racha_actual'], ultima_asistencia=a['ultima_asistencia'],
         porque=[dict(descripcion=f['descripcion'], variable=f['variable'], valor=f['valor']) for f in a['factores']])
         for a in r['alertas'] if a['perfil']['nivel'] != 'VERDE']
     return {**base, 'fecha': r['fecha'], 'mes': r['mes'], 'total': len(alertas), 'estudiantes_con_registro': r['total'],

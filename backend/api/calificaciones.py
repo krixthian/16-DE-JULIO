@@ -157,7 +157,7 @@ def lista(db,e,lock=False):
     members=list(db.execute(read(select(m.Matricula,m.Estudiante).join(m.Estudiante,m.Estudiante.id==m.Matricula.estudiante_id).where(m.Matricula.curso_id==e.curso_id,m.Matricula.fecha_ingreso<=e.fecha_aplicacion,or_(m.Matricula.fecha_fin==None,m.Matricula.fecha_fin>=e.fecha_aplicacion)).order_by(m.Estudiante.apellido,m.Estudiante.nombre,m.Matricula.id))))
     notes=list(db.scalars(read(select(m.Calificacion).where(m.Calificacion.evaluacion_id==e.id).order_by(m.Calificacion.id))))
     by_id={x.matricula_id:x for x in notes}
-    rows=[{'matricula_id':mat.id,'nombre':s.nombre,'apellido':s.apellido,'origen':mat.origen,'estado':by_id[mat.id].estado if mat.id in by_id else None,'puntaje':by_id[mat.id].puntaje if mat.id in by_id else None,'registrado_en':by_id[mat.id].registrado_en if mat.id in by_id else None} for mat,s in members]
+    rows=[{'matricula_id':mat.id,'nombre':s.nombre,'apellido':s.apellido,'codigo':s.codigo_anonimo,'origen':mat.origen,'estado':by_id[mat.id].estado if mat.id in by_id else None,'puntaje':by_id[mat.id].puntaje if mat.id in by_id else None,'registrado_en':by_id[mat.id].registrado_en if mat.id in by_id else None} for mat,s in members]
     return {'evaluacion':evaluacion_salida(e),'revision':revision({'evaluacion':fila(e),'lista':rows,'notas':[fila(n) for n in notes]}),'estudiantes':rows,'registros_fuera_lista':len(set(by_id)-{mat.id for mat,s in members})}
 
 class NotaEntrada(Entrada):

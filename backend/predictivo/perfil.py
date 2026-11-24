@@ -11,8 +11,13 @@ nivel y, si marca a alguien que el perfil deja en verde, lo pasa a amarillo para
 DIMENSIONES = ('Académica', 'Desempeño', 'Actitud', 'Asistencia')
 
 
+# Señales por materia (asistencia_materia.senales). Cortes fijados el 24/11/2026 antes de contar a quién marcan: 80 % ya era el
+# criterio del sistema; 3 materias, 3 citaciones en una materia y 2 de Dirección u Orientación, criterio propio por validar.
+SENALES = ('materias_asistencia_baja', 'materias_bajas_detalle', 'citaciones_max_una_materia', 'citaciones_materia_detalle', 'citaciones_direccion_orientacion')
+
+
 def _num(v):
-    return None if v is None or v != v else float(v)
+    return None if v is None or isinstance(v, str) or v != v else float(v)
 
 
 def _color(rojo, amarillo, hay):
@@ -26,11 +31,15 @@ def dimensiones(v):
     si = lambda k, f: m(k) is not None and f(m(k))
     caida = m('promedio_T2') is not None and m('promedio_T1') is not None and m('promedio_T2') - m('promedio_T1') <= -10
     return {
-        'Académica': _color(si('n_areas_bajo_51_T1', lambda x: x >= 2), si('n_areas_bajo_51_T1', lambda x: x == 1) or caida, m('promedio_T1') is not None),
+        'Académica': _color(si('n_areas_bajo_51_T1', lambda x: x >= 2), si('n_areas_bajo_51_T1', lambda x: x == 1) or caida
+            or si('citaciones_max_una_materia', lambda x: x >= 3), m('promedio_T1') is not None or si('citaciones_max_una_materia', lambda x: x >= 3)),
         'Desempeño': _color(si('bajas_T1', lambda x: x >= 4), si('bajas_T1', lambda x: x >= 1) or si('cambio_saber_hacer', lambda x: x <= -10), m('saber_T1') is not None),
-        'Actitud': _color(si('ser_T1', lambda x: x < 51) or si('decidir_T1', lambda x: x < 51), si('ser_T1', lambda x: x < 60) or si('decidir_T1', lambda x: x < 60), m('ser_T1') is not None),
-        'Asistencia': _color(si('prop_faltas', lambda x: x >= .10) or si('racha_actual', lambda x: x >= 5),
-            si('prop_faltas', lambda x: x >= .05) or si('faltas_ult20', lambda x: x >= 3) or si('prop_retrasos', lambda x: x >= .10), m('prop_faltas') is not None)}
+        'Actitud': _color(si('ser_T1', lambda x: x < 51) or si('decidir_T1', lambda x: x < 51), si('ser_T1', lambda x: x < 60) or si('decidir_T1', lambda x: x < 60)
+            or si('citaciones_direccion_orientacion', lambda x: x >= 2), m('ser_T1') is not None or si('citaciones_direccion_orientacion', lambda x: x >= 2)),
+        'Asistencia': _color(si('prop_faltas', lambda x: x >= .10) or si('racha_actual', lambda x: x >= 5)
+            or si('materias_asistencia_baja', lambda x: x >= 3),
+            si('prop_faltas', lambda x: x >= .05) or si('faltas_ult20', lambda x: x >= 3) or si('prop_retrasos', lambda x: x >= .10)
+            or si('materias_asistencia_baja', lambda x: x >= 1), m('prop_faltas') is not None)}
 
 
 
@@ -58,7 +67,8 @@ def alerta(v, nivel_modelo='BAJO', racha_alerta=5):
         motivos = [dict(dimension='Modelo XGBoost', color='AMARILLO')]
     else:
         nivel = 'VERDE'
-    return dict(nivel=nivel, colores=c, motivos=motivos, notas_y_asistencia=juntas and nivel == 'ROJO')
+    detalle_materia = [v.get('materias_bajas_detalle')] + ([v['citaciones_materia_detalle']] if (v.get('citaciones_max_una_materia') or 0) >= 3 else [])
+    return dict(nivel=nivel, colores=c, motivos=motivos, por_materia=' · '.join(x for x in detalle_materia if x) or None, notas_y_asistencia=juntas and nivel == 'ROJO')
 
 
 def detalle(v, dimension):
@@ -73,6 +83,8 @@ def detalle(v, dimension):
             d.append(f"{k} {'área' if k == 1 else 'áreas'} bajo 51")
         if m('promedio_T2') is not None and m('promedio_T1') is not None and m('promedio_T2') - m('promedio_T1') <= -10:
             d.append(f"el promedio bajó de {n(m('promedio_T1'))} a {n(m('promedio_T2'))}")
+        if m('citaciones_max_una_materia') is not None and m('citaciones_max_una_materia') >= 3:
+            d.append(v['citaciones_materia_detalle'])
     elif dimension == 'Desempeño':
         if m('bajas_T1'):
             k = int(m('bajas_T1'))
@@ -81,7 +93,11 @@ def detalle(v, dimension):
             d.append(f"Saber y Hacer bajaron {n(-m('cambio_saber_hacer'))} puntos")
     elif dimension == 'Actitud':
         d += [f'{t} {n(m(k))}' for k, t in (('ser_T1', 'Ser'), ('decidir_T1', 'Decidir')) if m(k) is not None and m(k) < 60]
+        if m('citaciones_direccion_orientacion') is not None and m('citaciones_direccion_orientacion') >= 2:
+            d.append(f"{n(m('citaciones_direccion_orientacion'))} citaciones de Dirección u Orientación")
     elif dimension == 'Asistencia':
+        if m('materias_asistencia_baja'):
+            d.append('por materia: ' + v['materias_bajas_detalle'])
         if m('racha_actual') is not None and m('racha_actual') >= 5:
             d.append(f"{n(m('racha_actual'))} faltas seguidas")
         if m('prop_faltas') is not None and m('prop_faltas') >= .05:
