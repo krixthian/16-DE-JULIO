@@ -83,6 +83,9 @@ const segOptions=computed(()=>{const o=base({title:'Average precision (AP)'});o.
  o.plugins.tooltip={callbacks:{footer:items=>{const c=seg.value.cortes[items[0].dataIndex];return `Detecta ${n(c.verdaderos_positivos,1)} de ${c.abandonos} · ${n(c.falsos_positivos,1)} falsas alarmas`}}};return o})
 // Abre en abril: el corte del objetivo (cierre del 1.er trimestre), no el mes con mejor resultado.
 const corte=computed(()=>seg.value?.cortes.find(c=>c.mes===mes.value))
+const combinada=computed(()=>seg.value?.alerta_combinada?.[mes.value])
+const nivelesAlerta=[['URGENTE','Urgente','text-red-700 dark:text-red-400'],['ROJO','Rojo','text-red-600'],['AMARILLO','Amarillo','text-amber-600'],['VERDE','Verde','text-emerald-600']]
+const totalNivel=k=>Object.values(combinada.value[k]).reduce((a,b)=>a+b,0)
 const lecturaMes=computed(()=>['feb','mar','abr','may'].includes(mes.value)?'Antes de que dejen de asistir, el modelo no se distingue del azar.'
  :['sep','oct'].includes(mes.value)?'No cuenta como mérito: el abandono se define por no asistir en el 3.er trimestre.'
  :'Detecta a quienes ya dejaron de venir; no lo predice antes.')
@@ -100,24 +103,29 @@ onBeforeUnmount(()=>observer.disconnect())
  <section class="p-4 md:p-8 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
   <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest font-semibold mb-2">Alerta temprana</p>
   <h1 class="text-3xl font-bold">Resultados del modelo</h1>
-  <p class="mt-2 text-slate-500 dark:text-slate-400">Qué tan bien funciona la detección y cómo se evaluó.</p>
   <div v-if="error" role="alert" class="mt-6 bg-red-50 text-red-800 rounded-xl p-4">{{ error }}</div>
   <p v-if="busy&&!data" class="mt-6 text-slate-500">Cargando…</p>
   <template v-if="data">
-   <p class="mt-4 rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 px-4 py-2.5 text-sm"><strong>Prueba técnica con archivos de origen no verificado.</strong> No mide la predicción en estudiantes reales.</p>
    <div class="flex flex-wrap gap-2 mt-6 border-b border-slate-200 dark:border-slate-700" role="tablist">
     <button v-for="[k,l] in [['vigente','Modelo vigente'],['anterior','Modelo anterior']]" :key="k" role="tab" :aria-selected="tab===k" @click="tab=k" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab===k?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">{{ l }}</button>
    </div>
    <!-- Seguimiento continuo: modelo vigente -->
    <section v-if="tab==='vigente'&&seg" class="mt-5">
-    <div class="grid sm:grid-cols-2 gap-3">
-     <div v-if="d5" class="rounded-xl border border-red-200 dark:border-red-900 p-4"><p class="text-xs text-slate-500">Alerta inmediata (5 faltas seguidas)</p><p class="text-2xl font-bold mt-1">{{ d5.detectados }} de {{ d5.abandonos }}</p><p class="text-xs text-slate-500">abandonos detectados · {{ d5.falsas_alarmas }} falsas alarmas de {{ d5.continuaron }} (46 a 49 de 1728 en versiones posteriores de los archivos)</p></div>
-     <div v-if="d5" class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Tiempo hasta el cierre del trimestre</p><p class="text-2xl font-bold mt-1">{{ n(d5.dias_antes_del_cierre_del_trimestre_mediana,0) }} días</p><p class="text-xs text-slate-500">mediana; mínimo {{ d5.dias_antes_del_cierre_del_trimestre_min }}</p></div>
-    </div>
-    <p class="mt-4 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm"><strong>En una frase:</strong> detecta que el estudiante dejó de venir; no lo predice antes de que ocurra. De febrero a mayo el modelo no supera al azar.</p>
+    <p class="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm"><strong>En una frase:</strong> detecta que el estudiante dejó de venir; no lo predice antes de que ocurra. De febrero a mayo el modelo no supera al azar.</p>
     <div v-if="corte" class="mt-5">
-     <div class="flex flex-wrap items-center gap-3"><p class="text-sm font-semibold">Métricas de XGBoost al cierre de</p>
-      <select v-model="mes" aria-label="Mes de las métricas" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-1.5 text-sm"><option v-for="c in seg.cortes" :key="c.mes" :value="c.mes">{{ mesLargo[c.mes] }}{{ c.mes==='abr'?' (1.er trimestre)':'' }}</option></select></div>
+     <div class="flex flex-wrap items-center gap-3"><label for="mesResultados" class="text-sm font-semibold">Resultados al cierre de</label>
+      <select id="mesResultados" v-model="mes" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-1.5 text-sm"><option v-for="c in seg.cortes" :key="c.mes" :value="c.mes">{{ mesLargo[c.mes] }}{{ c.mes==='abr'?' (1.er trimestre)':'' }}</option></select></div>
+     <article v-if="combinada" class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+      <h2 class="font-semibold">Alerta combinada <span class="font-normal text-sm text-slate-500">· notas, actitud y asistencia</span></h2>
+      <div class="grid md:grid-cols-2 gap-5 mt-3">
+       <div v-for="[k,l] in [['abandonaron','Abandonaron'],['continuaron','Continuaron']]" :key="k">
+        <p class="text-sm text-slate-500">{{ l }} ({{ totalNivel(k) }})</p>
+        <div class="grid grid-cols-4 gap-2 mt-2"><div v-for="[v,t,c] in nivelesAlerta" :key="v" class="rounded-lg bg-slate-50 dark:bg-slate-900 p-2 text-center"><p class="text-xl font-bold" :class="c">{{ combinada[k][v] }}</p><p class="text-xs text-slate-500">{{ t }}</p></div></div>
+       </div>
+      </div>
+      <p class="mt-3 text-sm text-slate-500">Las faltas detectan el abandono; las notas y la actitud señalan a quién más apoyar.</p>
+     </article>
+     <p class="mt-5 text-sm font-semibold">Métricas de XGBoost</p>
      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-3">
       <div v-for="[l,k,extra] in [['ROC AUC','roc_auc','azar: 0,500'],['Average precision','average_precision',`azar: ${n(corte.azar)}`],['F1','f1',''],['Sensibilidad','sensibilidad',`detecta ${n(corte.verdaderos_positivos,2)} de ${corte.abandonos}`],['Precisión','precision',`${n(corte.falsos_positivos,1)} falsas alarmas`]]" :key="k" class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
        <p class="text-xs text-slate-500">{{ l }}</p><p class="text-2xl font-bold mt-1">{{ n(corte[k]) }}</p><p class="text-xs text-slate-500">IC 95 % {{ ic(corte,k) }}</p><p v-if="extra" class="text-xs text-slate-500">{{ extra }}</p>
@@ -135,7 +143,8 @@ onBeforeUnmount(()=>observer.disconnect())
     <PanelPlegable class="mt-3" titulo="Cómo leer estos resultados" resumen="Datos, método y límites">
      <p>De febrero a mayo nadie se distingue: quienes abandonan tienen notas, asistencia y trayectoria normales hasta el día en que dejan de venir. Desde que dejan de asistir, la regla lo detecta en días.</p>
      <p class="mt-2">En septiembre y octubre la detección es casi automática: la escuela define el abandono por no asistir en el 3.er trimestre. {{ seg.nota }}</p>
-     <p class="mt-2">Archivos recibidos, origen no verificado ({{ seg.dataset }}): {{ seg.matriculas }} matrículas y {{ seg.abandonos }} abandonos en 2021-2025. El riesgo se recalcula al final de cada mes, con {{ seg.variables }} variables y solo con lo registrado hasta esa fecha. {{ seg.protocolo }}</p>
+     <p v-if="d5" class="mt-2"><strong>Regla de 5 faltas seguidas</strong> (nivel Urgente), revisada día por día: {{ d5.detectados }} de {{ d5.abandonos }} abandonos y {{ d5.falsas_alarmas }} falsas alarmas de {{ d5.continuaron }}; en versiones posteriores de los archivos, de 46 a 49 de 1728. Salió {{ n(d5.dias_antes_del_cierre_del_trimestre_mediana,0) }} días antes del cierre del trimestre (mediana; mínimo {{ d5.dias_antes_del_cierre_del_trimestre_min }}).</p>
+     <p class="mt-2"><strong>Alerta combinada:</strong> conteo a fin de cada mes en 2021-2025, sobre datos pasados. Agregar notas y actitud no mejora la detección del abandono; amplía a quién apoyar. Quienes continuaron con alerta no tienen por qué ser errores: se señalan por sus notas, actitud o faltas. El conteo es circular para el abandono, porque se definió con la asistencia.</p>
      <p v-if="seg.corte_unico?.abril" class="mt-2">Experimento aparte, con un solo corte al 30 de abril y todas las gestiones: AP {{ n(seg.corte_unico.abril.average_precision,3) }} frente a {{ n(seg.corte_unico.abril.azar,3) }} del azar: no anticipa.</p>
      <p class="mt-2">Métricas por mes: media de 20 repeticiones de validación cruzada agrupada por estudiante, con umbral 0,5 e IC 95 % por bootstrap. Los intervalos son amplios porque hay pocos abandonos.</p>
      <p v-if="seg.corte_unico?.trayectoria" class="mt-2">Trayectoria previa (febrero): AP {{ n(seg.corte_unico.trayectoria.average_precision,3) }}.</p>

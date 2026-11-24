@@ -31,6 +31,7 @@ REGISTROS = BACKEND.parent / 'docs' / 'analisis_registros_detallados.json'
 ALGORITMOS = BACKEND.parent / 'docs' / 'experimento_algoritmos.json'
 MENSUAL = BACKEND.parent / 'docs' / 'experimento_seguimiento_mensual.json'
 TRAYECTORIA = BACKEND.parent / 'docs' / 'experimento_trayectoria.json'
+COMBINADA = BACKEND.parent / 'docs' / 'alerta_combinada_por_mes.json'
 DESGLOSADO = BACKEND.parent / 'docs' / 'experimento_desglosado.json'
 NOMBRES = {'xgboost': 'XGBoost (modelo en uso)', 'regresion_logistica': 'Regresión logística', 'regla_promedio_T1': 'Regla: promedio T1',
     'regla_n_areas_bajo_51': 'Regla: áreas bajo 51', 'regla_faltas_T1': 'Regla: faltas T1', 'siempre_continuidad': 'Siempre "continúa" (azar)'}
@@ -120,7 +121,7 @@ def seguimiento_continuo():
         ic95_ap=c['xgboost'].get('ic95', {}).get('average_precision'), regla_5=c['regla_5_faltas']) for mes, c in met['cortes'].items()]
     t = (tray.get('modelos') or {}).get('trayectoria|xgboost') or {}
     g = (desg.get('modelos') or {}).get('global|xgboost') or {}
-    return dict(version=met['version'], dataset=met['dataset'], protocolo=met['protocolo'], nota=met['nota'], variables=len(met['variables']),
+    return dict(alerta_combinada=(leer_json(COMBINADA) or {}).get('meses'), version=met['version'], dataset=met['dataset'], protocolo=met['protocolo'], nota=met['nota'], variables=len(met['variables']),
         cortes=cortes, diario=mensual.get('monitoreo_diario'), matriculas=mensual.get('matriculas'), abandonos=mensual.get('abandonos'),
         corte_unico=dict(abril=g and dict(average_precision=g.get('average_precision'), roc_auc=g.get('roc_auc'), azar=((desg.get('modelos') or {}).get('siempre_continuidad') or {}).get('average_precision')),
             trayectoria=t and dict(average_precision=t.get('average_precision'), roc_auc=t.get('roc_auc'), azar=tray.get('prevalencia_azar'))))

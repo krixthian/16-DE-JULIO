@@ -144,7 +144,7 @@ onBeforeUnmount(()=>observer.disconnect())
    <p v-else-if="!ds" class="text-slate-500">Cargando…</p>
    <template v-else>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-     <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Matrículas reales</p><p class="text-2xl font-bold mt-1">{{ ds.resumen.matriculas }}</p></div>
+     <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Matrículas 2021-2025</p><p class="text-2xl font-bold mt-1">{{ ds.resumen.matriculas }}</p></div>
      <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Abandonaron</p><p class="text-2xl font-bold mt-1 text-red-600">{{ ds.resumen.abandonos }}</p></div>
      <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Continuaron</p><p class="text-2xl font-bold mt-1">{{ ds.resumen.continuaron }}</p></div>
      <div class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4"><p class="text-xs text-slate-500">Tasa de abandono</p><p class="text-2xl font-bold mt-1">{{ num(100*ds.resumen.tasa_abandono) }} %</p><p class="text-xs text-slate-500">{{ ds.resumen.proporcion }}: clases muy desbalanceadas</p></div>
@@ -153,7 +153,7 @@ onBeforeUnmount(()=>observer.disconnect())
      <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
       <h2 class="font-semibold">Abandono por gestión</h2>
       <div class="mt-3 h-56"><Bar :data="dsGestion" :options="gestionOptions" aria-label="Tasa de abandono por gestión" /></div>
-      <p class="mt-2 text-xs text-slate-500"><span v-for="(g,i) in ds.por_gestion" :key="g.valor">{{ g.valor }}: {{ g.abandonos }} de {{ g.matriculas }}<span v-if="i<ds.por_gestion.length-1"> · </span></span>. 2021-2023 provienen de pocos cursos históricos.</p>
+      <p class="mt-2 text-xs text-slate-500"><span v-for="(g,i) in ds.por_gestion" :key="g.valor">{{ g.valor }}: {{ g.abandonos }} de {{ g.matriculas }}<span v-if="i<ds.por_gestion.length-1"> · </span></span></p>
      </article>
      <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
       <h2 class="font-semibold">Abandono por grado</h2>
@@ -168,7 +168,7 @@ onBeforeUnmount(()=>observer.disconnect())
       <label class="text-sm flex items-center gap-2"><input type="checkbox" v-model="useMedian"> Usar mediana (no la afectan los casos extremos)</label>
      </div>
      <div class="mt-3 h-96"><Bar :data="dsMaterias" :options="materiasOptions" aria-label="Nota por materia según abandono" /></div>
-     <p v-if="areaDiffs.length" class="mt-3 text-sm rounded-lg bg-slate-50 dark:bg-slate-900 p-3">En todas las materias, quienes abandonaron tenían notas más bajas, con una diferencia de medias parecida en todas (entre {{ num(Math.min(...areaDiffs.map(Math.abs))) }} y {{ num(Math.max(...areaDiffs.map(Math.abs))) }} puntos). <strong>Ninguna materia explica por sí sola el abandono</strong>: el patrón es un rendimiento algo más bajo en general, casi siempre por encima de 51.</p>
+     <p v-if="areaDiffs.length" class="mt-3 text-sm rounded-lg bg-slate-50 dark:bg-slate-900 p-3">Diferencia de medias entre quienes abandonaron y quienes continuaron: de {{ num(Math.min(...areaDiffs)) }} a {{ num(Math.max(...areaDiffs)) }} puntos según la materia. Con {{ ds.resumen.abandonos }} abandonos, <strong>no prueba que una materia cause el abandono</strong>.</p>
      <h3 class="font-semibold mt-5 text-sm">Abandonos por banda de valoración (Ley 070) en cada materia</h3>
      <div class="overflow-x-auto mt-2"><table class="w-full text-sm">
       <thead class="text-left text-slate-500"><tr><th class="py-1 pr-3">Materia</th><th class="pr-3">Nota media: abandonaron</th><th class="pr-3">Nota media: continuaron</th><th class="pr-3">Diferencia (puntos)</th><th v-for="b in ds.bandas" :key="b.codigo" class="pr-3" :title="b.etiqueta">{{ b.codigo }}</th></tr></thead>
@@ -177,7 +177,7 @@ onBeforeUnmount(()=>observer.disconnect())
        <td v-for="b in ds.bandas" :key="b.codigo" class="pr-3 text-slate-600 dark:text-slate-300">{{ bandCell(mt,b.codigo) }}</td>
       </tr></tbody>
      </table></div>
-     <p class="mt-2 text-xs text-slate-500">Columnas ED a DP: cuántos abandonaron de cuántos estudiantes tenían esa banda en la materia (ej.: «10 de 236» = de 236 con nota entre 51 y 68, abandonaron 10). ED ≤ 50 · DA 51-68 · DO 69-84 · DP 85-100. Los abandonos se concentran en la banda DA (aprobado, pero bajo), no en la reprobada.</p>
+     <p class="mt-2 text-xs text-slate-500">Columnas ED a DP: cuántos abandonaron de cuántos estudiantes tenían esa banda en la materia (ej.: «10 de 236» = de 236 con nota entre 51 y 68, abandonaron 10). ED ≤ 50 · DA 51-68 · DO 69-84 · DP 85-100.</p>
     </article>
     <div class="grid lg:grid-cols-2 gap-6 mt-6">
      <article class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
@@ -193,9 +193,9 @@ onBeforeUnmount(()=>observer.disconnect())
         <td>{{ a.variable==='tasa_asistencia_T1'?`${num(100*a.mediana_abandonaron,0)} % · ${num(100*a.abandonaron,0)} %`:`${num(a.mediana_abandonaron)} · ${num(a.abandonaron)}` }}</td>
         <td>{{ a.variable==='tasa_asistencia_T1'?`${num(100*a.mediana_continuaron,0)} % · ${num(100*a.continuaron,0)} %`:`${num(a.mediana_continuaron)} · ${num(a.continuaron)}` }}</td>
        </tr></tbody></table>
-      <p class="mt-3 text-xs text-slate-500">La media de faltas de quienes abandonaron sube por un solo caso que no asistió en todo el trimestre; la mediana muestra que la asistencia en el 1.er trimestre fue parecida en ambos grupos.</p>
      </article>
     </div>
+    <p class="mt-4 text-xs text-slate-500">{{ ds.nota }}</p>
    </template>
   </section>
   <template v-if="data&&tab==='seguimiento'">

@@ -1,0 +1,9 @@
+feb {'abandonaron': {'URGENTE': 0, 'ROJO': 0, 'AMARILLO': 6, 'VERDE': 5}, 'continuaron': {'URGENTE': 0, 'ROJO': 84, 'AMARILLO': 690, 'VERDE': 1104}}
+mar {'abandonaron': {'URGENTE': 0, 'ROJO': 1, 'AMARILLO': 3, 'VERDE': 7}, 'continuaron': {'URGENTE': 0, 'ROJO': 22, 'AMARILLO': 326, 'VERDE': 1530}}
+abr {'abandonaron': {'URGENTE': 0, 'ROJO': 1, 'AMARILLO': 3, 'VERDE': 7}, 'continuaron': {'URGENTE': 0, 'ROJO': 76, 'AMARILLO': 240, 'VERDE': 1562}}
+may {'abandonaron': {'URGENTE': 1, 'ROJO': 0, 'AMARILLO': 2, 'VERDE': 8}, 'continuaron': {'URGENTE': 0, 'ROJO': 82, 'AMARILLO': 217, 'VERDE': 1579}}
+jun {'abandonaron': {'URGENTE': 9, 'ROJO': 0, 'AMARILLO': 1, 'VERDE': 1}, 'continuaron': {'URGENTE': 0, 'ROJO': 74, 'AMARILLO': 173, 'VERDE': 1631}}
+jul {'abandonaron': {'URGENTE': 9, 'ROJO': 0, 'AMARILLO': 1, 'VERDE': 1}, 'continuaron': {'URGENTE': 0, 'ROJO': 70, 'AMARILLO': 212, 'VERDE': 1596}}
+ago {'abandonaron': {'URGENTE': 9, 'ROJO': 0, 'AMARILLO': 0, 'VERDE': 2}, 'continuaron': {'URGENTE': 0, 'ROJO': 69, 'AMARILLO': 212, 'VERDE': 1597}}
+sep {'abandonaron': {'URGENTE': 11, 'ROJO': 0, 'AMARILLO': 0, 'VERDE': 0}, 'continuaron': {'URGENTE': 0, 'ROJO': 68, 'AMARILLO': 186, 'VERDE': 1624}}
+oct {'abandonaron': {'URGENTE': 11, 'ROJO': 0, 'AMARILLO': 0, 'VERDE': 0}, 'continuaron': {'URGENTE': 0, 'ROJO': 68, 'AMARILLO': 184, 'VERDE': 1626}}

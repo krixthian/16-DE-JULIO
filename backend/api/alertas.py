@@ -88,10 +88,19 @@ def ranking(db, rows):
         for r in rows}
 
 
+def nivel_alerta(p, corte, modelo):
+    """Nivel de la alerta combinada cuando se abrió el caso (los modelos anteriores al seguimiento no lo tienen)."""
+    if not modelo.version.startswith('seguimiento'):
+        return None
+    from predictivo import perfil as pf, seguimiento as sg
+    del_modelo = (p.factores or {}).get('origen') == 'MODELO_MENSUAL'
+    return pf.alerta((corte.variables or {}).get('indicadores') or {}, p.nivel if del_modelo else 'BAJO', sg.RACHA_ALERTA)['nivel']
+
+
 def alerta_dict(row, total, puesto, abandonos=frozenset()):
     a, p, mod, c, cur, g, e, u = row
     return {'id': a.id, 'estado': a.estado, 'creada_en': a.creada_en, 'cerrada_en': a.cerrada_en, 'motivo_cierre': a.motivo_cierre,
-        'probabilidad': float(p.probabilidad), 'nivel': p.nivel, 'factores': (p.factores or {}).get('principales', []),
+        'probabilidad': float(p.probabilidad), 'nivel': p.nivel, 'nivel_alerta': nivel_alerta(p, c, mod), 'factores': (p.factores or {}).get('principales', []),
         'uso': (p.factores or {}).get('uso'), 'modelo': mod.version, 'fecha_corte': c.fecha_corte, 'gestion': g.anio,
         'curso_id': cur.id, 'curso': f'{cur.grado}° {cur.paralelo}', 'grado': cur.grado, 'estudiante': e.codigo_anonimo,
         'abandono_confirmado': c.matricula_id in abandonos,

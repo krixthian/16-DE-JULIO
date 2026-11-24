@@ -1,10 +1,13 @@
-"""Reglas RP01-RP05: recomendaciones pedagógicas a partir de los indicadores T1 de una alerta.
+"""Reglas RP00-RP08: recomendaciones pedagógicas a partir de los indicadores de una alerta. RP06-RP08 siguen las dimensiones
+de predictivo/perfil.py con sus mismos cortes.
 
 Propuesta pendiente de validación con docentes y Dirección. Los umbrales siguen la escala de
 valoración de primaria (Ley 070: ED 1-50, DA 51-68, DO 69-84, DP 85-100) y percentiles descriptivos
 de asistencia de la escuela; no se ajustaron con las etiquetas de abandono.
 """
-VERSION = 'RP-v1'
+from predictivo import perfil as pf
+
+VERSION = 'RP-v2'
 VALIDACION = 'Propuesta pendiente de validación con docentes y Dirección'
 AREAS = {'CNAT': 'Ciencias Naturales', 'LCO': 'Comunicación y Lenguajes', 'SOC': 'Ciencias Sociales',
     'APV': 'Artes Plásticas y Visuales', 'EFI': 'Educación Física', 'EMU': 'Educación Musical', 'MAT': 'Matemática',
@@ -20,7 +23,11 @@ def _inasistencia_continua(ind, nivel):
 
 def _bajo_promedio(ind, nivel):
     v = ind.get('promedio_T1')
-    return v is not None and v <= 68 and f'promedio_T1 = {v:g}'
+    t2 = ind.get('promedio_T2')
+    partes = [f'promedio_T1 = {v:g}'] if v is not None and v <= 68 else []
+    if v is not None and t2 is not None and t2 - v <= -10:
+        partes.append(f'el promedio bajó de {v:.0f} a {t2:.0f} en el T2')
+    return bool(partes) and ', '.join(partes)
 
 
 def _areas_bajas(ind, nivel):
@@ -42,6 +49,24 @@ def _inasistencia(ind, nivel):
     return bool(partes) and ', '.join(partes)
 
 
+def _desempeno(ind, nivel):
+    if pf.dimensiones(ind)['Desempeño'] not in ('ROJO', 'AMARILLO'):
+        return False
+    return pf.detalle(ind, 'Desempeño')
+
+
+def _actitud(ind, nivel):
+    if pf.dimensiones(ind)['Actitud'] not in ('ROJO', 'AMARILLO'):
+        return False
+    return pf.detalle(ind, 'Actitud')
+
+
+def _faltas_leves(ind, nivel):
+    v = ind.get('prop_faltas')
+    return (v is not None and v >= .05 and not _inasistencia(ind, nivel) and not _inasistencia_continua(ind, nivel)
+        and f'faltas en el año = {v * 100:.1f} %'.replace('.', ','))
+
+
 def _atrasos(ind, nivel):
     v = ind.get('atrasos_T1')
     if v is None and ind.get('prop_retrasos') is not None:  # seguimiento a la fecha
@@ -54,7 +79,7 @@ REGLAS = [
         recomendacion='Contactar hoy a la familia (llamada o visita domiciliaria) para conocer la causa y acordar el retorno; '
             'si no hay respuesta en 2 días, informar a Dirección para la reunión de caso.',
         tipo='CITACION', evaluar=_inasistencia_continua),
-    dict(codigo='RP01', nombre='Rendimiento global bajo', condicion='promedio_T1 ≤ 68 (por debajo de "Desarrollo óptimo")',
+    dict(codigo='RP01', nombre='Rendimiento global bajo', condicion='promedio_T1 ≤ 68 (por debajo de "Desarrollo óptimo") o caída de 10 puntos en el T2',
         recomendacion='Plan de reforzamiento con el docente asesor y citación al apoderado para acordar apoyo en casa.',
         tipo='REFORZAMIENTO', evaluar=_bajo_promedio),
     dict(codigo='RP02', nombre='Áreas en desarrollo', condicion='Alguna área con nota < 51 ("En desarrollo")',
@@ -66,6 +91,15 @@ REGLAS = [
     dict(codigo='RP04', nombre='Atrasos frecuentes', condicion='atrasos_T1 ≥ 4 (≈ percentil 95)',
         recomendacion='Entrevista con el estudiante y el apoderado sobre rutina y traslado; registrar acuerdos de puntualidad.',
         tipo='ENTREVISTA', evaluar=_atrasos),
+    dict(codigo='RP06', nombre='Desempeño en clase', condicion='Dimensión Desempeño en amarillo o rojo (notas de Saber o Hacer < 51, o caída de 10 puntos)',
+        recomendacion='El docente revisa las actividades de Saber y Hacer más bajas, da apoyo en clase y evalúa el avance en dos semanas.',
+        tipo='REFORZAMIENTO', evaluar=_desempeno),
+    dict(codigo='RP07', nombre='Actitud', condicion='Dimensión Actitud en amarillo o rojo (Ser o Decidir < 60)',
+        recomendacion='Conversación del docente asesor u Orientación con el estudiante y acuerdo de convivencia o participación.',
+        tipo='ENTREVISTA', evaluar=_actitud),
+    dict(codigo='RP08', nombre='Faltas leves', condicion='Faltas ≥ 5 % del año, sin llegar a la regla de inasistencia',
+        recomendacion='Conversación del docente asesor con el estudiante y aviso a la familia, para prevenir que las faltas aumenten.',
+        tipo='ENTREVISTA', evaluar=_faltas_leves),
     dict(codigo='RP05', nombre='Revisión de caso', condicion='Prioridad ALTA, o alerta sin otra regla activa',
         recomendacion='Reunión de caso (docente asesor, orientación y Dirección) para revisar la situación y definir seguimiento.',
         tipo='REUNION_CASO', evaluar=None),

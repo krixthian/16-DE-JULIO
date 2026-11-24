@@ -57,7 +57,7 @@ const years=computed(()=>[...new Set(alerts.value.map(a=>a.gestion))])
 const courses=computed(()=>[...new Map(alerts.value.filter(a=>!filter.value.gestion||a.gestion===Number(filter.value.gestion))
  .sort((a,b)=>a.grado-b.grado||a.curso.localeCompare(b.curso)).map(a=>[a.curso_id,`${a.curso} · ${a.gestion}`])).entries()])
 const visible=computed(()=>alerts.value.filter(a=>(!filter.value.estado||a.estado===filter.value.estado)&&(!filter.value.gestion||a.gestion===Number(filter.value.gestion))
- &&(!filter.value.curso||a.curso_id===Number(filter.value.curso))&&(!filter.value.nivel||a.nivel===filter.value.nivel)))
+ &&(!filter.value.curso||a.curso_id===Number(filter.value.curso))&&(!filter.value.nivel||(a.nivel_alerta||a.nivel)===filter.value.nivel)))
 const levelClass=n=>n==='ALTO'?'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200':n==='MEDIO'?'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200':'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
 const caseClass=t=>t==='actual'?'border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 text-blue-900 dark:text-blue-100':'border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200'
 const modelInfo=v=>{const m=/^xgb-(.+)-(\d{4})(\d{2})(\d{2})\d{6}$/.exec(v||'');return m?`Versión ${m[1]} · entrenado el ${m[4]}/${m[3]}/${m[2]}`:(v||'—')}
@@ -257,22 +257,19 @@ onMounted(load)
    <select v-model="filter.estado" aria-label="Estado" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los estados</option><option v-for="[k,l] in states" :key="k" :value="k">{{ l }}</option></select>
    <select v-model="filter.gestion" @change="filter.curso=''" aria-label="Gestión" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todas las gestiones</option><option v-for="y in years" :key="y" :value="y">{{ y }}</option></select>
    <select v-model="filter.curso" aria-label="Curso" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los cursos</option><option v-for="[id,l] in courses" :key="id" :value="id">{{ l }}</option></select>
-   <select v-model="filter.nivel" aria-label="Nivel" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los niveles</option><option value="ALTO">Alto (≥ 0,8)</option><option value="MEDIO">Medio (0,5 – 0,8)</option><option value="BAJO">Bajo (&lt; 0,5)</option></select>
+   <select v-model="filter.nivel" aria-label="Nivel" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Todos los niveles</option><option v-for="n in ['URGENTE','ROJO','AMARILLO']" :key="n" :value="n">{{ NIVEL[n][0] }}</option></select>
    <span class="self-center text-sm text-slate-500">{{ visible.length }} de {{ alerts.length }} casos</span>
-  </div>
-  <div v-if="tab==='modelo'&&filter.nivel==='BAJO'" class="mt-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-   <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 mr-1.5" aria-hidden="true"></span><strong>Nivel verde (prioridad baja): {{ summary?.predicciones?.BAJO||0 }} estudiantes</strong> con puntaje menor a {{ comma(summary?.modelo?.umbral_medio??0.5) }}. En este nivel el sistema no genera alerta: siguen con el seguimiento normal del docente. Si un docente ve una señal de riesgo, la escuela puede atenderla igual; el modelo apoya, no sustituye, el criterio docente.
   </div>
   <div v-if="tab==='modelo'" class="grid lg:grid-cols-3 gap-6 mt-4">
    <div class="lg:col-span-2 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
     <table class="w-full text-sm">
-     <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="px-3 py-2.5">Estudiante</th><th class="px-3 py-2.5">Curso</th><th class="px-3 py-2.5">Prioridad</th><th class="px-3 py-2.5">Estado</th></tr></thead>
+     <thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="px-3 py-2.5">Estudiante</th><th class="px-3 py-2.5">Curso</th><th class="px-3 py-2.5">Alerta</th><th class="px-3 py-2.5">Estado</th></tr></thead>
      <tbody>
-      <tr v-if="!visible.length"><td colspan="4" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : filter.nivel==='BAJO' ? 'El nivel verde no genera alertas.' : 'No hay alertas con estos filtros.' }}</td></tr>
+      <tr v-if="!visible.length"><td colspan="4" class="p-6 text-center text-slate-500">{{ busy ? 'Cargando…' : 'No hay casos con estos filtros.' }}</td></tr>
       <tr v-for="a in visible" :key="a.id" @click="open(a)" class="border-t border-slate-100 dark:border-slate-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700" :class="selected?.id===a.id?'bg-blue-50 dark:bg-slate-700':''">
        <td class="px-3 py-2.5 font-medium whitespace-nowrap">{{ etiquetaCodigo(a.estudiante) }}</td>
        <td class="px-3 py-2.5"><span class="whitespace-nowrap">{{ a.curso }} · {{ a.gestion }}</span><span v-if="a.uso==='RETROSPECTIVO_EN_ENTRENAMIENTO'" class="block text-xs text-slate-500">{{ a.abandono_confirmado ? 'Histórico · abandonó' : 'Histórico · no abandonó' }}</span><span v-else class="block text-xs text-blue-600">Gestión actual</span></td>
-       <td class="px-3 py-2.5"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="levelClass(a.nivel)">{{ a.nivel }}</span></td>
+       <td class="px-3 py-2.5"><span class="px-2 py-1 rounded-full text-xs font-semibold" :class="NIVEL[a.nivel_alerta]?.[1]||levelClass(a.nivel)">{{ NIVEL[a.nivel_alerta]?.[0]||a.nivel }}</span></td>
        <td class="px-3 py-2.5"><span class="whitespace-nowrap">{{ label(states,a.estado) }}</span><span class="block text-xs text-slate-500 whitespace-nowrap" :title="`Responsable: ${a.responsable.nombre}`">{{ a.intervenciones }} interv.</span></td>
       </tr>
      </tbody>

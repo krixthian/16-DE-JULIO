@@ -444,11 +444,12 @@ def explicar(corte, pred, umbral_medio, umbral_alto, curso_txt, anio, companeros
     else:
         motivo = f'Puntaje del modelo de {v.get("mes")} ({p_txt}) por encima del umbral de prioridad {pred.nivel.lower()}.'
     principales = ', '.join(f"{r['etiqueta'].lower()} ({r['valor_texto']})" for r in suben[:3])
-    resumen = (f'Dejó de asistir: {racha} faltas seguidas, última asistencia {v.get("ultima_asistencia") or "sin registro"}. ' if inmediata else '')
-    resumen += f'Lo que más eleva la prioridad en el modelo: {principales}.' if suben else 'Ninguna variable eleva el puntaje del modelo.'
+    resumen = pf.explicacion(perfil, ind) or 'Ninguna dimensión en rojo o amarillo.'
+    if inmediata:
+        resumen += f' Última asistencia: {v.get("ultima_asistencia") or "sin registro"}.'
+    resumen += f' Lo que más pesó en el puntaje del modelo: {principales}.' if suben else ' El modelo no señala ninguna variable.'
     caso = dict(tipo='actual', titulo=f'Caso abierto el {corte.fecha_corte:%d/%m/%Y} (gestión {anio}).',
-        texto='Contactar a la familia lo antes posible: llamada o visita, y acordar el retorno del estudiante.' if inmediata else
-            'Revisar con el docente si hay señales recientes (faltas, cambio de domicilio, situación familiar) antes de decidir una acción.')
+        texto=pf.ACCION_NIVEL[perfil['nivel']])
     como_leer = [f'La alerta inmediata se activa con {RACHA_ALERTA} o más faltas seguidas; en los archivos recibidos de 2021-2025 (origen '
         'no verificado) se cumplió en 11 de 11 abandonos. Es retrospectivo y el abandono se definió con la asistencia.', 'El puntaje del modelo ordena la prioridad; no es la probabilidad real de abandono.']
     return dict(nivel=dict(nivel=pred.nivel, puntaje=round(p, 6), umbral_medio=umbral_medio, umbral_alto=umbral_alto, puesto=1, de=1, motivo=motivo,

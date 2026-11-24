@@ -61,5 +61,48 @@ def alerta(v, nivel_modelo='BAJO', racha_alerta=5):
     return dict(nivel=nivel, colores=c, motivos=motivos, notas_y_asistencia=juntas and nivel == 'ROJO')
 
 
+def detalle(v, dimension):
+    """Los datos que ponen una dimensión en rojo o amarillo, en palabras."""
+    g = {k: _num(x) for k, x in v.items()}
+    m = g.get
+    n = lambda x, d=0: f'{x:.{d}f}'.replace('.', ',')
+    d = []
+    if dimension == 'Académica':
+        if m('n_areas_bajo_51_T1'):
+            k = int(m('n_areas_bajo_51_T1'))
+            d.append(f"{k} {'área' if k == 1 else 'áreas'} bajo 51")
+        if m('promedio_T2') is not None and m('promedio_T1') is not None and m('promedio_T2') - m('promedio_T1') <= -10:
+            d.append(f"el promedio bajó de {n(m('promedio_T1'))} a {n(m('promedio_T2'))}")
+    elif dimension == 'Desempeño':
+        if m('bajas_T1'):
+            k = int(m('bajas_T1'))
+            d.append(f"{k} {'nota' if k == 1 else 'notas'} de Saber o Hacer bajo 51")
+        if m('cambio_saber_hacer') is not None and m('cambio_saber_hacer') <= -10:
+            d.append(f"Saber y Hacer bajaron {n(-m('cambio_saber_hacer'))} puntos")
+    elif dimension == 'Actitud':
+        d += [f'{t} {n(m(k))}' for k, t in (('ser_T1', 'Ser'), ('decidir_T1', 'Decidir')) if m(k) is not None and m(k) < 60]
+    elif dimension == 'Asistencia':
+        if m('racha_actual') is not None and m('racha_actual') >= 5:
+            d.append(f"{n(m('racha_actual'))} faltas seguidas")
+        if m('prop_faltas') is not None and m('prop_faltas') >= .05:
+            d.append(f"{n(100 * m('prop_faltas'), 1)} % de faltas")
+        if m('faltas_ult20') is not None and m('faltas_ult20') >= 3:
+            d.append(f"{n(m('faltas_ult20'))} faltas en los últimos 20 días de clase")
+        if m('prop_retrasos') is not None and m('prop_retrasos') >= .10:
+            d.append(f"{n(100 * m('prop_retrasos'))} % de atrasos")
+    return ', '.join(d)
+
+
+def explicacion(p, v):
+    """"Académica (rojo): 6 áreas bajo 51. Actitud (rojo): Ser 40."""
+    return ' '.join(f"{x['dimension']} ({x['color'].lower()}): {detalle(v, x['dimension']) or 'puntaje del modelo'}." for x in p['motivos'])
+
+
+ACCION_NIVEL = {'URGENTE': 'Contactar hoy a la familia (llamada o visita) y acordar el retorno del estudiante.',
+    'ROJO': 'Atender pronto: revisar el caso con el docente y aplicar las acciones de cada dimensión en rojo.',
+    'AMARILLO': 'Observar: el docente aplica la acción de la dimensión señalada y revisa el avance.',
+    'VERDE': 'Sin alerta a la fecha en que se abrió: seguimiento normal.'}
+
+
 def texto(p):
     return ', '.join(f"{x['dimension']} ({x['color'].lower()})" for x in p['motivos']) or 'sin motivos'
