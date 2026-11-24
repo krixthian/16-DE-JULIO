@@ -1,0 +1,9 @@
+feb: AP 0.008 [0.003248280116995134, 0.02201672793758531]  AUC 0.505  VP 2.8  FP 271.3  | regla 5: {'detectados': 0, 'falsas_alarmas': 0}
+mar: AP 0.015 [0.0033677060174895604, 0.0773222516580711]  AUC 0.535  VP 1.8  FP 93.6  | regla 5: {'detectados': 0, 'falsas_alarmas': 0}
+abr: AP 0.013 [0.0033007672049920073, 0.06444031574461422]  AUC 0.548  VP 0.2  FP 22.8  | regla 5: {'detectados': 0, 'falsas_alarmas': 0}
+may: AP 0.009 [0.0037239119043690353, 0.029625746494011736]  AUC 0.565  VP 0.1  FP 26.4  | regla 5: {'detectados': 1, 'falsas_alarmas': 0}
+jun: AP 0.793 [0.5343734927553421, 1.0]  AUC 0.962  VP 8.6  FP 5.5  | regla 5: {'detectados': 9, 'falsas_alarmas': 0}
+jul: AP 0.780 [0.5000447629018716, 1.0]  AUC 0.954  VP 8.6  FP 4.3  | regla 5: {'detectados': 9, 'falsas_alarmas': 0}
+ago: AP 0.721 [0.43607448331238646, 0.9705096726190475]  AUC 0.954  VP 7.7  FP 4.7  | regla 5: {'detectados': 9, 'falsas_alarmas': 0}
+sep: AP 1.000 [0.9999999999999999, 1.0]  AUC 1.000  VP 9.8  FP 0.0  | regla 5: {'detectados': 11, 'falsas_alarmas': 0}
+oct: AP 1.000 [0.9999999999999999, 1.0]  AUC 1.000  VP 9.8  FP 0.0  | regla 5: {'detectados': 11, 'falsas_alarmas': 0}

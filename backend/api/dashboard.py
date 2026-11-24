@@ -1,6 +1,6 @@
 """Agregados para el panel analítico. Todo sale de la base; sin datos personales de estudiantes."""
 from collections import Counter, defaultdict
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from api.alertas import seguimiento, NOTA_PRIORIDAD
@@ -43,14 +43,19 @@ def panel(gestion: int | None = None, db: Session = Depends(get_db)):
     uso = Counter()
     for p, corte, curso, g in filas:
         if p.id in alertas:
-            uso['actual' if (p.factores or {}).get('uso') == 'COHORTE_ACTUAL' else 'retrospectiva'] += 1
+            uso['actual' if (p.factores or {}).get('uso') in ('COHORTE_ACTUAL', 'SEGUIMIENTO_A_LA_FECHA') else 'retrospectiva'] += 1
         promedio = ((corte.variables or {}).get('indicadores') or {}).get('promedio_T1')
         if promedio is not None:
             distribucion[curso.grado][banda(promedio)] += 1
             n_grado[curso.grado] += 1
         if p.id in alertas:
             por_curso[(g.anio, curso.grado, curso.paralelo)][p.nivel] += 1
-    ids = [a.id for a in alertas.values()]
+    # Casos: todos los de la gestión, aunque se hayan abierto con un modelo anterior (igual que Alertas y Reportes).
+    todos = (select(m.Alerta).join(m.Prediccion, m.Prediccion.id == m.Alerta.prediccion_id)
+        .join(m.CortePredictivo, m.CortePredictivo.id == m.Prediccion.corte_id).join(m.Matricula, m.Matricula.id == m.CortePredictivo.matricula_id)
+        .join(m.Curso, m.Curso.id == m.Matricula.curso_id).join(m.Gestion, m.Gestion.id == m.Curso.gestion_id))
+    casos = db.scalars(todos.where(m.Gestion.anio == gestion) if gestion else todos).all()
+    ids = [a.id for a in casos]
     con_intervencion = set(db.scalars(select(m.Intervencion.alerta_id).where(m.Intervencion.alerta_id.in_(ids)))) if ids else set()
     estados_int = Counter()
     if ids:
@@ -65,15 +70,17 @@ def panel(gestion: int | None = None, db: Session = Depends(get_db)):
         evolucion[g.anio]['retrospectiva'] |= (p.factores or {}).get('uso') == 'RETROSPECTIVO_EN_ENTRENAMIENTO'
         if p.id in con_alerta:
             evolucion[g.anio][p.nivel] += 1
-    estados_alerta = Counter(a.estado for a in alertas.values())
+    estados_alerta = Counter(a.estado for a in casos)
     niveles = Counter(p.nivel for p, *_ in filas if p.id in alertas)
     bajo = sum(1 for p, *_ in filas if p.nivel == 'BAJO')
     return {
         'gestion': gestion, 'gestiones': sorted(evolucion), 'nota': NOTA_PRIORIDAD,
+        'gestiones_con_matricula': sorted(set(db.scalars(select(m.Gestion.anio).join(m.Curso, m.Curso.gestion_id == m.Gestion.id)
+            .join(m.Matricula, m.Matricula.curso_id == m.Curso.id)))),
         'umbrales': modelo_umbrales(db),
-        'resumen': {'predicciones': len(filas), 'alertas': len(alertas), 'alto': niveles['ALTO'], 'medio': niveles['MEDIO'], 'bajo': bajo,
+        'resumen': {'predicciones': len(filas), 'casos': len(casos), 'alertas': len(alertas), 'alto': niveles['ALTO'], 'medio': niveles['MEDIO'], 'bajo': bajo,
             'tasa_alerta': round(len(alertas) / len(filas), 4) if filas else 0, 'retrospectivas': uso['retrospectiva'],
-            'cohorte_actual': uso['actual'], 'con_intervencion': len(con_intervencion), 'sin_intervencion': len(alertas) - len(con_intervencion),
+            'cohorte_actual': uso['actual'], 'con_intervencion': len(con_intervencion), 'sin_intervencion': len(casos) - len(con_intervencion),
             'intervenciones_pendientes': estados_int['PENDIENTE'], 'intervenciones_ejecutadas': estados_int['EJECUTADA'],
             'alertas_cerradas': estados_alerta['CERRADA'], 'cursos_con_alerta': len(por_curso), 'cursos': len(matriculas_curso)},
         'alertas_por_curso': [{'gestion': k[0], 'curso': f'{k[1]}° {k[2]}', 'grado': k[1], 'ALTO': v['ALTO'], 'MEDIO': v['MEDIO'],
@@ -86,6 +93,28 @@ def panel(gestion: int | None = None, db: Session = Depends(get_db)):
         'intervenciones': {k: estados_int[k] for k in ('PENDIENTE', 'EJECUTADA', 'CANCELADA')},
         'estados_alerta': {k: estados_alerta[k] for k in ('NUEVA', 'EN_REVISION', 'EN_SEGUIMIENTO', 'CERRADA')},
     }
+
+
+@router.get('/semaforo')
+def semaforo(gestion: int, db: Session = Depends(get_db)):
+    """Alerta combinada de todos los estudiantes de la gestión a su última fecha registrada: los mismos números que Alertas."""
+    from predictivo import perfil as pf, seguimiento as sg
+    try:
+        r = sg.calcular(db, gestion)
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    cursos, bandas = {}, defaultdict(Counter)
+    for a in r['alertas']:
+        c = cursos.setdefault(a['curso_id'], {'id': a['curso_id'], 'curso': a['curso'], 'gestion': gestion, 'total': 0, **dict.fromkeys(pf.NIVELES, 0)})
+        c['total'] += 1
+        c[a['perfil']['nivel']] += 1
+        promedio = a['indicadores'].get('promedio_T1')
+        if promedio is not None:
+            bandas[int(a['curso'].split('°')[0])][banda(promedio)] += 1
+    return {'gestion': gestion, 'fecha': r['fecha'], 'total': r['total'], 'simulada': any(a['origen'] == 'SIMULADO' for a in r['alertas']),
+        'niveles': {k: sum(c[k] for c in cursos.values()) for k in pf.NIVELES}, 'nota': pf.NOTA,
+        'cursos': sorted(cursos.values(), key=lambda c: c['curso']),
+        'promedio_por_grado': [{'grado': g, 'n': sum(bandas[g].values()), **{c: bandas[g][c] for c, *_ in BANDAS}} for g in sorted(bandas)]}
 
 
 def _media(valores):

@@ -108,15 +108,15 @@ def etiqueta_ampliada():
 
 
 def seguimiento_continuo():
-    """Seguimiento continuo con los registros completos de la institución: validación de cada corte mensual del modelo en
-    uso por el sistema (artifacts/seguimiento_mensual_v1/metricas.json), la regla de faltas seguidas revisada a diario y
+    """Seguimiento continuo con los archivos recibidos (origen no verificado): validación de cada corte mensual del modelo en
+    uso por el sistema (artifacts/seguimiento_mensual_v2/metricas.json), la regla de faltas seguidas revisada a diario y
     los cortes únicos que no anticipan (30 de abril y trayectoria previa)."""
     from predictivo import seguimiento as sg
     met, mensual, tray, desg = sg.metricas(), leer_json(MENSUAL) or {}, leer_json(TRAYECTORIA) or {}, leer_json(DESGLOSADO) or {}
     if met is None:
         return None
     cortes = [dict(mes=mes, matriculas=c['matriculas'], abandonos=c['abandonos'], azar=c['azar'],
-        **{k: c['xgboost'].get(k) for k in ('average_precision', 'roc_auc', 'verdaderos_positivos', 'falsos_positivos')},
+        **{k: c['xgboost'].get(k) for k in ('average_precision', 'roc_auc', 'f1', 'sensibilidad', 'precision', 'verdaderos_positivos', 'falsos_positivos', 'ic95')},
         ic95_ap=c['xgboost'].get('ic95', {}).get('average_precision'), regla_5=c['regla_5_faltas']) for mes, c in met['cortes'].items()]
     t = (tray.get('modelos') or {}).get('trayectoria|xgboost') or {}
     g = (desg.get('modelos') or {}).get('global|xgboost') or {}
@@ -148,7 +148,8 @@ def por_dimension(imp):
 
 @router.get('/resultados')
 def resultados(db: Session = Depends(get_db)):
-    modelo = db.scalar(select(m.ModeloPredictivo).order_by(m.ModeloPredictivo.id.desc()))
+    # Las métricas de esta página son las del modelo de corte único (el de seguimiento tiene su propia sección).
+    modelo = db.scalar(select(m.ModeloPredictivo).where(m.ModeloPredictivo.version.not_like('seguimiento%')).order_by(m.ModeloPredictivo.id.desc()))
     if modelo is None:
         raise HTTPException(404, 'No hay un modelo registrado.')
     met = modelo.metricas or {}
@@ -196,5 +197,5 @@ def resultados(db: Session = Depends(get_db)):
             'etiqueta_ampliada': 'docs/experimento_etiqueta_ampliada.json' if AMPLIADA.exists() else None,
             'registros': 'docs/analisis_registros_detallados.json' if REGISTROS.exists() else None,
             'algoritmos': 'docs/experimento_algoritmos.json' if ALGORITMOS.exists() else None,
-            'seguimiento': 'backend/artifacts/seguimiento_mensual_v1/metricas.json, docs/experimento_seguimiento_mensual.json, docs/experimento_trayectoria.json'},
+            'seguimiento': 'backend/artifacts/seguimiento_mensual_v2/metricas.json, docs/experimento_seguimiento_mensual.json, docs/experimento_trayectoria.json'},
     }

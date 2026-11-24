@@ -13,6 +13,7 @@ from database import get_db
 from api.auth import get_current_user
 from api.escolar import Entrada, obtener, fila, guardar as persistir, aplicar, encargado
 from api.asistencia import auditar
+from predictivo.desglose import DIMENSIONES
 import models as m
 
 router=APIRouter(prefix='/calificaciones',tags=['Calificaciones'])
@@ -94,6 +95,8 @@ def contexto(db:Session=Depends(get_db),user=Depends(personal)):
         ids={a['gestion_id'] for a in assignments};years=years.where(m.Gestion.id.in_(ids));periods=periods.where(m.Periodo.gestion_id.in_(ids))
     return {'asignaciones':assignments,'gestiones':[fila(g) for g in db.scalars(years)],'periodos':[fila(p) for p in db.scalars(periods)]}
 
+Dimension=Literal[tuple(DIMENSIONES)]
+
 class EvaluacionEntrada(Entrada):
     asignacion_id:int=Field(gt=0)
     periodo_id:int=Field(gt=0)
@@ -101,7 +104,7 @@ class EvaluacionEntrada(Entrada):
     tipo:Literal['PRUEBA','TRABAJO','PROYECTO','ORAL','OTRA']
     fecha_aplicacion:date
     puntaje_maximo:Decimal=Field(gt=0,max_digits=8,decimal_places=2)
-    dimension:str|None=Field(default=None,min_length=1,max_length=60)
+    dimension:Dimension|None=None
 
 class EvaluacionEdicion(EvaluacionEntrada):
     revision:str=Field(pattern=r'^[a-f0-9]{64}$')

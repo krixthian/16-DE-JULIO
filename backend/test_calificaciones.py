@@ -41,6 +41,7 @@ class CalificacionesTests(unittest.TestCase):
       await req('POST','periodos',pb,403)
       context=await req('GET','contexto');self.assertEqual([x['id'] for x in context['asignaciones']],[a.id])
       eb={'asignacion_id':a.id,'periodo_id':p['id'],'titulo':'Prueba parcial','tipo':'PRUEBA','fecha_aplicacion':'1992-03-10','puntaje_maximo':'20.00','dimension':None}
+      await req('POST','evaluaciones',{**eb,'dimension':'Inventada'},422)
       await req('POST','evaluaciones',{**eb,'fecha_aplicacion':'1992-06-10'},422)
       e=await req('POST','evaluaciones',eb,201)
       app.dependency_overrides[get_current_user]=lambda:stranger

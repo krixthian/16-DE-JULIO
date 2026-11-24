@@ -1,0 +1,53 @@
+import unittest
+
+from predictivo import perfil as pf
+
+OK = dict(n_areas_bajo_51_T1=0, promedio_T1=75, promedio_T2=None, bajas_T1=0, saber_T1=75, cambio_saber_hacer=None, ser_T1=80, decidir_T1=80,
+    prop_faltas=.01, racha_actual=0, faltas_ult20=0, prop_retrasos=.01)
+
+
+class PerfilTests(unittest.TestCase):
+    def test_niveles(self):
+        n = lambda **k: pf.alerta({**OK, **k})['nivel']
+        self.assertEqual(n(), 'VERDE')
+        self.assertEqual(n(n_areas_bajo_51_T1=2, bajas_T1=5, ser_T1=40), 'ROJO', 'Sin faltas, las notas solas alertan y no se cuentan tres veces.')
+        self.assertEqual(n(prop_faltas=.12), 'ROJO')
+        a = pf.alerta({**OK, 'n_areas_bajo_51_T1': 2, 'prop_faltas': .06})
+        self.assertEqual((a['nivel'], a['notas_y_asistencia']), ('ROJO', True))
+        self.assertFalse(pf.alerta({**OK, 'prop_faltas': .12})['notas_y_asistencia'])
+        self.assertEqual(n(bajas_T1=1, prop_faltas=.06), 'AMARILLO', 'Dos amarillos no hacen un rojo.')
+        self.assertEqual(n(racha_actual=5), 'URGENTE', 'Las 5 faltas no dependen de las notas.')
+        self.assertFalse(pf.alerta({**OK, 'n_areas_bajo_51_T1': 2, 'racha_actual': 5})['notas_y_asistencia'], 'En urgente no cambia el orden.')
+        self.assertEqual(n(promedio_T2=65), 'AMARILLO')
+        self.assertEqual(n(ser_T1=55), 'AMARILLO')
+
+    def test_sin_dato_y_modelo(self):
+        sin = {**OK, **{k: None for k in ('n_areas_bajo_51_T1', 'promedio_T1', 'bajas_T1', 'saber_T1', 'ser_T1', 'decidir_T1')}}
+        a = pf.alerta(sin)
+        self.assertEqual((a['nivel'], a['colores']['Académica'], a['colores']['Asistencia']), ('VERDE', None, 'VERDE'), 'Sin dato no es rojo ni verde.')
+        self.assertEqual(pf.alerta({**sin, 'promedio_T1': float('nan')})['colores']['Académica'], None)
+        a = pf.alerta(OK, 'ALTO')
+        self.assertEqual((a['nivel'], a['motivos'][0]['dimension']), ('AMARILLO', 'Modelo XGBoost'))
+
+
+class MismosNumerosTests(unittest.TestCase):
+    def test_panel_y_reportes_cuentan_como_alertas(self):
+        """Solo lectura sobre la base en uso."""
+        from collections import Counter
+        from sqlalchemy.orm import Session
+        from api import dashboard, reportes
+        from database import engine
+        from predictivo import seguimiento as sg
+        with Session(engine) as db:
+            r = sg.calcular(db, 2026)
+            esperado = {k: Counter(a['perfil']['nivel'] for a in r['alertas'])[k] for k in pf.NIVELES}
+            panel = dashboard.semaforo(2026, db)
+            _, filas, (total, niveles, _), _ = reportes.datos(db, 2026, None)
+            self.assertEqual((panel['total'], panel['niveles']), (r['total'], esperado))
+            self.assertEqual((total, niveles), (r['total'], esperado))
+            con_alerta = {reportes.etiqueta(a['estudiante']) for a in r['alertas'] if a['perfil']['nivel'] != 'VERDE'}
+            self.assertEqual(con_alerta, {f['etiqueta'] for f in filas if f['nivel'] in ('URGENTE', 'ROJO', 'AMARILLO')})
+
+
+if __name__ == '__main__':
+    unittest.main()

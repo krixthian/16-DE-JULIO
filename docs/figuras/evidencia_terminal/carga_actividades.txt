@@ -1,0 +1,14 @@
+respaldo alerta_temprana_v3_antes_actividades_20261123.sql 40.1 MB
+archivos 
+Insertado. 
+simuladas 
+Insertado. 
+6 calculos 8.4 s
+tablas {'calificaciones': (238518, 1152036), 'evaluaciones': (9945, 47835)} | 2022 igual True
+2026-04-30 150 dif max 0.0 cambian de nivel [] inmediatas 0 resto igual True
+2026-05-29 150 dif max 0.0 cambian de nivel [] inmediatas 1 resto igual True
+2026-06-30 150 dif max 0.0 cambian de nivel [] inmediatas 1 resto igual True
+2026-08-31 150 dif max 0.0 cambian de nivel [] inmediatas 1 resto igual True
+2026-10-30 150 dif max 0.0 cambian de nivel [] inmediatas 2 resto igual True
+excesos 0
+academicas 1.7 s 75

@@ -26,10 +26,11 @@ async function loadEvaluations(){
  try{evaluations.value=(await api.get('/calificaciones/evaluaciones',{params:{asignacion_id:assignmentId.value}})).data;loadedAssignment.value=Number(assignmentId.value)}
  catch(e){error.value=msg(e);loadedAssignment.value=null;evaluations.value=[]}finally{busy.value=false}
 }
+const DIMENSIONES=['Ser','Saber','Hacer','Decidir','Autoevaluación']
 function startEvaluation(e=null){
  if(!discard())return
  dirty.value=false;sheet.value=null;error.value='';notice.value='';formDirty.value=false
- editForm.value=e?{...e,motivo_correccion:''}:{asignacion_id:loadedAssignment.value,periodo_id:periodsForForm.value[0]?.id||'',titulo:'',tipo:'PRUEBA',fecha_aplicacion:'',puntaje_maximo:'',dimension:'',motivo_correccion:''}
+ editForm.value=e?{...e,dimension:e.dimension||'',motivo_correccion:''}:{asignacion_id:loadedAssignment.value,periodo_id:periodsForForm.value[0]?.id||'',titulo:'',tipo:'PRUEBA',fecha_aplicacion:'',puntaje_maximo:'',dimension:'',motivo_correccion:''}
 }
 function cancelEvaluation(){if(!formDirty.value||window.confirm('¿Descartar los cambios de la evaluación?')){editForm.value=null;formDirty.value=false}}
 async function saveEvaluation(){
@@ -109,7 +110,7 @@ onBeforeRouteLeave(()=>discard())
      <label class="label">Tipo<select v-model="editForm.tipo" required class="field" :disabled="!ready"><option value="PRUEBA">Prueba</option><option value="TRABAJO">Trabajo</option><option value="PROYECTO">Proyecto</option><option value="ORAL">Oral</option><option value="OTRA">Otra</option></select></label>
      <label class="label">Fecha de aplicación<input v-model="editForm.fecha_aplicacion" type="date" required class="field" :disabled="!ready" /></label>
      <label class="label">Puntaje máximo<input v-model="editForm.puntaje_maximo" type="number" min="0.01" max="999999.99" step="0.01" required class="field" :disabled="!ready" placeholder="Ej.: 100" /></label>
-     <label class="label md:col-span-2">Dimensión (opcional)<input v-model="editForm.dimension" maxlength="60" class="field" :disabled="!ready" placeholder="Según la planilla del colegio" /></label>
+     <label class="label md:col-span-2">Dimensión<select v-model="editForm.dimension" class="field" :disabled="!ready"><option value="">Sin dimensión</option><option v-for="d in DIMENSIONES" :key="d" :value="d">{{ d }}</option></select></label>
      <label v-if="editForm.id" class="label md:col-span-2">Motivo de corrección<input v-model="editForm.motivo_correccion" required maxlength="500" class="field" :disabled="!ready" /></label>
     </div>
     <p class="text-sm text-slate-500 mt-4">Cuando tenga notas, se conservarán la fecha, el trimestre, la dimensión y el puntaje máximo para proteger el historial.</p>

@@ -1,0 +1,7 @@
+# Ejecución: 2026-11-13 23:30:27 | Python 3.12.2 | Comando (desde backend): python -m unittest test_calificaciones -v
+test_periodos_evaluaciones_y_notas (test_calificaciones.CalificacionesTests.test_periodos_evaluaciones_y_notas) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.630s
+
+OK

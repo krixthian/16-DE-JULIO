@@ -1,0 +1,10 @@
+feb: azar 0.006 | 15: AP 0.008 VP 2.6 FA 271.6 | 23: AP 0.008 VP 2.8 FA 271.3 | dif +0.000 IC [-0.000, +0.001] | peso 0.0% {}
+mar: azar 0.006 | 15: AP 0.015 VP 1.8 FA 88.2 | 23: AP 0.015 VP 1.8 FA 93.6 | dif -0.000 IC [-0.004, +0.005] | peso 0.0% {}
+abr: azar 0.006 | 15: AP 0.016 VP 0.8 FA 39.4 | 23: AP 0.013 VP 0.2 FA 22.8 | dif -0.003 IC [-0.020, +0.003] | peso 22.5% {'ser_T1': 0.0221, 'saber_T1': 0.0887, 'hacer_T1': 0.0781, 'decidir_T1': 0.0231, 'autoevaluacion_T1': 0.0009, 'dimension_minima_T1': 0.0125}
+may: azar 0.006 | 15: AP 0.009 VP 0.1 FA 36.5 | 23: AP 0.009 VP 0.1 FA 26.4 | dif +0.000 IC [-0.002, +0.004] | peso 17.0% {'ser_T1': 0.0154, 'saber_T1': 0.0465, 'hacer_T1': 0.0725, 'decidir_T1': 0.0242, 'autoevaluacion_T1': 0.0028, 'dimension_minima_T1': 0.0087}
+jun: azar 0.006 | 15: AP 0.803 VP 8.7 FA 6.0 | 23: AP 0.793 VP 8.6 FA 5.5 | dif -0.010 IC [-0.021, -0.001] | peso 4.0% {'ser_T1': 0.0015, 'saber_T1': 0.0049, 'hacer_T1': 0.0083, 'dimension_minima_T1': 0.0254}
+jul: azar 0.006 | 15: AP 0.791 VP 8.7 FA 4.7 | 23: AP 0.780 VP 8.6 FA 4.3 | dif -0.011 IC [-0.029, +0.004] | peso 8.4% {'saber_T1': 0.0055, 'hacer_T1': 0.0189, 'autoevaluacion_T1': 0.0003, 'dimension_minima_T1': 0.0597}
+ago: azar 0.006 | 15: AP 0.754 VP 8.3 FA 4.2 | 23: AP 0.721 VP 7.7 FA 4.7 | dif -0.033 IC [-0.122, +0.015] | peso 13.6% {'saber_T1': 0.0, 'hacer_T1': 0.0221, 'autoevaluacion_T1': 0.0002, 'dimension_minima_T1': 0.0652, 'cambio_saber_hacer': 0.0482}
+sep: azar 0.006 | 15: AP 1.000 VP 9.8 FA 0.0 | 23: AP 1.000 VP 9.8 FA 0.0 | dif +0.000 IC [+0.000, +0.000] | peso 0.0% {}
+oct: azar 0.006 | 15: AP 1.000 VP 9.8 FA 0.0 | 23: AP 1.000 VP 9.8 FA 0.0 | dif +0.000 IC [+0.000, +0.000] | peso 0.0% {}
+mejora clara: [] | empeora claro: ['jun'] | SE ADOPTA: False

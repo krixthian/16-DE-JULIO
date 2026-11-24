@@ -1,0 +1,11 @@
+respaldo alerta_temprana_v3_antes_desglose_2026_20261123.sql 39.2 MB
+ de 10
+Insertado.
+ 
+tablas {'calificaciones': (225063, 238518), 'evaluaciones': (9405, 9945)} | 2022 igual True
+2026-04-30 150 dif max 0.3359 cambian de nivel [('MEDIO', 'BAJO'), ('BAJO', 'MEDIO'), ('BAJO', 'MEDIO')] inmediatas 0 resto igual True
+2026-05-29 150 dif max 0.3511 cambian de nivel [('ALTO', 'BAJO'), ('MEDIO', 'BAJO'), ('MEDIO', 'BAJO'), ('MEDIO', 'BAJO')] inmediatas 1 resto igual True
+2026-06-30 150 dif max 0.4616 cambian de nivel [('MEDIO', 'BAJO'), ('MEDIO', 'BAJO')] inmediatas 1 resto igual True
+2026-08-31 150 dif max 0.3456 cambian de nivel [] inmediatas 1 resto igual True
+2026-10-30 150 dif max 0.0 cambian de nivel [] inmediatas 2 resto igual True
+excesos 0

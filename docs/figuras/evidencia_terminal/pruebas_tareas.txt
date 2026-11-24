@@ -1,0 +1,7 @@
+# Ejecución: 2026-11-13 23:30:38 | Python 3.12.2 | Comando (desde backend): python -m unittest test_tareas -v
+test_tareas_entregas_permisos_e_historial (test_tareas.TareasTests.test_tareas_entregas_permisos_e_historial) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.599s
+
+OK

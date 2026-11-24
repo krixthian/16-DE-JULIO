@@ -13,6 +13,11 @@ TIPOS_ACCION = {'CITACION': 'Citación al apoderado', 'REFORZAMIENTO': 'Reforzam
     'REUNION_CASO': 'Reunión de caso', 'DERIVACION': 'Derivación', 'OTRA': 'Otra acción'}
 
 
+def _inasistencia_continua(ind, nivel):
+    v = ind.get('racha_actual')
+    return v is not None and v >= 5 and f'{v:g} faltas seguidas hasta la fecha'
+
+
 def _bajo_promedio(ind, nivel):
     v = ind.get('promedio_T1')
     return v is not None and v <= 68 and f'promedio_T1 = {v:g}'
@@ -20,6 +25,8 @@ def _bajo_promedio(ind, nivel):
 
 def _areas_bajas(ind, nivel):
     bajas = [f'{AREAS[a]} ({ind[f"{a}_T1"]:g})' for a in AREAS if ind.get(f'{a}_T1') is not None and ind[f'{a}_T1'] < 51]
+    if not bajas and ind.get('n_areas_bajo_51_T1'):  # seguimiento: solo se guarda el conteo
+        return f"{ind['n_areas_bajo_51_T1']:g} área(s) < 51 en el T1"
     return bool(bajas) and 'Áreas < 51: ' + ', '.join(bajas)
 
 
@@ -28,15 +35,25 @@ def _inasistencia(ind, nivel):
     partes = [f'faltas_T1 = {faltas:g}'] if faltas is not None and faltas >= 3 else []
     if tasa is not None and tasa < .90:
         partes.append(f'asistencia = {tasa * 100:.0f} %')
+    if ind.get('faltas_ult20') is not None and ind['faltas_ult20'] >= 3:  # seguimiento a la fecha
+        partes.append(f"{ind['faltas_ult20']:g} faltas en los últimos 20 días de clase")
+    if ind.get('prop_faltas') is not None and ind['prop_faltas'] >= .10:
+        partes.append(f"faltas en el año = {ind['prop_faltas'] * 100:.0f} %")
     return bool(partes) and ', '.join(partes)
 
 
 def _atrasos(ind, nivel):
     v = ind.get('atrasos_T1')
+    if v is None and ind.get('prop_retrasos') is not None:  # seguimiento a la fecha
+        return ind['prop_retrasos'] >= .10 and f"atrasos = {ind['prop_retrasos'] * 100:.0f} % de los días"
     return v is not None and v >= 4 and f'atrasos_T1 = {v:g}'
 
 
 REGLAS = [
+    dict(codigo='RP00', nombre='Inasistencia continua', condicion='5 o más faltas seguidas hasta la fecha (alerta inmediata)',
+        recomendacion='Contactar hoy a la familia (llamada o visita domiciliaria) para conocer la causa y acordar el retorno; '
+            'si no hay respuesta en 2 días, informar a Dirección para la reunión de caso.',
+        tipo='CITACION', evaluar=_inasistencia_continua),
     dict(codigo='RP01', nombre='Rendimiento global bajo', condicion='promedio_T1 ≤ 68 (por debajo de "Desarrollo óptimo")',
         recomendacion='Plan de reforzamiento con el docente asesor y citación al apoderado para acordar apoyo en casa.',
         tipo='REFORZAMIENTO', evaluar=_bajo_promedio),

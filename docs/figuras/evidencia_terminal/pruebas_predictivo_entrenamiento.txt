@@ -1,0 +1,59 @@
+# Ejecución: 2026-11-13 23:30:49 | Python 3.12.2 | Comando (desde backend): python -m unittest test_predictivo test_ajuste test_predictivo_api -v
+test_context_uses_latest_full_form_without_fill_from_previous (test_predictivo.FeaturesTests.test_context_uses_latest_full_form_without_fill_from_previous) ... ok
+test_enrollment_origin_and_start_boundary (test_predictivo.FeaturesTests.test_enrollment_origin_and_start_boundary) ... ok
+test_invalid_grades_and_duplicates_rejected (test_predictivo.FeaturesTests.test_invalid_grades_and_duplicates_rejected) ... ok
+test_labels_do_not_enter_feature_contract (test_predictivo.FeaturesTests.test_labels_do_not_enter_feature_contract) ... ok
+test_late_correction_reconstructs_original_value (test_predictivo.FeaturesTests.test_late_correction_reconstructs_original_value) ... ok
+test_later_enrollment_does_not_require_unavailable_past_calendar (test_predictivo.FeaturesTests.test_later_enrollment_does_not_require_unavailable_past_calendar) ... ok
+test_outcomes_require_complete_followup_and_exclude_transfers (test_predictivo.FeaturesTests.test_outcomes_require_complete_followup_and_exclude_transfers) ... ok
+test_pending_and_exempt_are_not_failures (test_predictivo.FeaturesTests.test_pending_and_exempt_are_not_failures) ... ok
+test_scales_missing_and_future_records (test_predictivo.FeaturesTests.test_scales_missing_and_future_records) ... ok
+test_unknown_breaks_absence_streak_and_non_schoolday_excluded (test_predictivo.FeaturesTests.test_unknown_breaks_absence_streak_and_non_schoolday_excluded) ... ok
+test_one_class_rejected (test_predictivo.TrainingTests.test_one_class_rejected) ... ok
+test_temporal_student_and_label_availability_separation (test_predictivo.TrainingTests.test_temporal_student_and_label_availability_separation) ... ok
+test_training_save_reload_and_origin_guard (test_predictivo.TrainingTests.test_training_save_reload_and_origin_guard) ... ok
+test_calibration_is_monotone_and_bounded (test_ajuste.AjusteTests.test_calibration_is_monotone_and_bounded) ... C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+ok
+test_grid_is_small_and_contains_base (test_ajuste.AjusteTests.test_grid_is_small_and_contains_base) ... ok
+test_nested_uses_only_outer_training_and_reports_choices (test_ajuste.AjusteTests.test_nested_uses_only_outer_training_and_reports_choices) ... C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\sklearn\linear_model\_logistic.py:455: DeprecationWarning: scipy.optimize: The `disp` and `iprint` options of the L-BFGS-B solver are deprecated and will be removed in SciPy 1.18.0.
+  opt_res = optimize.minimize(
+ok
+test_selection_prefers_simpler_on_ties (test_ajuste.AjusteTests.test_selection_prefers_simpler_on_ties) ... ok
+test_truncated_rounds_match_a_model_trained_with_fewer_trees (test_ajuste.AjusteTests.test_truncated_rounds_match_a_model_trained_with_fewer_trees) ... ok
+test_main_application_registers_routes_and_requires_authentication (test_predictivo_api.PredictivoApiTests.test_main_application_registers_routes_and_requires_authentication) ... ok
+test_model_registry_hash_thresholds_origin_and_duplicate_guard (test_predictivo_api.PredictivoApiTests.test_model_registry_hash_thresholds_origin_and_duplicate_guard) ... ok
+test_permissions_preview_persistence_and_immutable_cuts (test_predictivo_api.PredictivoApiTests.test_permissions_preview_persistence_and_immutable_cuts) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 18.945s
+
+OK

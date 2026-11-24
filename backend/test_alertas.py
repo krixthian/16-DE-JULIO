@@ -389,7 +389,7 @@ class AlertasApiTests(unittest.TestCase):
                     self.assertTrue(case['areas_bajo_51'])
                     self.assertTrue(all(a['nota'] < 51 for a in case['areas_bajo_51']))
                     self.assertIn('RP02', case['reglas'])
-                self.assertEqual(data['sin_alerta_del_modelo'], sum(1 for c in data['casos'] if c['modelo']['alerta_id'] is None))
+                self.assertEqual(data['sin_caso'], sum(1 for c in data['casos'] if c['caso'] is None))
                 year = data['casos'][0]['gestion']
                 filtered = (await client.get('/alertas/academicas', params={'gestion': year})).json()
                 self.assertTrue(all(c['gestion'] == year for c in filtered['casos']))

@@ -42,7 +42,7 @@ class CalculosTests(unittest.TestCase):
 
     def test_modelos_entrenados_y_validados(self):
         met = sg.metricas()
-        self.assertIsNotNone(met, 'Falta artifacts/seguimiento_mensual_v1: ejecutar el entrenamiento.')
+        self.assertIsNotNone(met, 'Falta artifacts/seguimiento_mensual_v2: ejecutar el entrenamiento.')
         self.assertEqual(met['variables'], sg.VARIABLES)
         self.assertEqual(set(met['cortes']), {'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct'})
         for mes, c in met['cortes'].items():
@@ -105,6 +105,65 @@ class SeguimientoApiTests(unittest.TestCase):
                         self.assertEqual((await c.get('/alertas/seguimiento', params={'gestion': 1993, 'fecha': '1993-01-15'})).json()['total'], 0)
                         self.assertEqual((await c.get('/alertas/seguimiento', params={'gestion': 1800})).status_code, 404)
                         self.assertEqual((await c.get('/alertas/inasistencia')).json()['dias'], 5)
+                        resumen = (await c.get('/alertas/seguimiento/gestiones')).json()
+                        fila = next(g for g in resumen['gestiones'] if g['gestion'] == 1993)
+                        self.assertEqual((fila['matriculas'], fila['alertas_inmediatas'], fila['en_curso'], fila['falsas_alarmas']), (2, 1, True, None),
+                            'Gestión simulada: la alerta cuenta, pero no se califica como falsa alarma.')
+
+                        # Casos: la alerta inmediata se abre como caso (sin duplicar) y usa toda la gestión de alertas.
+                        calculo = sg.calcular(db, 1993, dias[-1])
+                        self.assertEqual(sg.abrir_inmediatas(db, calculo), 1)
+                        self.assertEqual(sg.abrir_inmediatas(db, calculo), 0, 'No duplica casos abiertos.')
+                        db.flush()
+                        caso_id = sg.casos_abiertos(db, [mats[1].id])[mats[1].id][0]
+                        casos = (await c.get('/alertas', params={'gestion': 1993})).json()
+                        self.assertEqual([(x['id'], x['estudiante'], x['nivel'], x['modelo']) for x in casos], [(caso_id, 'EST-QS02', 'ALTO', sg.VERSION)])
+                        por_que = (await c.get(f'/alertas/{caso_id}/explicacion')).json()
+                        self.assertIn('6 faltas seguidas', por_que['nivel']['motivo'])
+                        self.assertTrue(por_que['coincide_con_guardado'])
+                        recs = [r['codigo'] for r in (await c.get(f'/alertas/{caso_id}/recomendaciones')).json()['reglas']]
+                        self.assertIn('RP00', recs)
+                        visto = (await c.get('/alertas/seguimiento', params={'gestion': 1993, 'fecha': dias[-1].isoformat()})).json()
+                        self.assertEqual(next(x for x in visto['alertas'] if x['estudiante'] == 'EST-QS02')['caso']['id'], caso_id)
+                        r = await c.post('/alertas/seguimiento/abrir', json={'matricula_id': mats[0].id, 'gestion': 1993, 'fecha': dias[-1].isoformat()})
+                        self.assertEqual(r.status_code, 422, 'Las gestiones pasadas son de consulta.')
+                        self.assertEqual((await c.get('/modelo/resultados')).status_code, 200, 'Resultados sigue usando el modelo anterior.')
+
+                        # Vista del docente: solo los cursos donde tiene asignación; sin puntajes.
+                        otro = m.Curso(gestion_id=year.id, grado=4, paralelo='QT')
+                        db.add(otro)
+                        db.flush()
+                        e3 = m.Estudiante(nombre='ANONIMO', apellido='EST-QT01', codigo_anonimo='EST-QT01')
+                        db.add(e3)
+                        db.flush()
+                        mat3 = m.Matricula(estudiante_id=e3.id, curso_id=otro.id, fecha_ingreso=date(1993, 2, 1), origen='SIMULADO', registrado_por=admin.id)
+                        db.add(mat3)
+                        db.flush()
+                        for i, dia in enumerate(dias):
+                            j = m.JornadaClase(curso_id=otro.id, fecha=dia, es_lectiva=True)
+                            db.add(j)
+                            db.flush()
+                            db.add(m.Asistencia(matricula_id=mat3.id, jornada_id=j.id, curso_id=otro.id, estado='FALTA' if i >= len(dias) - 6 else 'PRESENTE', registrado_por=admin.id))
+                        docente = m.Usuario(nombre='Temporal', apellido='Docente', email='docente-seguimiento@example.invalid', rol='Docente', activo=True)
+                        db.add(docente)
+                        db.flush()
+                        materia = db.scalar(select(m.Materia))
+                        db.add(m.AsignacionDocente(curso_id=course.id, materia_id=materia.id, docente_id=docente.id, vigente_desde=date(1993, 2, 1)))
+                        db.flush()
+                        params = {'gestion': 1993, 'fecha': dias[-1].isoformat()}
+                        todo = (await c.get('/docente/alertas', params=params)).json()
+                        self.assertEqual({a['estudiante'] for a in todo['alertas']}, {'EST-QS02', 'EST-QT01'}, 'Admin ve todos los cursos.')
+                        app.dependency_overrides[get_current_user] = lambda: docente
+                        r = await c.get('/docente/alertas', params=params)
+                        self.assertEqual(r.status_code, 200, r.text)
+                        mio = r.json()
+                        self.assertEqual(([a['estudiante'] for a in mio['alertas']], mio['mis_cursos']), (['EST-QS02'], 1))
+                        self.assertTrue(mio['alertas'][0]['alerta_inmediata'])
+                        self.assertNotIn('probabilidad', mio['alertas'][0], 'El docente no ve puntajes del modelo.')
+                        self.assertEqual((await c.get('/alertas/seguimiento', params=params)).status_code, 403, 'El docente no entra a la gestión de alertas.')
+                        orientador = m.Usuario(nombre='Temporal', apellido='Orientador', email='orientador-seguimiento@example.invalid', rol='Orientador', activo=True)
+                        app.dependency_overrides[get_current_user] = lambda: orientador
+                        self.assertEqual((await c.get('/docente/alertas', params=params)).status_code, 403)
                 finally:
                     app.dependency_overrides.clear()
                     db.close()

@@ -25,3 +25,6 @@ venv/
 
 # Artefactos experimentales, datasets y particiones locales del modelo
 backend/artifacts/
+
+# Capturas sin tapar (contienen nombres); las del manual ya van tapadas en capturas_limpias
+docs/manual/capturas/

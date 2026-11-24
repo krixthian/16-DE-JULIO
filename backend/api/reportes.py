@@ -2,19 +2,19 @@
 import csv
 import io
 import re
-from datetime import datetime
+from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from api.alertas import seguimiento, consulta, responder, reglas_alerta, NOTA_PRIORIDAD
 from database import get_db
-from predictivo import recomendaciones as rp
+from predictivo import perfil as pf, recomendaciones as rp
 import models as m
 
 router = APIRouter(prefix='/reportes', tags=['Reportes'], dependencies=[Depends(seguimiento)])
 APOYO = 'El modelo apoya, no sustituye, el criterio docente.'
-ESTADOS = {'NUEVA': 'Nueva', 'EN_REVISION': 'En revisión', 'EN_SEGUIMIENTO': 'En seguimiento', 'CERRADA': 'Cerrada',
+ESTADOS = {'SIN_CASO': 'Sin caso abierto', 'NUEVA': 'Nueva', 'EN_REVISION': 'En revisión', 'EN_SEGUIMIENTO': 'En seguimiento', 'CERRADA': 'Cerrada',
     'PROPUESTA': 'Propuesta', 'APROBADA': 'Aprobada', 'EN_CURSO': 'En curso', 'REALIZADA': 'Realizada', 'CANCELADA': 'Cancelada'}
 
 
@@ -47,8 +47,60 @@ def datos(db, gestion, curso_id):
         alerta['reglas'] = [r['codigo'] for r in activas]
         alerta['reglas_info'] = {r['codigo']: r['nombre'] for r in activas}
         alerta['pasos'] = pasos.get(alerta['id'], [])
+    modelo = db.scalar(select(m.ModeloPredictivo).order_by(m.ModeloPredictivo.id.desc()))
+    vigente = modelo is not None and modelo.version.startswith('seguimiento')
+    if vigente:
+        alertas, resumen = con_perfil(db, gestion, curso_id, alertas, {a['id']: row[3].matricula_id for a, row in zip(alertas, rows)})
+    else:
+        resumen = resumen_semaforo(db, gestion, curso_id)
     alcance = f'Gestión {gestion}' + (f' · Curso {curso.grado}° {curso.paralelo}' if curso else ' · Todos los cursos')
-    return alcance, alertas
+    if db.scalar(select(m.Matricula.id).join(m.Curso, m.Curso.id == m.Matricula.curso_id).join(m.Gestion, m.Gestion.id == m.Curso.gestion_id)
+            .where(m.Gestion.anio == gestion, m.Matricula.origen == 'SIMULADO').limit(1)):
+        alcance += ' · Datos simulados'
+    return alcance, alertas, resumen, [pf.NOTA, NOTA_PUNTAJE] if vigente else [NOTA_PRIORIDAD]
+
+
+NOTA_PUNTAJE = ('El puntaje de XGBoost ordena la revisión dentro de cada nivel (ranking de prioridad) y pasa a amarillo a quien solo él marca; '
+    'no está calibrado y no es un riesgo absoluto.')
+
+
+def con_perfil(db, gestion, curso_id, casos, matricula_de):
+    """Todas las alertas de la gestión como en la pantalla Alertas (seguimiento en vivo), con su caso si ya se abrió."""
+    from predictivo import seguimiento as sg
+    r = sg.calcular(db, gestion, solo_cursos=[curso_id] if curso_id is not None else None)
+    por_matricula, anteriores = {}, []
+    for c in casos:  # si un estudiante tiene más de un caso, el último va con su alerta y los demás se conservan aparte
+        previo = por_matricula.get(matricula_de[c['id']])
+        if previo:
+            anteriores.append(min(previo, c, key=lambda x: x['id']))
+            c = max(previo, c, key=lambda x: x['id'])
+        por_matricula[matricula_de[c['id']]] = c
+    filas = []
+    for a in r['alertas']:
+        caso, nivel = por_matricula.pop(a['matricula_id'], None), a['perfil']['nivel']
+        if nivel == 'VERDE' and caso is None:
+            continue
+        # Sin caso, las reglas se evalúan con el nivel que tendría al abrirse (igual que en seguimiento).
+        activas = [] if caso else rp.evaluar(a['indicadores'], 'ALTO' if nivel in ('URGENTE', 'ROJO') else a['nivel'] if a['nivel'] != 'BAJO' else 'MEDIO')
+        motivos = pf.texto(a['perfil']) if a['perfil']['motivos'] else 'Sin motivos a la fecha (tiene un caso abierto antes)'
+        filas.append({**(caso or dict(estado='SIN_CASO', responsable={'rol': '—'}, pasos=[], reglas=[x['codigo'] for x in activas],
+                reglas_info={x['codigo']: x['nombre'] for x in activas})),
+            'etiqueta': etiqueta(a['estudiante']), 'gestion': gestion, 'curso': a['curso'], 'nivel': nivel, 'motivos': motivos,
+            'notas_y_asistencia': a['perfil']['notas_y_asistencia'], 'probabilidad': a['probabilidad'], 'factores': a['factores'],
+            'prioridad': {'puesto': a['puesto'], 'de': r['total']}, 'modelo': sg.VERSION, 'fecha_corte': date.fromisoformat(r['fecha'])})
+    filas += [{**c, 'motivos': 'Sin seguimiento a la fecha'} for c in por_matricula.values()] + [{**c, 'motivos': 'Caso anterior'} for c in anteriores]
+    niveles = {k: sum(1 for a in r['alertas'] if a['perfil']['nivel'] == k) for k in pf.NIVELES}
+    return filas, (r['total'], niveles, [date.fromisoformat(r['fecha'])])
+
+
+def nivel_texto(a):
+    return NIVELES.get(a['nivel'], (a['nivel'],))[0] + (' · notas y asistencia' if a.get('notas_y_asistencia') else '')
+
+
+def porque(a):
+    """Por qué se alerta (dimensiones) y, aparte, lo que más pesó en el puntaje del modelo."""
+    motivos = a.get('motivos')
+    return f'{motivos}. Puntaje del modelo: {factores_claros(a)}' if motivos else factores_claros(a)
 
 
 def factores(a):
@@ -71,15 +123,15 @@ def nombre_archivo(gestion, curso_id, extension):
 
 @router.get('/alertas.csv')
 def reporte_csv(gestion: int, curso_id: int | None = None, db: Session = Depends(get_db)):
-    alcance, alertas = datos(db, gestion, curso_id)
+    alcance, alertas, _, nota_nivel = datos(db, gestion, curso_id)
     out = io.StringIO()
     out.write(f'# Reporte de alertas de riesgo · {alcance} · generado {datetime.now():%Y-%m-%d %H:%M}\n')
-    out.write(f'# {NOTA_PRIORIDAD}\n# {APOYO}\n')
+    out.write('# ' + '\n# '.join([*nota_nivel, APOYO]) + '\n')
     writer = csv.writer(out)
-    writer.writerow(['estudiante', 'gestion', 'curso', 'nivel_prioridad', 'puesto_ranking', 'de', 'puntaje_no_calibrado', 'estado_alerta',
+    writer.writerow(['estudiante', 'gestion', 'curso', 'nivel_alerta', 'motivos', 'puesto_ranking', 'de', 'puntaje_no_calibrado', 'estado_alerta',
         'responsable_rol', 'factores', 'reglas_activas', 'intervenciones', 'modelo', 'fecha_corte'])
     for a in alertas:
-        writer.writerow([a['etiqueta'], a['gestion'], a['curso'], a['nivel'], a['prioridad']['puesto'], a['prioridad']['de'],
+        writer.writerow([a['etiqueta'], a['gestion'], a['curso'], nivel_texto(a), a.get('motivos', ''), a['prioridad']['puesto'], a['prioridad']['de'],
             f"{a['probabilidad']:.3f}", ESTADOS[a['estado']], a['responsable']['rol'], factores(a), ' '.join(a['reglas']),
             ' || '.join(paso_texto(p) for p in a['pasos']), a['modelo'], a['fecha_corte']])
     # BOM para que Excel abra bien las tildes.
@@ -90,42 +142,31 @@ def reporte_csv(gestion: int, curso_id: int | None = None, db: Session = Depends
 INSTITUCION = 'Unidad Educativa «16 de Julio»'
 UBICACION = 'Nivel Primario · La Paz – Bolivia'
 SISTEMA = 'Sistema de Alerta Temprana de Abandono Escolar'
-NIVELES = {'ALTO': ('Alta', '#fde2e2', '#9b1c1c'), 'MEDIO': ('Media', '#fdf0d5', '#8a5a00'), 'BAJO': ('Baja', '#dcf5e8', '#166534')}
-
-
-def resumen_semaforo(db, gestion, curso_id):
-    """Conteo real de predicciones por nivel (modelo vigente) en el alcance del reporte, y la fecha de corte."""
-    from api.dashboard import base
-    filas = db.execute(base(gestion)).all()
-    if curso_id is not None:
-        filas = [f for f in filas if f[2].id == curso_id]
-    niveles = {k: sum(1 for f in filas if f[0].nivel == k) for k in NIVELES}
-    cortes = sorted({f[1].fecha_corte for f in filas})
-    return len(filas), niveles, cortes
-
-
-INSTITUCION = 'Unidad Educativa «16 de Julio»'
-UBICACION = 'Nivel Primario · La Paz – Bolivia'
-SISTEMA = 'Sistema de Alerta Temprana de Abandono Escolar'
-NIVELES = {'ALTO': ('Alta', '#fde2e2', '#9b1c1c'), 'MEDIO': ('Media', '#fdf0d5', '#8a5a00'), 'BAJO': ('Baja', '#dcf5e8', '#166534')}
+NIVELES = {'URGENTE': ('Urgente', '#f5b5b5', '#7f1d1d'), 'ROJO': ('Rojo', '#fde2e2', '#9b1c1c'), 'AMARILLO': ('Amarillo', '#fdf0d5', '#8a5a00'),
+    'VERDE': ('Verde', '#dcf5e8', '#166534'), 'ALTO': ('Alta', '#fde2e2', '#9b1c1c'), 'MEDIO': ('Media', '#fdf0d5', '#8a5a00'),
+    'BAJO': ('Baja', '#dcf5e8', '#166534')}
 
 
 def factores_claros(a):
     """Factores con nombres comprensibles para docentes (p. ej. 'Promedio del 1.er trimestre: 66')."""
     from predictivo.explicacion import ETIQUETAS
-    valor = lambda v: f'{v:g}' if isinstance(v, (int, float)) else v
-    return '; '.join(f"{ETIQUETAS.get(f['variable'], f['variable'])}: {valor(f['valor'])}" for f in a['factores']) or 'Sin factores positivos'
+    def valor(f):
+        v = f['valor']
+        if not isinstance(v, (int, float)):
+            return v
+        return (f'{100 * v:.1f} %' if f['variable'].startswith('prop_') else f'{v:.4g}').replace('.', ',')
+    return '; '.join(f"{f.get('descripcion') or ETIQUETAS.get(f['variable'], f['variable'])}: {valor(f)}" for f in a['factores']) or 'Sin factores positivos'
 
 
 def resumen_semaforo(db, gestion, curso_id):
-    """Conteo real de predicciones por nivel (modelo vigente) en el alcance del reporte, y la fecha de corte."""
+    """Conteo por nivel con modelos anteriores al seguimiento, que no tienen perfil por dimensiones."""
     from api.dashboard import base
     filas = db.execute(base(gestion)).all()
     if curso_id is not None:
         filas = [f for f in filas if f[2].id == curso_id]
-    niveles = {k: sum(1 for f in filas if f[0].nivel == k) for k in NIVELES}
-    cortes = sorted({f[1].fecha_corte for f in filas})
-    return len(filas), niveles, cortes
+    cuenta = {k: sum(1 for f in filas if f[0].nivel == k) for k in ('ALTO', 'MEDIO', 'BAJO')}
+    return len(filas), {'URGENTE': 0, 'ROJO': cuenta['ALTO'], 'AMARILLO': cuenta['MEDIO'], 'VERDE': cuenta['BAJO']}, \
+        sorted({f[1].fecha_corte for f in filas})
 
 
 @router.get('/alertas.pdf')
@@ -139,8 +180,7 @@ def reporte_pdf(gestion: int, curso_id: int | None = None, db: Session = Depends
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
     from xml.sax.saxutils import escape
 
-    alcance, alertas = datos(db, gestion, curso_id)
-    evaluados, niveles, cortes = resumen_semaforo(db, gestion, curso_id)
+    alcance, alertas, (evaluados, niveles, cortes), nota_nivel = datos(db, gestion, curso_id)
     modelo = db.scalar(select(m.ModeloPredictivo).order_by(m.ModeloPredictivo.id.desc()))
     curso = db.get(m.Curso, curso_id) if curso_id is not None else None
     emitido = datetime.now()
@@ -168,7 +208,7 @@ def reporte_pdf(gestion: int, curso_id: int | None = None, db: Session = Depends
     story.append(Paragraph('1. Datos del reporte', seccion))
     ficha = [[b('Gestión'), p(gestion), b('Curso'), p(f'{curso.grado}° {curso.paralelo}' if curso else 'Todos los cursos')],
         [b('Fecha de corte'), p(', '.join(f'{c:%d/%m/%Y}' for c in cortes) or '—'), b('Fecha de emisión'), p(f'{emitido:%d/%m/%Y %H:%M}')],
-        [b('Modelo'), p(f'XGBoost · {modelo.version}' if modelo else '—'), b('Umbrales de prioridad'), p(umbrales)],
+        [b('Modelo'), p(f'XGBoost · {modelo.version}' if modelo else '—'), b('Umbrales del puntaje'), p(umbrales)],
         [b('Emitido por'), p(f'{user.nombre} {user.apellido} ({user.rol})'), b('Código del documento'), p(codigo)]]
     t = Table(ficha, colWidths=[3.4 * cm, 9.4 * cm, 3.8 * cm, 9.4 * cm])
     t.setStyle(TableStyle([('GRID', (0, 0), (-1, -1), .4, colors.HexColor('#cbd5e1')),
@@ -176,30 +216,29 @@ def reporte_pdf(gestion: int, curso_id: int | None = None, db: Session = Depends
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), ('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]))
     story.append(t)
 
-    story.append(Paragraph('2. Resumen del semáforo de prioridad', seccion))
+    story.append(Paragraph('2. Resumen de la alerta', seccion))
     con_intervencion = sum(1 for a in alertas if a['pasos'])
-    sem = [[p(h, head) for h in ('Estudiantes evaluados', 'Rojo · prioridad alta', 'Amarillo · prioridad media',
-            'Verde · prioridad baja (sin alerta)', 'Alertas generadas', 'Alertas con intervención')],
-        [b(evaluados), b(f"{niveles['ALTO']}  ({pct(niveles['ALTO'])})"), b(f"{niveles['MEDIO']}  ({pct(niveles['MEDIO'])})"),
-            b(f"{niveles['BAJO']}  ({pct(niveles['BAJO'])})"), b(len(alertas)), b(f'{con_intervencion} de {len(alertas)}')]]
-    t = Table(sem, colWidths=[4.2 * cm, 4.4 * cm, 4.4 * cm, 5.4 * cm, 3.6 * cm, 4.0 * cm])
+    casos = sum(1 for a in alertas if a['estado'] != 'SIN_CASO')
+    colores_sem = ('URGENTE', 'ROJO', 'AMARILLO', 'VERDE')
+    sem = [[p(h, head) for h in ('Estudiantes evaluados', 'Urgente · 5 o más faltas seguidas', 'Rojo · notas o asistencia', 'Amarillo · señales leves',
+            'Verde · sin alerta', 'Casos abiertos o cerrados', 'Casos con intervención')],
+        [b(evaluados), *(b(f'{niveles[k]}  ({pct(niveles[k])})') for k in colores_sem), b(casos), b(f'{con_intervencion} de {casos}')]]
+    t = Table(sem, colWidths=[3.4 * cm, 4.2 * cm, 4.0 * cm, 4.0 * cm, 3.6 * cm, 3.4 * cm, 3.4 * cm])
     t.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, 0), navy), ('GRID', (0, 0), (-1, -1), .4, colors.HexColor('#cbd5e1')),
-        ('BACKGROUND', (1, 1), (1, 1), colors.HexColor(NIVELES['ALTO'][1])),
-        ('BACKGROUND', (2, 1), (2, 1), colors.HexColor(NIVELES['MEDIO'][1])),
-        ('BACKGROUND', (3, 1), (3, 1), colors.HexColor(NIVELES['BAJO'][1])),
+        *(('BACKGROUND', (i, 1), (i, 1), colors.HexColor(NIVELES[k][1])) for i, k in enumerate(colores_sem, start=1)),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'), ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 5), ('BOTTOMPADDING', (0, 0), (-1, -1), 5)]))
     story.append(t)
 
     story.append(Paragraph('3. Detalle de alertas', seccion))
-    header = ['N.º', 'Estudiante', 'Curso', 'Prioridad', 'Estado', 'Factores que elevan la prioridad', 'Reglas', 'Intervenciones registradas']
+    header = ['N.º', 'Estudiante', 'Curso', 'Alerta', 'Caso', 'Por qué (dimensiones y puntaje del modelo)', 'Reglas', 'Intervenciones registradas']
     filas, estilos = [], []
     for i, a in enumerate(alertas, start=1):
-        nombre, fondo, texto = NIVELES.get(a['nivel'], (a['nivel'], '#ffffff', '#1e293b'))
+        _, fondo, texto = NIVELES.get(a['nivel'], (a['nivel'], '#ffffff', '#1e293b'))
         filas.append([p(i), b(a['etiqueta']), p(f"{a['curso']} · {a['gestion']}"),
-            Paragraph(f"<b><font color='{texto}'>{escape(nombre)}</font></b><br/>Puesto {a['prioridad']['puesto']} de {a['prioridad']['de']}",
+            Paragraph(f"<b><font color='{texto}'>{escape(nivel_texto(a))}</font></b><br/>Puesto {a['prioridad']['puesto']} de {a['prioridad']['de']}",
                 small),
-            p(ESTADOS[a['estado']]), p(factores_claros(a)), p(' '.join(a['reglas']) or '—'),
+            p(ESTADOS[a['estado']]), p(porque(a)), p(' '.join(a['reglas']) or '—'),
             [p(paso_texto(x)) for x in a['pasos']] or p('Sin intervenciones')])
         estilos.append(('BACKGROUND', (3, i), (3, i), colors.HexColor(fondo)))
     if filas:
@@ -216,7 +255,7 @@ def reporte_pdf(gestion: int, curso_id: int | None = None, db: Session = Depends
     reglas = {}
     for a in alertas:
         reglas.update(a.get('reglas_info') or {})
-    notas = [NOTA_PRIORIDAD, APOYO]
+    notas = [*nota_nivel, APOYO]
     if reglas:
         notas.append('Reglas de recomendación: ' + '; '.join(f'{k} = {v}' for k, v in sorted(reglas.items()))
             + f'. Versión {rp.VERSION} ({rp.VALIDACION}).')
@@ -296,8 +335,7 @@ def reporte_xlsx(gestion: int, curso_id: int | None = None, db: Session = Depend
     from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.table import Table as TablaExcel, TableStyleInfo
 
-    alcance, alertas = datos(db, gestion, curso_id)
-    evaluados, niveles, cortes = resumen_semaforo(db, gestion, curso_id)
+    alcance, alertas, (evaluados, niveles, cortes), nota_nivel = datos(db, gestion, curso_id)
     modelo = db.scalar(select(m.ModeloPredictivo).order_by(m.ModeloPredictivo.id.desc()))
     curso = db.get(m.Curso, curso_id) if curso_id is not None else None
     emitido = datetime.now()
@@ -309,7 +347,7 @@ def reporte_xlsx(gestion: int, curso_id: int | None = None, db: Session = Depend
     envolver = Alignment(wrap_text=True, vertical='top')
     centro = Alignment(horizontal='center', vertical='center', wrap_text=True)
     pct = lambda n: (n / evaluados) if evaluados else 0
-    columnas = ['N.º', 'Estudiante', 'Curso', 'Gestión', 'Prioridad', 'Puesto', 'Estado', 'Factores que elevan la prioridad', 'Reglas',
+    columnas = ['N.º', 'Estudiante', 'Curso', 'Gestión', 'Alerta', 'Puesto', 'Caso', 'Por qué (dimensiones y puntaje del modelo)', 'Reglas',
         'Intervenciones registradas']
     ultima = get_column_letter(len(columnas))
 
@@ -343,7 +381,7 @@ def reporte_xlsx(gestion: int, curso_id: int | None = None, db: Session = Depend
         if modelo else '—')
     ficha = [('Gestión', gestion, 'Curso', f'{curso.grado}° {curso.paralelo}' if curso else 'Todos los cursos'),
         ('Fecha de corte', ', '.join(f'{c:%d/%m/%Y}' for c in cortes) or '—', 'Fecha de emisión', f'{emitido:%d/%m/%Y %H:%M}'),
-        ('Modelo', f'XGBoost · {modelo.version}' if modelo else '—', 'Umbrales de prioridad', umbrales),
+        ('Modelo', f'XGBoost · {modelo.version}' if modelo else '—', 'Umbrales del puntaje', umbrales),
         ('Emitido por', f'{user.nombre} {user.apellido} ({user.rol})', 'Código del documento', codigo)]
     for k1, v1, k2, v2 in ficha:
         r += 1
@@ -360,11 +398,13 @@ def reporte_xlsx(gestion: int, curso_id: int | None = None, db: Session = Depend
             ws.cell(row=r, column=col).border = borde
 
     r += 2
-    fila_unida(r, '2. Resumen del semáforo de prioridad', Font(bold=True, size=11, color=NAVY))
+    fila_unida(r, '2. Resumen de la alerta', Font(bold=True, size=11, color=NAVY))
     con_intervencion = sum(1 for a in alertas if a['pasos'])
-    bloques = [('A', 'B', 'Estudiantes evaluados', evaluados, None), ('C', 'D', 'Rojo · prioridad alta', niveles['ALTO'], 'ALTO'),
-        ('E', 'F', 'Amarillo · prioridad media', niveles['MEDIO'], 'MEDIO'), ('G', 'H', 'Verde · prioridad baja (sin alerta)', niveles['BAJO'], 'BAJO'),
-        ('I', 'I', 'Alertas generadas', len(alertas), None), ('J', 'J', 'Alertas con intervención', f'{con_intervencion} de {len(alertas)}', None)]
+    casos = sum(1 for a in alertas if a['estado'] != 'SIN_CASO')
+    bloques = [('A', 'B', 'Estudiantes evaluados', evaluados, None), ('C', 'D', 'Urgente · 5 o más faltas seguidas', niveles['URGENTE'], 'URGENTE'),
+        ('E', 'F', 'Rojo · notas o asistencia', niveles['ROJO'], 'ROJO'), ('G', 'G', 'Amarillo · señales leves', niveles['AMARILLO'], 'AMARILLO'),
+        ('H', 'H', 'Verde · sin alerta', niveles['VERDE'], 'VERDE'),
+        ('I', 'I', 'Casos', casos, None), ('J', 'J', 'Casos con intervención', f'{con_intervencion} de {casos}', None)]
     for desde, hasta, titulo_b, valor, nivel in bloques:
         for fila_b, contenido, es_titulo in ((r + 1, titulo_b, True), (r + 2, valor, False)):
             if desde != hasta:
@@ -392,9 +432,9 @@ def reporte_xlsx(gestion: int, curso_id: int | None = None, db: Session = Depend
     ws.row_dimensions[r].height = 30
     for i, a in enumerate(alertas, start=1):
         r += 1
-        nombre_nivel, fondo, texto = NIVELES.get(a['nivel'], (a['nivel'], '#FFFFFF', '#1E293B'))
-        valores = [i, a['etiqueta'], a['curso'], a['gestion'], nombre_nivel, f"{a['prioridad']['puesto']} de {a['prioridad']['de']}",
-            ESTADOS[a['estado']], factores_claros(a), ' '.join(a['reglas']) or '—',
+        _, fondo, texto = NIVELES.get(a['nivel'], (a['nivel'], '#FFFFFF', '#1E293B'))
+        valores = [i, a['etiqueta'], a['curso'], a['gestion'], nivel_texto(a), f"{a['prioridad']['puesto']} de {a['prioridad']['de']}",
+            ESTADOS[a['estado']], porque(a), ' '.join(a['reglas']) or '—',
             '\n'.join(paso_texto(x) for x in a['pasos']) or 'Sin intervenciones']
         for col, valor in enumerate(valores, start=1):
             c = ws.cell(row=r, column=col, value=valor)
@@ -415,7 +455,7 @@ def reporte_xlsx(gestion: int, curso_id: int | None = None, db: Session = Depend
     reglas = {}
     for a in alertas:
         reglas.update(a.get('reglas_info') or {})
-    notas = [NOTA_PRIORIDAD, APOYO]
+    notas = [*nota_nivel, APOYO]
     if reglas:
         notas.append('Reglas de recomendación: ' + '; '.join(f'{k} = {v}' for k, v in sorted(reglas.items()))
             + f'. Versión {rp.VERSION} ({rp.VALIDACION}).')
@@ -447,12 +487,12 @@ def reporte_xlsx(gestion: int, curso_id: int | None = None, db: Session = Depend
     ws.oddFooter.right.size = 7
 
     hoja = wb.create_sheet('Datos')
-    encabezado = ['Estudiante', 'Gestión', 'Curso', 'Prioridad', 'Puesto', 'De', 'Estado', 'Responsable (rol)', 'Factores', 'Reglas',
+    encabezado = ['Estudiante', 'Gestión', 'Curso', 'Alerta', 'Puesto', 'De', 'Caso', 'Responsable (rol)', 'Por qué', 'Reglas',
         'Intervenciones', 'Modelo', 'Fecha de corte']
     hoja.append(encabezado)
     for a in alertas:
-        hoja.append([a['etiqueta'], a['gestion'], a['curso'], NIVELES.get(a['nivel'], (a['nivel'],))[0], a['prioridad']['puesto'],
-            a['prioridad']['de'], ESTADOS[a['estado']], a['responsable']['rol'], factores_claros(a), ' '.join(a['reglas']),
+        hoja.append([a['etiqueta'], a['gestion'], a['curso'], nivel_texto(a), a['prioridad']['puesto'],
+            a['prioridad']['de'], ESTADOS[a['estado']], a['responsable']['rol'], porque(a), ' '.join(a['reglas']),
             ' || '.join(paso_texto(x) for x in a['pasos']), a['modelo'], a['fecha_corte']])
     for (celda,) in hoja.iter_rows(min_row=2, min_col=13, max_col=13):
         celda.number_format = 'DD/MM/YYYY'

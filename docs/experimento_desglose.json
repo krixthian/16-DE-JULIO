@@ -1,0 +1,304 @@
+{
+ "criterio": "Criterio fijado el 23/11/2026 ANTES de ver resultados: se adopta solo si el IC 95 % de la diferencia de AP (23 - 15) queda\npor encima de cero en mayo, junio o julio y en ningún mes queda por debajo de cero. Validación: StratifiedGroupKFold\n5 x 20 por estudiante, mismos pliegues para ambos; IC por bootstrap de estudiantes pareado. Mismos hiperparámetros.\nLos archivos de origen no están verificados (docs/CONSISTENCIA_REGISTROS.md): es una prueba técnica.",
+ "variables_nuevas": {
+  "ser_T1": "Ser: promedio de las áreas (1.er trimestre)",
+  "saber_T1": "Saber: promedio de las áreas (1.er trimestre)",
+  "hacer_T1": "Hacer: promedio de las áreas (1.er trimestre)",
+  "decidir_T1": "Decidir: promedio de las áreas (1.er trimestre)",
+  "autoevaluacion_T1": "Autoevaluación: promedio de las áreas (1.er trimestre)",
+  "dimension_minima_T1": "Dimensión más baja (1.er trimestre)",
+  "bajas_T1": "Notas de Saber o Hacer por debajo de 51 (1.er trimestre)",
+  "cambio_saber_hacer": "Cambio de Saber y Hacer del 1.er al 2.º trimestre"
+ },
+ "matriculas": 1889,
+ "abandonos": 11,
+ "meses": [
+  {
+   "mes": "feb",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 0.007546508060491608,
+    "vp": 2.65,
+    "fa": 271.65,
+    "ic95": [
+     0.0033188976802123508,
+     0.018484974169531973
+    ]
+   },
+   "23": {
+    "ap": 0.007586924000488914,
+    "vp": 2.75,
+    "fa": 271.3,
+    "ic95": [
+     0.003361099430383678,
+     0.01860527891271598
+    ]
+   },
+   "diferencia": 4.041593999730593e-05,
+   "ic95_diferencia": [
+    -0.00015983695944311822,
+    0.0006385172731149362
+   ],
+   "peso_desglose": {}
+  },
+  {
+   "mes": "mar",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 0.014879288145807934,
+    "vp": 1.8,
+    "fa": 88.2,
+    "ic95": [
+     0.0037953774933202843,
+     0.056177731373699906
+    ]
+   },
+   "23": {
+    "ap": 0.014593936232923363,
+    "vp": 1.75,
+    "fa": 93.6,
+    "ic95": [
+     0.0035748733367174414,
+     0.05505617494534074
+    ]
+   },
+   "diferencia": -0.0002853519128845714,
+   "ic95_diferencia": [
+    -0.004361403115416143,
+    0.005202533970897459
+   ],
+   "peso_desglose": {}
+  },
+  {
+   "mes": "abr",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 0.016440990145876667,
+    "vp": 0.8,
+    "fa": 39.4,
+    "ic95": [
+     0.005674271824948664,
+     0.053181139115350724
+    ]
+   },
+   "23": {
+    "ap": 0.012953741375157946,
+    "vp": 0.2,
+    "fa": 22.75,
+    "ic95": [
+     0.004967963428115368,
+     0.03750006036316992
+    ]
+   },
+   "diferencia": -0.0034872487707187216,
+   "ic95_diferencia": [
+    -0.019923842660403965,
+    0.0032358076441303617
+   ],
+   "peso_desglose": {
+    "ser_T1": 0.0221,
+    "saber_T1": 0.0887,
+    "hacer_T1": 0.0781,
+    "decidir_T1": 0.0231,
+    "autoevaluacion_T1": 0.0009,
+    "dimension_minima_T1": 0.0125
+   }
+  },
+  {
+   "mes": "may",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 0.009152063392641338,
+    "vp": 0.05,
+    "fa": 36.55,
+    "ic95": [
+     0.004628802434718097,
+     0.019541009946472978
+    ]
+   },
+   "23": {
+    "ap": 0.00929924449469019,
+    "vp": 0.05,
+    "fa": 26.35,
+    "ic95": [
+     0.004284484702042727,
+     0.02244068015098103
+    ]
+   },
+   "diferencia": 0.0001471811020488517,
+   "ic95_diferencia": [
+    -0.0015169625251026041,
+    0.004230316930868852
+   ],
+   "peso_desglose": {
+    "ser_T1": 0.0154,
+    "saber_T1": 0.0465,
+    "hacer_T1": 0.0725,
+    "decidir_T1": 0.0242,
+    "autoevaluacion_T1": 0.0028,
+    "dimension_minima_T1": 0.0087
+   }
+  },
+  {
+   "mes": "jun",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 0.8031767119278082,
+    "vp": 8.7,
+    "fa": 6.0,
+    "ic95": [
+     0.5541102051595795,
+     0.9798739575375605
+    ]
+   },
+   "23": {
+    "ap": 0.7932768403271878,
+    "vp": 8.55,
+    "fa": 5.55,
+    "ic95": [
+     0.5464336161602191,
+     0.9705995411833053
+    ]
+   },
+   "diferencia": -0.009899871600620336,
+   "ic95_diferencia": [
+    -0.02137173646030467,
+    -0.0007248918227740916
+   ],
+   "peso_desglose": {
+    "ser_T1": 0.0015,
+    "saber_T1": 0.0049,
+    "hacer_T1": 0.0083,
+    "dimension_minima_T1": 0.0254
+   }
+  },
+  {
+   "mes": "jul",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 0.7905934686859956,
+    "vp": 8.7,
+    "fa": 4.7,
+    "ic95": [
+     0.5310086628429865,
+     0.9755217874496008
+    ]
+   },
+   "23": {
+    "ap": 0.7799001562111763,
+    "vp": 8.55,
+    "fa": 4.3,
+    "ic95": [
+     0.5314832319149007,
+     0.9659911452586083
+    ]
+   },
+   "diferencia": -0.010693312474819305,
+   "ic95_diferencia": [
+    -0.028535934351362695,
+    0.004192142942363741
+   ],
+   "peso_desglose": {
+    "saber_T1": 0.0055,
+    "hacer_T1": 0.0189,
+    "autoevaluacion_T1": 0.0003,
+    "dimension_minima_T1": 0.0597
+   }
+  },
+  {
+   "mes": "ago",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 0.7538184727107031,
+    "vp": 8.3,
+    "fa": 4.2,
+    "ic95": [
+     0.5011068691821642,
+     0.9514756615325554
+    ]
+   },
+   "23": {
+    "ap": 0.7211730505654474,
+    "vp": 7.65,
+    "fa": 4.65,
+    "ic95": [
+     0.45952584218405196,
+     0.9361727883686247
+    ]
+   },
+   "diferencia": -0.032645422145255676,
+   "ic95_diferencia": [
+    -0.12157989713077694,
+    0.01510325335534515
+   ],
+   "peso_desglose": {
+    "saber_T1": 0.0,
+    "hacer_T1": 0.0221,
+    "autoevaluacion_T1": 0.0002,
+    "dimension_minima_T1": 0.0652,
+    "cambio_saber_hacer": 0.0482
+   }
+  },
+  {
+   "mes": "sep",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 1.0,
+    "vp": 9.75,
+    "fa": 0.0,
+    "ic95": [
+     1.0,
+     1.0
+    ]
+   },
+   "23": {
+    "ap": 1.0,
+    "vp": 9.75,
+    "fa": 0.0,
+    "ic95": [
+     1.0,
+     1.0
+    ]
+   },
+   "diferencia": 0.0,
+   "ic95_diferencia": [
+    0.0,
+    0.0
+   ],
+   "peso_desglose": {}
+  },
+  {
+   "mes": "oct",
+   "azar": 0.005823186871360508,
+   "15": {
+    "ap": 1.0,
+    "vp": 9.75,
+    "fa": 0.0,
+    "ic95": [
+     1.0,
+     1.0
+    ]
+   },
+   "23": {
+    "ap": 1.0,
+    "vp": 9.75,
+    "fa": 0.0,
+    "ic95": [
+     1.0,
+     1.0
+    ]
+   },
+   "diferencia": 0.0,
+   "ic95_diferencia": [
+    0.0,
+    0.0
+   ],
+   "peso_desglose": {}
+  }
+ ],
+ "mejora_clara": [],
+ "empeora_claro": [
+  "jun"
+ ],
+ "se_adopta": false
+}

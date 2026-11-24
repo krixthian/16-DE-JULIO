@@ -1,0 +1,16 @@
+# Ejecución: 2026-11-13 23:30:42 | Python 3.12.2 | Comando (desde backend): python -m unittest test_predictivo.FeaturesTests -v
+test_context_uses_latest_full_form_without_fill_from_previous (test_predictivo.FeaturesTests.test_context_uses_latest_full_form_without_fill_from_previous) ... ok
+test_enrollment_origin_and_start_boundary (test_predictivo.FeaturesTests.test_enrollment_origin_and_start_boundary) ... ok
+test_invalid_grades_and_duplicates_rejected (test_predictivo.FeaturesTests.test_invalid_grades_and_duplicates_rejected) ... ok
+test_labels_do_not_enter_feature_contract (test_predictivo.FeaturesTests.test_labels_do_not_enter_feature_contract) ... ok
+test_late_correction_reconstructs_original_value (test_predictivo.FeaturesTests.test_late_correction_reconstructs_original_value) ... ok
+test_later_enrollment_does_not_require_unavailable_past_calendar (test_predictivo.FeaturesTests.test_later_enrollment_does_not_require_unavailable_past_calendar) ... ok
+test_outcomes_require_complete_followup_and_exclude_transfers (test_predictivo.FeaturesTests.test_outcomes_require_complete_followup_and_exclude_transfers) ... ok
+test_pending_and_exempt_are_not_failures (test_predictivo.FeaturesTests.test_pending_and_exempt_are_not_failures) ... ok
+test_scales_missing_and_future_records (test_predictivo.FeaturesTests.test_scales_missing_and_future_records) ... ok
+test_unknown_breaks_absence_streak_and_non_schoolday_excluded (test_predictivo.FeaturesTests.test_unknown_breaks_absence_streak_and_non_schoolday_excluded) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.003s
+
+OK

@@ -96,10 +96,10 @@ def asistencia_t1(wb, gestion, meses=MESES_T1):
     return {k: sorted(v) for k, v in out.items()}
 
 
-def notas_t1(wb, area):
+def notas_t1(wb, area, trimestre=1):
     """{orden: {'SER': [..], 'SABER': [..], 'HACER': [..], 'DECIDIR': [..], 'promedios': {dim: x},
     'autoevaluacion': x, 'nota': x}} de la hoja '<AREA> 1'. Las actividades quedan en el orden del registro."""
-    filas = list(wb[f'{area} 1'].iter_rows(values_only=True))
+    filas = list(wb[f'{area} {trimestre}'].iter_rows(values_only=True))
     # Fila de dimensiones (SER/5, SABER/45, ...) y fila de actividades (con 'PROMEDIO' al cierre de cada una).
     fd = next(i for i, f in enumerate(filas) if any(_txt(v).upper().startswith('SABER') for v in f))
     inicios = sorted((j, _txt(v).upper().split('/')[0].strip()) for j, v in enumerate(filas[fd])

@@ -141,14 +141,60 @@ def resumen(db: Session = Depends(get_db)):
         'origen': modelo.origen_datos, 'umbral_medio': float(modelo.umbral_medio), 'umbral_alto': float(modelo.umbral_alto)}}
 
 
-REGLA_ACADEMICA = ('Regla RP02: al menos un área con nota menor a 51 ("en desarrollo", escala de la Ley 070) al cierre del '
-    '1.er trimestre. No es una predicción del modelo: señala bajo rendimiento que el modelo no prioriza, porque en el historial '
-    'esos estudiantes no abandonaron.')
+REGLA_ACADEMICA = ('Regla RP02: al menos un área con promedio menor a 51 ("en desarrollo", escala de la Ley 070) en el '
+    '1.er trimestre, con las notas registradas en el sistema. No es una predicción del modelo: señala bajo rendimiento, que en el '
+    'historial casi no se asoció al abandono; sirve para reforzamiento pedagógico.')
 
 
-NOTA_INASISTENCIA = ('Regla operativa, no es una predicción del modelo. Validada con los registros completos de la institución '
-    '2021-2025: con 5 faltas seguidas se detectaron los 11 abandonos de cinco gestiones, sin falsas alarmas entre 1878 estudiantes '
-    'que continuaron (ninguno pasó de 3 faltas seguidas), unos 84 días antes de que la escuela registre el abandono al cierre del trimestre.')
+NOTA_INASISTENCIA = ('Regla operativa, no es una predicción del modelo. Probada en los archivos recibidos de 2021-2025 (origen '
+    'no verificado): con 5 faltas seguidas se marcan 11 de 11 abandonos y 0 de 1878 matrículas que continuaron; en versiones posteriores de esos '
+    'archivos, entre 46 y 49 de 1728. La alerta sale unos 84 días antes del cierre del trimestre. Es retrospectivo y el abandono se definió con la asistencia.')
+
+
+@router.get('/alertas/seguimiento/gestiones')
+def seguimiento_por_gestion(db: Session = Depends(get_db)):
+    """Resumen por gestión y total: alerta inmediata (5 faltas seguidas) revisada día por día en todo el año, frente al
+    abandono confirmado (situaciones escolares). Solo lectura. Una "falsa alarma" es un estudiante que llegó a 5 faltas
+    seguidas y no tiene abandono confirmado; en la gestión en curso eso puede cambiar."""
+    from collections import defaultdict
+    from predictivo import seguimiento as sg
+    k = sg.RACHA_ALERTA
+    info = {mid: (anio, origen) for mid, anio, origen in db.execute(select(m.Matricula.id, m.Gestion.anio, m.Matricula.origen)
+        .join(m.Curso, m.Curso.id == m.Matricula.curso_id).join(m.Gestion, m.Gestion.id == m.Curso.gestion_id))}
+    dias = defaultdict(list)
+    for mid, fecha, estado in db.execute(select(m.Asistencia.matricula_id, m.JornadaClase.fecha, m.Asistencia.estado)
+            .join(m.JornadaClase, m.JornadaClase.id == m.Asistencia.jornada_id).where(m.JornadaClase.es_lectiva == True)):
+        dias[mid].append((fecha, estado))
+    alerta = {}
+    for mid, regs in dias.items():
+        racha = 0
+        for fecha, estado in sorted(regs):
+            racha = racha + 1 if estado == 'FALTA' else 0
+            if racha >= k:
+                alerta[mid] = fecha
+                break
+    abandono = set(db.scalars(select(m.SituacionEscolar.matricula_id).where(m.SituacionEscolar.tipo == 'ABANDONO_CONFIRMADO')))
+    filas = {}
+    for mid, (anio, origen) in info.items():
+        f = filas.setdefault(anio, dict(gestion=anio, simulada=False, matriculas=0, con_asistencia=0, alertas_inmediatas=0,
+            abandonos_confirmados=0, detectados=0, falsas_alarmas=0))
+        f['matriculas'] += 1
+        f['simulada'] |= origen == 'SIMULADO'
+        f['con_asistencia'] += mid in dias
+        f['alertas_inmediatas'] += mid in alerta
+        f['abandonos_confirmados'] += mid in abandono
+        f['detectados'] += mid in alerta and mid in abandono
+        f['falsas_alarmas'] += mid in alerta and mid not in abandono
+    gestiones = sorted((f for f in filas.values() if f['con_asistencia']), key=lambda f: -f['gestion'])
+    for f in gestiones:
+        f['en_curso'] = f['simulada'] or f['gestion'] >= date.today().year
+        if f['en_curso']:  # el año no cerró: aún no se sabe quién abandonó
+            f['detectados'] = f['falsas_alarmas'] = f['abandonos_confirmados'] = None
+    reales = [f for f in gestiones if not f['en_curso']]
+    total = {c: sum(f[c] for f in reales) for c in ('matriculas', 'con_asistencia', 'alertas_inmediatas', 'abandonos_confirmados', 'detectados', 'falsas_alarmas')}
+    return {'racha_alerta': k, 'gestiones': gestiones, 'total_reales': dict(gestiones=[f['gestion'] for f in reales], **total),
+        'nota': 'Alerta inmediata revisada día por día en todo el año. El total general suma solo las gestiones no simuladas; '
+            'las gestiones simuladas se muestran aparte y no tienen abandonos confirmados registrados.'}
 
 
 @router.get('/alertas/seguimiento')
@@ -156,12 +202,52 @@ def seguimiento_continuo(gestion: int | None = None, fecha: date | None = None, 
     """Riesgo a la fecha (seguimiento continuo): XGBoost del mes en curso con lo registrado hasta `fecha`, más la alerta
     inmediata de 5 faltas seguidas. Solo lectura. Por defecto: la gestión más reciente y su último día con asistencia."""
     from predictivo import seguimiento as sg
-    if gestion is None:
-        gestion = db.scalar(select(func.max(m.Gestion.anio)))
+    ultima = db.scalar(select(func.max(m.Gestion.anio)))
+    gestion = gestion or ultima
     try:
-        return sg.calcular(db, gestion, fecha)
+        r = sg.calcular(db, gestion, fecha)
     except LookupError as e:
         raise HTTPException(404, str(e))
+    # Apertura automática (decisión de Dirección): solo al mirar HOY la gestión en curso; las fechas pasadas no escriben.
+    r['casos_abiertos_ahora'] = 0
+    r['gestion_en_curso'] = ultima
+    if fecha is None and gestion == ultima and r['alertas']:
+        r['casos_abiertos_ahora'] = sg.abrir_inmediatas(db, r)
+        db.commit()
+    casos = sg.casos_abiertos(db, [a['matricula_id'] for a in r['alertas']])
+    for a in r['alertas']:
+        c = casos.get(a['matricula_id'])
+        a['caso'] = c and {'id': c[0], 'estado': c[1]}
+    return r
+
+
+class AperturaCaso(Entrada):
+    matricula_id: int
+    gestion: int
+    fecha: date | None = None
+
+
+@router.post('/alertas/seguimiento/abrir', status_code=201)
+def abrir_caso(data: AperturaCaso, db: Session = Depends(get_db), user=Depends(seguimiento)):
+    """Abre como caso una alerta del seguimiento (prioridad roja o amarilla, o inmediata) para asignar responsable e intervenciones."""
+    from predictivo import seguimiento as sg
+    mat = db.get(m.Matricula, data.matricula_id)
+    if mat is None:
+        raise HTTPException(404, 'Matrícula no encontrada.')
+    if data.gestion != db.scalar(select(func.max(m.Gestion.anio))):
+        raise HTTPException(422, 'Los casos se abren en la gestión en curso; las gestiones pasadas son de consulta.')
+    try:
+        r = sg.calcular(db, data.gestion, data.fecha, solo_cursos=[mat.curso_id])
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    fila = next((a for a in r['alertas'] if a['matricula_id'] == mat.id), None)
+    if fila is None:
+        raise HTTPException(422, 'La matrícula no tiene asistencia registrada a esa fecha.')
+    if fila['perfil']['nivel'] == 'VERDE':
+        raise HTTPException(422, 'Solo se abren casos con alguna alerta; este estudiante está en verde.')
+    caso_id, nuevo = sg.abrir_caso(db, r, fila, user, usuario=user)
+    db.commit()
+    return {'alerta_id': caso_id, 'nuevo': nuevo, 'alerta': responder(db, [obtener(db, caso_id)])[0]}
 
 
 @router.get('/alertas/inasistencia')
@@ -169,8 +255,8 @@ def inasistencia_continua(dias: int = 5, gestion: int | None = None, db: Session
     """Alerta operativa (regla, no modelo): estudiantes con `dias` o más faltas seguidas al último registro.
 
     Usa la asistencia diaria y la asistencia por materia (un día es falta si faltó a todas las horas registradas).
-    Validada con los registros completos de la institución 2021-2025 (docs/experimento_seguimiento_mensual.json):
-    con 5 faltas seguidas detecta 11 de 11 abandonos y 0 falsas alarmas entre 1878 estudiantes que continuaron.
+    Probada en los archivos recibidos 2021-2025, de origen no verificado (docs/experimento_seguimiento_mensual.json,
+    docs/CONSISTENCIA_REGISTROS.md): 11 de 11 abandonos y 0 de 1878 matrículas que continuaron; retrospectivo.
     """
     from predictivo import asistencia_materia as am
     if not 2 <= dias <= 30:
@@ -202,9 +288,8 @@ def inasistencia_continua(dias: int = 5, gestion: int | None = None, db: Session
         if mat.fecha_fin is not None and mat.fecha_fin < r['ultimo_registro']:
             continue
         curso, est = db.get(m.Curso, mat.curso_id), db.get(m.Estudiante, mat.estudiante_id)
-        gestion = db.get(m.Gestion, curso.gestion_id)
         out.append({'matricula_id': mat_id, 'estudiante': est.codigo_anonimo, 'curso_id': curso.id, 'curso': f'{curso.grado}° {curso.paralelo}',
-            'gestion': gestion.anio, **r})
+            'gestion': gestion, **r})
     out.sort(key=lambda x: (-x['racha'], x['gestion'], x['curso']))
     return {'dias': dias, 'gestion': gestion, 'total': len(out), 'alertas': out,
         'nota': NOTA_INASISTENCIA}
@@ -212,30 +297,56 @@ def inasistencia_continua(dias: int = 5, gestion: int | None = None, db: Session
 
 @router.get('/alertas/academicas')
 def academicas(gestion: int | None = None, db: Session = Depends(get_db)):
-    """Riesgo académico por regla explícita (solo lectura): matrículas con áreas bajo 51, con o sin alerta del modelo."""
-    modelo = select(func.max(m.ModeloPredictivo.id)).scalar_subquery()
-    query = (select(m.CortePredictivo, m.Prediccion, m.Curso, m.Gestion, m.Estudiante, m.Alerta.id).select_from(m.CortePredictivo)
-        .join(m.Prediccion, (m.Prediccion.corte_id == m.CortePredictivo.id) & (m.Prediccion.modelo_id == modelo))
-        .join(m.Matricula, m.Matricula.id == m.CortePredictivo.matricula_id).join(m.Curso, m.Curso.id == m.Matricula.curso_id)
+    """Riesgo académico por regla explícita (solo lectura): matrículas con áreas bajo 51 en el 1.er trimestre, calculado con
+    las notas registradas en la base (promedio por área), con el estado de su caso si lo tiene."""
+    from collections import defaultdict
+    from predictivo import desglose as dg, seguimiento as sg
+    q = (select(m.Calificacion.matricula_id, m.Materia.sigla, m.Materia.nombre, m.Evaluacion.titulo, m.Calificacion.puntaje, m.Evaluacion.puntaje_maximo,
+            m.Gestion.anio, m.Curso.id, m.Curso.grado, m.Curso.paralelo, m.Estudiante.codigo_anonimo, m.Matricula.origen)
+        .join(m.Evaluacion, m.Evaluacion.id == m.Calificacion.evaluacion_id).join(m.Periodo, m.Periodo.id == m.Evaluacion.periodo_id)
+        .join(m.AsignacionDocente, m.AsignacionDocente.id == m.Evaluacion.asignacion_id).join(m.Materia, m.Materia.id == m.AsignacionDocente.materia_id)
+        .join(m.Matricula, m.Matricula.id == m.Calificacion.matricula_id).join(m.Curso, m.Curso.id == m.Matricula.curso_id)
         .join(m.Gestion, m.Gestion.id == m.Curso.gestion_id).join(m.Estudiante, m.Estudiante.id == m.Matricula.estudiante_id)
-        .outerjoin(m.Alerta, m.Alerta.prediccion_id == m.Prediccion.id))
+        .where(m.Periodo.numero == 1, m.Calificacion.estado == 'CALIFICADA', m.Evaluacion.titulo.not_like('Actividad del %'), m.Evaluacion.titulo.not_like('Cierre del %')))
     if gestion is not None:
-        query = query.where(m.Gestion.anio == gestion)
+        q = q.where(m.Gestion.anio == gestion)
+    notas, info = defaultdict(lambda: defaultdict(list)), {}
+    registros = defaultdict(list)
+    for mid, sigla, nombre, titulo, puntaje, maximo, anio, cid, grado, par, codigo, origen in db.execute(q):
+        registros[mid].append(((sigla, nombre), titulo, float(puntaje) / float(maximo) * 100))
+        info[mid] = (anio, cid, f'{grado}° {par}', grado, codigo, origen)
+    for mid, v in registros.items():
+        for area, nota in dg.notas_de_area(v):
+            notas[mid][area].append(nota)
+    # Respaldo: matrículas sin calificaciones T1 registradas pero con notas por área guardadas en un corte (carga histórica).
+    qc = (select(m.CortePredictivo.matricula_id, m.CortePredictivo.variables, m.Gestion.anio, m.Curso.id, m.Curso.grado, m.Curso.paralelo,
+            m.Estudiante.codigo_anonimo, m.Matricula.origen)
+        .join(m.Matricula, m.Matricula.id == m.CortePredictivo.matricula_id).join(m.Curso, m.Curso.id == m.Matricula.curso_id)
+        .join(m.Gestion, m.Gestion.id == m.Curso.gestion_id).join(m.Estudiante, m.Estudiante.id == m.Matricula.estudiante_id))
+    if gestion is not None:
+        qc = qc.where(m.Gestion.anio == gestion)
+    for mid, variables, anio, cid, grado, par, codigo, origen in db.execute(qc):
+        ind = (variables or {}).get('indicadores') or {}
+        if mid in notas or not any(ind.get(f'{a}_T1') is not None for a in ex.NOMBRES_AREAS):
+            continue
+        for a, nombre in ex.NOMBRES_AREAS.items():
+            if ind.get(f'{a}_T1') is not None:
+                notas[mid][(a, nombre)].append(float(ind[f'{a}_T1']))
+        info[mid] = (anio, cid, f'{grado}° {par}', grado, codigo, origen)
+    casos_ab = sg.casos_abiertos(db, list(notas))
     casos = []
-    for corte, pred, curso, g, est, alerta_id in db.execute(query).all():
-        ind = (corte.variables or {}).get('indicadores') or {}
-        bajas = sorted(((ex.NOMBRES_AREAS[a], ind[f'{a}_T1']) for a in ex.NOMBRES_AREAS
-            if ind.get(f'{a}_T1') is not None and ind[f'{a}_T1'] < 51), key=lambda x: x[1])
+    for mid, por_area in notas.items():
+        areas = {k: round(sum(v) / len(v)) for k, v in por_area.items()}
+        bajas = sorted(((n, v) for (_, n), v in areas.items() if v < 51), key=lambda x: x[1])
         if not bajas:
             continue
-        reglas = [r['codigo'] for r in rp.evaluar(ind, pred.nivel) if r['codigo'] != 'RP05']
-        casos.append({'matricula_id': corte.matricula_id, 'estudiante': est.codigo_anonimo, 'gestion': g.anio, 'curso_id': curso.id,
-            'curso': f'{curso.grado}° {curso.paralelo}', 'grado': curso.grado, 'areas_bajo_51': [{'area': n, 'nota': v} for n, v in bajas],
-            'promedio_T1': ind.get('promedio_T1'), 'faltas_T1': ind.get('faltas_T1'), 'asistencia': ind.get('tasa_asistencia_T1'),
-            'modelo': {'nivel': pred.nivel, 'puntaje': float(pred.probabilidad), 'alerta_id': alerta_id}, 'reglas': reglas})
-    casos.sort(key=lambda c: (-c['gestion'], -len(c['areas_bajo_51']), c['promedio_T1'] or 0))
-    sin_alerta = [c for c in casos if c['modelo']['alerta_id'] is None]
-    return {'criterio': REGLA_ACADEMICA, 'total': len(casos), 'sin_alerta_del_modelo': len(sin_alerta),
+        anio, cid, curso, grado, codigo, origen = info[mid]
+        caso = casos_ab.get(mid)
+        casos.append({'matricula_id': mid, 'estudiante': codigo, 'origen': origen, 'gestion': anio, 'curso_id': cid, 'curso': curso, 'grado': grado,
+            'areas_bajo_51': [{'area': n, 'nota': v} for n, v in bajas], 'promedio_T1': round(sum(areas.values()) / len(areas)),
+            'caso': caso and {'id': caso[0], 'estado': caso[1]}, 'reglas': ['RP02'] + (['RP01'] if sum(areas.values()) / len(areas) <= 68 else [])})
+    casos.sort(key=lambda c: (-c['gestion'], -len(c['areas_bajo_51']), c['promedio_T1'], c['matricula_id']))
+    return {'criterio': REGLA_ACADEMICA, 'total': len(casos), 'sin_caso': sum(1 for c in casos if not c['caso']),
         'gestiones': sorted({c['gestion'] for c in casos}, reverse=True), 'casos': casos}
 
 
@@ -400,6 +511,16 @@ def explicacion(alert_id: int, db: Session = Depends(get_db)):
     """Por qué la alerta tiene ese nivel: todos los aportes del modelo, en lenguaje claro y comparados con el curso."""
     row = obtener(db, alert_id)
     alerta, pred, modelo, corte, curso, gestion = row[:6]
+    if modelo.version.startswith('seguimiento'):
+        from predictivo import seguimiento as sg
+        try:
+            curso_hoy = sg.calcular(db, gestion.anio, corte.fecha_corte, solo_cursos=[curso.id])['alertas']
+            return sg.explicar(corte, pred, float(modelo.umbral_medio), float(modelo.umbral_alto), f'{curso.grado}° {curso.paralelo}', gestion.anio,
+                companeros=[a['indicadores'] for a in curso_hoy if a['matricula_id'] != corte.matricula_id],
+                vigente=next((a['indicadores'] for a in curso_hoy if a['matricula_id'] == corte.matricula_id), None),
+                dia_regla=sg.dia_de_la_regla(db, db.get(m.Matricula, corte.matricula_id), corte.fecha_corte))
+        except LookupError as error:
+            raise HTTPException(503, str(error))
     try:
         model = ex.cargar_modelo(modelo.artefacto_uri, modelo.artefacto_sha256)
     except (OSError, ValueError) as error:

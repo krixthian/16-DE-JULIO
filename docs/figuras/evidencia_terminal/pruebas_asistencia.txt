@@ -1,0 +1,7 @@
+# Ejecución: 2026-11-13 23:30:32 | Python 3.12.2 | Comando (desde backend): python -m unittest test_asistencia -v
+test_daily_register (test_asistencia.AsistenciaTests.test_daily_register) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.321s
+
+OK
