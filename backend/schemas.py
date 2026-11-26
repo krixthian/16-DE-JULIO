@@ -24,7 +24,20 @@ class UsuarioCreate(UsuarioBase):
     def password_length(cls, value):
         if len(value.encode('utf-8')) > 72:
             raise ValueError('La contraseña no puede superar 72 bytes.')
+        faltan = requisitos_faltantes(value)
+        if faltan:
+            raise ValueError('La contraseña debe tener ' + ', '.join(faltan) + '.')
         return value
+
+
+def requisitos_faltantes(clave):
+    """Requisitos de contraseña segura que no se cumplen (los mismos que muestra el formulario de usuarios)."""
+    return [texto for cumple, texto in (
+        (len(clave) >= 8, 'al menos 8 caracteres'),
+        (any(c.isupper() for c in clave), 'una letra mayúscula'),
+        (any(c.isdigit() for c in clave), 'un número'),
+        (any(not c.isalnum() and not c.isspace() for c in clave), 'un carácter especial (por ejemplo ! @ # $ %)'),
+    ) if not cumple]
 
 class UsuarioUpdate(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True,extra='forbid')

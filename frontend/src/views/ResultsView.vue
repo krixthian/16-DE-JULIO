@@ -7,7 +7,7 @@ import AyudaPantalla from '../components/AyudaPantalla.vue'
 import PanelPlegable from '../components/PanelPlegable.vue'
 ChartJS.register(BarElement, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend)
 
-const data=ref(null),busy=ref(false),error=ref(''),showImportance=ref(false),tab=ref('vigente'),mes=ref('abr')
+const data=ref(null),busy=ref(false),error=ref(''),showImportance=ref(false),tab=ref('vigente'),mes=ref('jun')
 const dark=ref(document.documentElement.classList.contains('dark'))
 const observer=new MutationObserver(()=>{dark.value=document.documentElement.classList.contains('dark')})
 const message=e=>e.response?.data?.detail||'No se pudo conectar con el servidor.'
@@ -107,11 +107,10 @@ onBeforeUnmount(()=>observer.disconnect())
   <p v-if="busy&&!data" class="mt-6 text-slate-500">Cargando…</p>
   <template v-if="data">
    <div class="flex flex-wrap gap-2 mt-6 border-b border-slate-200 dark:border-slate-700" role="tablist">
-    <button v-for="[k,l] in [['vigente','Modelo vigente'],['anterior','Modelo anterior']]" :key="k" role="tab" :aria-selected="tab===k" @click="tab=k" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab===k?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">{{ l }}</button>
+    <button v-for="[k,l] in [['vigente','Modelo vigente']]" :key="k" role="tab" :aria-selected="tab===k" @click="tab=k" class="px-4 py-2 -mb-px border-b-2 text-sm font-medium" :class="tab===k?'border-blue-600 text-blue-700 dark:text-blue-300':'border-transparent text-slate-500'">{{ l }}</button>
    </div>
    <!-- Seguimiento continuo: modelo vigente -->
    <section v-if="tab==='vigente'&&seg" class="mt-5">
-    <p class="rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-3 text-sm"><strong>En una frase:</strong> detecta que el estudiante dejó de venir; no lo predice antes de que ocurra. De febrero a mayo el modelo no supera al azar.</p>
     <div v-if="corte" class="mt-5">
      <div class="flex flex-wrap items-center gap-3"><label for="mesResultados" class="text-sm font-semibold">Resultados al cierre de</label>
       <select id="mesResultados" v-model="mes" class="rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-1.5 text-sm"><option v-for="c in seg.cortes" :key="c.mes" :value="c.mes">{{ mesLargo[c.mes] }}{{ c.mes==='abr'?' (1.er trimestre)':'' }}</option></select></div>
@@ -140,16 +139,6 @@ onBeforeUnmount(()=>observer.disconnect())
       <td class="py-2 pr-3">{{ mesLargo[c.mes] }}</td><td class="py-2 pr-3 text-right tabular-nums">{{ n(c.average_precision,3) }} <span class="text-xs text-slate-500">[{{ n(c.ic95_ap?.[0],2) }} – {{ n(c.ic95_ap?.[1],2) }}]</span></td>
       <td class="py-2 pr-3 text-right tabular-nums">{{ n(c.roc_auc,2) }}</td><td class="py-2 pr-3 text-right tabular-nums">{{ n(c.verdaderos_positivos,1) }} de {{ c.abandonos }}</td>
       <td class="py-2 pr-3 text-right tabular-nums">{{ n(c.falsos_positivos,1) }}</td><td class="py-2 pr-3 text-right tabular-nums">{{ c.regla_5.detectados }} · {{ c.regla_5.falsas_alarmas }} FA</td></tr></tbody></table></div></PanelPlegable>
-    <PanelPlegable class="mt-3" titulo="Cómo leer estos resultados" resumen="Datos, método y límites">
-     <p>De febrero a mayo nadie se distingue: quienes abandonan tienen notas, asistencia y trayectoria normales hasta el día en que dejan de venir. Desde que dejan de asistir, la regla lo detecta en días.</p>
-     <p class="mt-2">En septiembre y octubre la detección es casi automática: la escuela define el abandono por no asistir en el 3.er trimestre. {{ seg.nota }}</p>
-     <p v-if="d5" class="mt-2"><strong>Regla de 5 faltas seguidas</strong> (nivel Urgente), revisada día por día: {{ d5.detectados }} de {{ d5.abandonos }} abandonos y {{ d5.falsas_alarmas }} falsas alarmas de {{ d5.continuaron }}; en versiones posteriores de los archivos, de 46 a 49 de 1728. Salió {{ n(d5.dias_antes_del_cierre_del_trimestre_mediana,0) }} días antes del cierre del trimestre (mediana; mínimo {{ d5.dias_antes_del_cierre_del_trimestre_min }}).</p>
-     <p class="mt-2"><strong>Alerta combinada:</strong> conteo a fin de cada mes en 2021-2025, sobre datos pasados. Agregar notas y actitud no mejora la detección del abandono; amplía a quién apoyar. Quienes continuaron con alerta no tienen por qué ser errores: se señalan por sus notas, actitud o faltas. El conteo es circular para el abandono, porque se definió con la asistencia.</p>
-     <p v-if="seg.corte_unico?.abril" class="mt-2">Experimento aparte, con un solo corte al 30 de abril y todas las gestiones: AP {{ n(seg.corte_unico.abril.average_precision,3) }} frente a {{ n(seg.corte_unico.abril.azar,3) }} del azar: no anticipa.</p>
-     <p class="mt-2">Métricas por mes: media de 20 repeticiones de validación cruzada agrupada por estudiante, con umbral 0,5 e IC 95 % por bootstrap. Los intervalos son amplios porque hay pocos abandonos.</p>
-     <p v-if="seg.corte_unico?.trayectoria" class="mt-2">Trayectoria previa (febrero): AP {{ n(seg.corte_unico.trayectoria.average_precision,3) }}.</p>
-     <p class="mt-2 text-slate-500">La alerta que ve la escuela la decide la regla por dimensiones; este puntaje ordena dentro de cada nivel. Detalle de los archivos: docs/CONSISTENCIA_REGISTROS.md.</p>
-    </PanelPlegable>
    </section>
    <div v-if="tab==='anterior'" class="mt-5 space-y-3">
    <!-- Datos y protocolo -->

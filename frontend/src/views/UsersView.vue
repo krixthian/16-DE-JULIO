@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import api from '../services/api'
@@ -12,8 +12,17 @@ const errorMessage = ref('')
 const saving = ref(false)
 const describeError = e => {
   const detail=e.response?.data?.detail
-  return Array.isArray(detail)?detail.map(x=>x.msg).join(' · '):detail||'No se pudo conectar con el servidor.'
+  return Array.isArray(detail)?detail.map(x=>x.msg.replace(/^Value error, /,'')).join(' · '):detail||'No se pudo conectar con el servidor.'
 }
+// Requisitos de contraseña: los mismos que valida el backend (schemas.requisitos_faltantes)
+const reglasClave = [
+  ['Al menos 8 caracteres', c => c.length >= 8],
+  ['Una letra mayúscula', c => /\p{Lu}/u.test(c)],
+  ['Un número', c => /\p{Nd}/u.test(c)],
+  ['Un carácter especial (! @ # $ % …)', c => /[^\p{L}\p{N}\s]/u.test(c)],
+]
+const estadoClave = computed(() => reglasClave.map(([texto, cumple]) => ({ texto, ok: cumple(formUser.value.password || '') })))
+const claveValida = computed(() => estadoClave.value.every(r => r.ok))
 
 // Redirigir si no está logueado o no es Admin
 onMounted(async () => {
@@ -75,6 +84,10 @@ const openModal = (user = null) => {
 
 const saveUser = async () => {
   if(saving.value)return
+  if((!isEditing.value || formUser.value.password) && !claveValida.value){
+    alert('La contraseña debe tener: ' + estadoClave.value.filter(r => !r.ok).map(r => r.texto.toLowerCase()).join(', ') + '.')
+    return
+  }
   saving.value=true
   try {
     const payload = { ...formUser.value }
@@ -205,7 +218,12 @@ const deleteUser = async (id) => {
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Contraseña <span v-if="isEditing" class="text-xs text-gray-400 dark:text-slate-500 font-normal">(Opcional si no cambia)</span></label>
-            <input v-model="formUser.password" type="password" :required="!isEditing" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+            <input v-model="formUser.password" type="password" autocomplete="new-password" :required="!isEditing" aria-describedby="requisitosClave" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" />
+            <ul v-if="!isEditing || formUser.password" id="requisitosClave" class="mt-2 space-y-0.5 text-xs">
+              <li v-for="r in estadoClave" :key="r.texto" :class="r.ok ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-slate-400'">
+                <span aria-hidden="true">{{ r.ok ? '✓' : '○' }}</span> {{ r.texto }}<span class="sr-only">{{ r.ok ? ' (cumple)' : ' (falta)' }}</span>
+              </li>
+            </ul>
           </div>
           
           <label v-if="isEditing" class="flex gap-2 text-gray-700 dark:text-slate-300"><input type="checkbox" v-model="formUser.activo" /> Usuario activo</label>

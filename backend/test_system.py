@@ -17,7 +17,7 @@ class SystemTests(unittest.TestCase):
   async def run():
    with engine.connect() as conn:
     tx=conn.begin();db=Session(bind=conn,join_transaction_mode='create_savepoint')
-    password=' QA-valid-pass-27 '
+    password=' QA-Valid-pass-27 '
     admin=m.Usuario(nombre='Temporal',apellido='Revisión',email='audit-admin@example.org',rol='Admin',activo=True,password_hash=get_password_hash(password))
     db.add(admin);db.flush()
     app.dependency_overrides[get_db]=lambda:db
@@ -41,7 +41,7 @@ class SystemTests(unittest.TestCase):
       self.assertEqual(db.get(m.Usuario,u['id']).email,body['email'])
       self.assertNotIn('password_hash',u)
       await request('POST','/users/',body,400)
-      for invalid in [{'nombre':None},{'nombre':' '},{'nombre':'x'*101},{'rol':None},{'password':None},{'password':'é'*37}]:
+      for invalid in [{'nombre':None},{'nombre':' '},{'nombre':'x'*101},{'rol':None},{'password':None},{'password':'é'*37},{'password':'Corta1!'},{'password':'sin-mayuscula-1'},{'password':'Sin-Numero-x'},{'password':'SinEspecial123'}]:
        await request('PUT',f"/users/{u['id']}",invalid,422)
       await request('PUT',f"/users/{u['id']}",{'email':admin.email},409)
       await request('DELETE',f'/users/{admin.id}',code=409)

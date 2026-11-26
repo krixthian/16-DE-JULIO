@@ -34,7 +34,7 @@ onMounted(load)
   <h1 class="text-3xl font-bold">Mis estudiantes con alerta</h1>
   <p class="mt-2 text-slate-500 dark:text-slate-400 max-w-3xl">
    {{ store.user?.rol === 'Docente' ? 'Estudiantes de tus cursos que necesitan atención.' : 'Vista previa de lo que ve cada docente (aquí, todos los cursos).' }}
-   <span v-if="data?.alertas.some(a => a.origen === 'SIMULADO')" class="ml-1 px-2 py-0.5 rounded-full text-xs bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">Datos simulados</span>
+
   </p>
 
   <div class="flex flex-wrap items-end gap-3 mt-6">

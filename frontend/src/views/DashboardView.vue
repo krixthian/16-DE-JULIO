@@ -199,11 +199,6 @@ onBeforeUnmount(()=>observer.disconnect())
    </template>
   </section>
   <template v-if="data&&tab==='seguimiento'">
-   <div class="mt-4 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 p-4 text-sm text-blue-900 dark:text-blue-100">
-    <p class="font-semibold">Resumen {{ scope }}</p>
-    <p class="mt-1">{{ cargando?'Calculando la alerta de todos los estudiantes…':summaryText }}</p>
-    <p v-if="elegidas.length" class="mt-1 text-xs">{{ elegidas[0].nota }} Son los mismos números que «Alertas de riesgo» a la última fecha registrada. En las gestiones pasadas es una revisión de datos pasados.</p>
-   </div>
    <div class="grid lg:grid-cols-2 gap-4 mt-4">
     <div v-for="g in cardGroups" :key="g.titulo" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4" :class="g.items.length>3?'lg:col-span-2':''">
      <p class="text-sm font-semibold">{{ g.titulo }}</p>
@@ -249,12 +244,6 @@ onBeforeUnmount(()=>observer.disconnect())
     <p v-else class="mt-3 text-sm text-slate-500">Sin alertas {{ scope }}.</p>
    </article>
    <article class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
-    <h2 class="font-semibold">Rendimiento del 1.er trimestre por grado</h2>
-    <p class="text-xs text-slate-500 mt-1">Qué parte de cada grado está en cada banda de la escala de valoración (Ley 070), según el promedio del 1.er trimestre. Cada barra suma el 100 % del grado.</p>
-    <div class="mt-3 h-72"><Bar :data="byGrade" :options="gradeOptions" aria-label="Distribución del promedio del primer trimestre por grado" /></div>
-    <p class="mt-2 text-sm">{{ gradeNote }}</p>
-   </article>
-   <article class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5">
     <h2 class="font-semibold">Reporte de alertas</h2>
     <p class="text-sm text-slate-500 mt-1">PDF imprimible, Excel con formato institucional o CSV de datos, con todas las alertas, sus motivos por dimensión e intervenciones. Estudiantes anonimizados; incluye la fecha, el nivel de alerta, el puesto y la nota de que el modelo apoya, no sustituye, el criterio docente.</p>
     <p v-if="!gestion" class="mt-3 text-sm text-amber-700 dark:text-amber-300">Elige una gestión arriba para generar el reporte.</p>
@@ -267,18 +256,6 @@ onBeforeUnmount(()=>observer.disconnect())
      <button :disabled="!!downloading" @click="download('csv')" class="px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-50">{{ downloading==='csv'?'Generando…':'Descargar CSV' }}</button>
     </div>
    </article>
-   <details class="mt-6 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 text-sm">
-    <summary class="cursor-pointer font-semibold">Ver los datos en tablas</summary>
-    <div class="grid md:grid-cols-2 gap-6 mt-4">
-     <table class="w-full"><caption class="text-left font-medium mb-1">Alertas por curso</caption><thead class="text-left text-slate-500"><tr><th>Curso</th><th>Gestión</th><th v-for="[k,l] in levels" :key="k">{{ l }}</th></tr></thead>
-      <tbody><tr v-for="c in cursosSem" :key="c.id"><td>{{ c.curso }}</td><td>{{ c.gestion }}</td><td v-for="[k] in levels" :key="k">{{ c[k] }}</td></tr></tbody></table>
-     <table class="w-full"><caption class="text-left font-medium mb-1">Promedio T1 por grado</caption><thead class="text-left text-slate-500"><tr><th>Grado</th><th>n</th><th v-for="b in data.bandas" :key="b.codigo">{{ b.codigo }}</th></tr></thead>
-      <tbody><tr v-for="g in grados" :key="g.grado"><td>{{ g.grado }}.º</td><td>{{ g.n }}</td><td v-for="b in data.bandas" :key="b.codigo">{{ g[b.codigo] }}</td></tr></tbody></table>
-     <table class="w-full"><caption class="text-left font-medium mb-1">Alertas por gestión</caption><thead class="text-left text-slate-500"><tr><th>Gestión</th><th>Evaluados</th><th v-for="[k,l] in levels" :key="k">{{ l }}</th></tr></thead>
-      <tbody><tr v-for="y in years" :key="y.gestion"><td>{{ y.gestion }}</td><td>{{ y.total }}</td><td v-for="[k] in levels" :key="k">{{ y.niveles[k] }}</td></tr></tbody></table>
-     <table class="w-full"><caption class="text-left font-medium mb-1">Intervenciones</caption><tbody><tr v-for="[k,l] in steps" :key="k"><td>{{ l }}</td><td>{{ data.intervenciones[k] }}</td></tr></tbody></table>
-    </div>
-   </details>
   </template>
  </section>
 </template>

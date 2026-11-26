@@ -41,7 +41,7 @@ onMounted(load)
   <template v-else>
    <section>
     <div class="flex flex-wrap items-baseline gap-2"><h2 class="text-lg font-semibold">Cómo van mis estudiantes</h2><span class="text-sm text-slate-500">Gestión {{ data.gestion }} al {{ fecha(data.fecha) }}</span>
-     <span v-if="alertas.some(a => a.origen === 'SIMULADO')" class="px-2 py-0.5 rounded-full text-xs bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">Datos simulados</span></div>
+</div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-3">
      <div v-for="t in tarjetas" :key="t.l" class="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4">
       <p class="text-sm text-slate-500 flex items-center gap-1.5"><span v-if="t.p" class="h-2.5 w-2.5 rounded-full" :class="t.p" aria-hidden="true"></span>{{ t.l }}</p>

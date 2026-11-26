@@ -137,7 +137,6 @@ onMounted(load)
  <section class="p-4 md:p-8 max-w-7xl mx-auto text-slate-900 dark:text-slate-100">
   <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-widest font-semibold mb-2">Alerta temprana</p>
   <h1 class="text-3xl font-bold">Alertas de riesgo de abandono</h1>
-  <p class="mt-2 text-slate-500 dark:text-slate-400">A quién apoyar primero, según sus notas, actitud y asistencia. Es una guía: no predice quién abandonará.<span v-if="follow?.alertas?.some(a=>a.origen==='SIMULADO')" class="ml-2 px-2 py-0.5 rounded-full text-xs bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200">Gestión {{ follow.gestion }}: datos simulados</span></p>
   <div v-if="error" role="alert" class="mt-6 bg-red-50 text-red-800 rounded-xl p-4">{{ error }}</div>
   <div v-if="notice" class="mt-6 bg-green-50 text-green-800 rounded-xl p-4">{{ notice }}</div>
   <div class="mt-6 inline-flex rounded-lg border border-slate-300 dark:border-slate-600 p-1 text-sm" role="group" aria-label="Alcance del resumen">
@@ -158,7 +157,7 @@ onMounted(load)
        <td class="px-4 py-2.5 text-right tabular-nums">{{ g.detectados ?? '—' }}</td>
        <td class="px-4 py-2.5 text-right tabular-nums">{{ g.falsas_alarmas ?? '—' }}</td></tr>
       <tr class="border-t-2 border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 font-semibold">
-       <td class="px-4 py-2.5">Total {{ Math.min(...byYear.total_reales.gestiones) }}-{{ Math.max(...byYear.total_reales.gestiones) }} (archivos recibidos, origen no verificado)</td>
+       <td class="px-4 py-2.5">Total {{ Math.min(...byYear.total_reales.gestiones) }}-{{ Math.max(...byYear.total_reales.gestiones) }}</td>
        <td class="px-4 py-2.5 text-right tabular-nums">{{ byYear.total_reales.matriculas }}</td>
        <td class="px-4 py-2.5 text-right tabular-nums text-red-700 dark:text-red-400">{{ byYear.total_reales.alertas_inmediatas }}</td>
        <td class="px-4 py-2.5 text-right tabular-nums">{{ byYear.total_reales.abandonos_confirmados }}</td>
@@ -166,7 +165,6 @@ onMounted(load)
        <td class="px-4 py-2.5 text-right tabular-nums">{{ byYear.total_reales.falsas_alarmas }}</td></tr>
      </tbody></table>
    </div>
-   <AyudaPantalla v-if="byYear" class="mt-3"><p>{{ byYear.nota }} En las gestiones en curso todavía no se sabe quién abandonó.</p></AyudaPantalla>
   </section>
   <div v-if="follow&&scope==='gestion'" class="grid grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
    <button v-for="k in tarjetas" :key="k.v" @click="followLevel=k.v;followReason='';tab='seguimiento'" :aria-pressed="followLevel===k.v" class="text-left rounded-xl bg-white dark:bg-slate-800 border p-5 hover:shadow-md" :class="followLevel===k.v?'border-blue-500 ring-1 ring-blue-500':'border-slate-200 dark:border-slate-700'">
@@ -188,15 +186,6 @@ onMounted(load)
     <label class="text-sm font-medium">Motivo<select v-model="followReason" class="block mt-1 rounded-lg border border-slate-300 dark:border-slate-600 dark:bg-slate-800 px-3 py-2"><option value="">Cualquiera</option><option v-for="d in ['Académica','Desempeño','Actitud','Asistencia','Modelo XGBoost']" :key="d">{{ d }}</option></select></label>
     <span class="text-sm text-slate-500 pb-2">{{ followRows.length }} estudiante(s)<template v-if="!follow.notas_t1_incluidas"> · las notas aparecen al cerrar el 1.er trimestre</template></span>
    </div>
-   <AyudaPantalla class="mt-3" titulo="¿Cómo se lee esta lista?">
-    <p><strong>Urgente</strong>: {{ follow.racha_alerta }} o más faltas seguidas. <strong>Rojo</strong> y <strong>amarillo</strong>: por notas, actitud o asistencia; en rojo van primero quienes tienen notas y asistencia a la vez. <strong>Verde</strong>: sin alerta. Solo se muestran las dimensiones con problema. Asistencia incluye la de cada materia; Académica y Actitud, las citaciones. «PB» es un estudiante de prueba.</p>
-    <p><strong>Regla propuesta.</strong> {{ follow.nota_perfil }}</p>
-    <p><strong>Puntaje de XGBoost</strong> ({{ monthName[follow.mes] || '—' }}): ordena dentro de cada nivel. {{ summary?.nota || 'No está calibrado: no es un riesgo absoluto.' }}</p>
-    <details class="text-xs"><summary class="cursor-pointer">Detalle técnico del modelo y de la regla de faltas</summary>
-     <p class="mt-1">Regla de faltas: en los archivos recibidos de 2021-2025 (origen no verificado) se cumplió en 11 de 11 abandonos; es una revisión de datos pasados y el abandono se definió con la propia asistencia.</p>
-     <p v-if="follow.validacion_del_corte" class="mt-1">Modelo en este corte, con los archivos recibidos, de origen no verificado: AP {{ comma(follow.validacion_del_corte.xgboost.average_precision,2) }} frente a {{ comma(follow.validacion_del_corte.azar,3) }} del azar; detecta en promedio {{ comma(follow.validacion_del_corte.xgboost.verdaderos_positivos,1) }} de {{ follow.validacion_del_corte.abandonos }} abandonos con {{ comma(follow.validacion_del_corte.xgboost.falsos_positivos,1) }} falsas alarmas entre {{ follow.validacion_del_corte.matriculas }} matrículas. Puntajes: {{ follow.modelo_usado }}.</p>
-    </details>
-   </AyudaPantalla>
    <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
     <table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-900 text-left"><tr><th class="px-3 py-2.5">N.º</th><th class="px-3 py-2.5">Estudiante</th><th class="px-3 py-2.5">Curso</th><th class="px-3 py-2.5">Alerta</th><th class="px-3 py-2.5">Motivo</th><th class="px-3 py-2.5">Faltas seguidas</th><th class="px-3 py-2.5">Puntaje</th><th class="px-3 py-2.5">Caso</th></tr></thead>
      <tbody><tr v-for="a in followRows" :key="a.matricula_id" class="border-t border-slate-100 dark:border-slate-700 align-middle">
@@ -336,62 +325,6 @@ onMounted(load)
     <p class="text-sm font-semibold mb-2">Situación en cada dimensión <span class="ml-1 px-2 py-0.5 rounded-full text-xs" :class="NIVEL[why.perfil.nivel][1]">{{ NIVEL[why.perfil.nivel][0] }}</span><span v-if="why.perfil.notas_y_asistencia" class="ml-1 px-2 py-0.5 rounded-full border border-red-300 dark:border-red-800 text-xs">Notas y asistencia</span></p>
     <PerfilRiesgo :colores="why.perfil.colores" grande />
    </div>
-   <AyudaPantalla class="mt-3" titulo="¿Cómo se lee?"><ul class="space-y-1 list-disc pl-5"><li v-for="l in why.como_leer" :key="l">{{ l }}</li></ul><p v-if="why.perfil">{{ why.perfil.nota }}</p></AyudaPantalla>
-   <button @click="showModel=!showModel" :aria-expanded="showModel" class="mt-4 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm">{{ showModel?'Ocultar el análisis del modelo':'Ver el análisis del modelo XGBoost' }}</button>
-   <template v-if="showModel">
-   <p class="mt-3 text-xs text-slate-500">Corte {{ selected.fecha_corte }} · puntaje {{ score(selected.probabilidad) }} · puesto {{ selected.prioridad.puesto }} de {{ selected.prioridad.de }} en {{ selected.gestion }}. Ranking de prioridad, no riesgo absoluto.</p>
-   <div class="grid lg:grid-cols-3 gap-6 mt-4">
-    <div class="lg:col-span-1 space-y-4">
-     <div class="rounded-lg bg-slate-50 dark:bg-slate-900 p-4">
-      <p class="text-sm font-semibold">1. Por qué está en este nivel</p>
-      <div class="relative mt-6 h-3 rounded-full opacity-80" :style="gaugeZones(why.nivel.umbral_medio,why.nivel.umbral_alto)" aria-hidden="true">
-       <span class="absolute -top-5 text-[10px] text-slate-500 -translate-x-1/2" :style="{left:gaugeLeft(why.nivel.umbral_medio/2)}">bajo</span>
-       <span class="absolute -top-5 text-[10px] text-slate-500 -translate-x-1/2" :style="{left:gaugeLeft(why.nivel.umbral_medio)}">medio {{ comma(why.nivel.umbral_medio) }}</span>
-       <span class="absolute -top-5 text-[10px] text-slate-500 -translate-x-1/2" :style="{left:gaugeLeft(why.nivel.umbral_alto)}">alto {{ comma(why.nivel.umbral_alto) }}</span>
-       <i class="absolute top-0 h-3 w-px bg-slate-500" :style="{left:gaugeLeft(why.nivel.umbral_medio)}"></i>
-       <i class="absolute top-0 h-3 w-px bg-slate-500" :style="{left:gaugeLeft(why.nivel.umbral_alto)}"></i>
-       <i class="absolute -top-1 h-5 w-5 rounded-full border-2 border-white dark:border-slate-900 -translate-x-1/2" :class="why.nivel.nivel==='ALTO'?'bg-red-600':'bg-amber-500'" :style="{left:gaugeLeft(why.nivel.puntaje)}"></i>
-      </div>
-      <p class="mt-3 text-sm">{{ why.nivel.motivo }}</p>
-      <p class="mt-2 text-xs text-slate-500">{{ why.nivel.nota }}</p>
-     </div>
-     <div class="rounded-lg bg-slate-50 dark:bg-slate-900 p-4">
-      <p class="text-sm font-semibold">2. En palabras</p>
-      <p class="mt-2 text-sm">{{ why.resumen }}</p>
-      <p v-if="why.areas_en_desarrollo.length" class="mt-2 text-sm text-red-700 dark:text-red-300">Áreas en desarrollo (&lt; 51): {{ why.areas_en_desarrollo.map(a=>`${a.etiqueta} (${a.valor})`).join(', ') }}.</p>
-      <p v-else class="mt-2 text-xs text-slate-500">Ninguna área por debajo de 51.</p>
-     </div>
-    </div>
-    <div class="lg:col-span-2">
-     <p class="text-sm font-semibold">3. Qué eleva y qué reduce la prioridad (10 variables con más peso)</p>
-     <div class="mt-2 h-80"><Bar :data="whyChart" :options="whyOptions" aria-label="Aporte de cada variable a la prioridad" /></div>
-    </div>
-   </div>
-   <p class="text-sm font-semibold mt-6">4. Todas las variables comparadas con su curso</p>
-   <div class="overflow-x-auto mt-2">
-    <table class="w-full text-sm">
-     <thead class="text-left text-slate-500"><tr><th class="py-2 pr-3">Variable</th><th class="py-2 pr-3">Estudiante</th><th class="py-2 pr-3">Promedio del curso</th><th class="py-2 pr-3">Efecto en la prioridad</th><th class="py-2 pr-3 text-right">Aporte</th></tr></thead>
-     <tbody>
-      <template v-for="(v,i) in shown" :key="v.variable">
-      <tr v-if="v.efecto==='neutro'&&shown[i-1]?.efecto!=='neutro'" class="border-t border-slate-200 dark:border-slate-600"><td colspan="5" class="pt-4 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Consideradas por el modelo, sin efecto en este caso</td></tr>
-      <tr class="border-t border-slate-100 dark:border-slate-700">
-       <td class="py-2 pr-3">{{ v.etiqueta }}<span class="block text-xs text-slate-400">{{ v.grupo }}</span></td>
-       <td class="py-2 pr-3 font-medium">{{ v.valor_texto }}</td>
-       <td class="py-2 pr-3 text-slate-500">{{ v.comparacion?.replace('curso: ','')||'—' }}</td>
-       <td class="py-2 pr-3"><span v-if="v.efecto==='sube'" class="text-red-700 dark:text-red-300">▲ eleva<span v-if="v.peso_relativo"> ({{ comma(v.peso_relativo,0) }} % de lo que la eleva)</span></span><span v-else-if="v.efecto==='baja'" class="text-emerald-700 dark:text-emerald-300">▼ reduce</span><span v-else class="text-slate-400">{{ v.valor==null&&why.variables.some(x=>x.valor!=null)?'sin dato':'sin efecto' }}</span></td>
-       <td class="py-2 pr-3 text-right tabular-nums">{{ v.aporte>0?'+':'' }}{{ comma(v.aporte,3) }}</td>
-      </tr>
-      </template>
-     </tbody>
-    </table>
-   </div>
-   <button @click="showAll=!showAll" class="mt-2 text-sm text-blue-700 dark:text-blue-300 underline">{{ showAll?'Ver solo las 8 principales':`Ver las ${why.variables.length} variables` }}</button>
-   <details class="mt-4 text-xs text-slate-500">
-    <summary class="cursor-pointer">Cómo se calcula y advertencias</summary>
-    <p class="mt-2">{{ why.metodo }} Punto de partida: {{ comma(why.punto_partida,3) }} → puntaje con sus datos: {{ comma(why.puntaje_recalculado,3) }}<span v-if="why.coincide_con_guardado"> (coincide con el puntaje guardado).</span></p>
-    <p class="mt-1">{{ why.advertencia }}</p>
-   </details>
-   </template>
   </section>
  </section>
 </template>

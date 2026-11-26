@@ -1,0 +1,18 @@
+25/11/2026 22:13:54
+> python -m unittest test_system
+test_auth_users_and_module_reads (test_system.SystemTests.test_auth_users_and_module_reads) ... C:\Users\Cristhian\AppData\Roaming\Python\Python312\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  now = timegm(datetime.utcnow().utctimetuple())
+ok
+test_calendar_preserves_task_deadline (test_system.SystemTests.test_calendar_preserves_task_deadline) ... ok
+test_database_failure_health (test_system.SystemTests.test_database_failure_health) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.021s
+
+OK
+> requisitos_faltantes (ejemplos sin uso real)
+'abc' -> ['al menos 8 caracteres', 'una letra mayúscula', 'un número', 'un carácter especial (por ejemplo ! @ # $ %)']
+'Abcdefg1' -> ['un carácter especial (por ejemplo ! @ # $ %)']
+'abcdefg1!' -> ['una letra mayúscula']
+'Abcdefgh!' -> ['un número']
+'Abcdefg1!' -> cumple
